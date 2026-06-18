@@ -115,4 +115,23 @@ describe('analyzeGame — motif tagging', () => {
     expect(g.moves[0].missed).toBe(false)
     expect(g.moves[0].type).toBeDefined() // falls back to 1-ply classification
   })
+
+  it('tags a missed non-capture fork as type=fork, missed=true', async () => {
+    // fenBefore: white knight on e5 can play Nf7+ forking Kh8 and Rd8 (non-capture fork).
+    // The player plays Ke2 instead — a different, non-best move.
+    // bestCp=300, playedCpMoverPov≈-100 → cpLoss≈400 → blunder, not lost_position.
+    const fenBefore = '3r3k/8/8/4N3/8/8/8/4K3 w - - 0 1'
+    const raw = oneMoveGame('Ke2', fenBefore, 'white')
+    const evaluate = async (fen: string) => {
+      if (fen === fenBefore) {
+        // best: Nf7+ forking Kh8 and Rd8
+        return { eval: { cp: 300, mate: null }, bestUci: 'e5f7', pv: ['e5f7', 'h8g8', 'f7d8'] }
+      }
+      // after Ke2 (opponent to move), position is losing for white
+      return { eval: { cp: -100, mate: null }, bestUci: 'd8d2', pv: [] }
+    }
+    const g = await analyzeGame(raw, 12, evaluate as any)
+    expect(g.moves[0].type).toBe('fork')
+    expect(g.moves[0].missed).toBe(true)
+  })
 })

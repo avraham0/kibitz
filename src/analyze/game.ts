@@ -69,14 +69,23 @@ export async function analyzeGame(
     } else if (severity === 'ok') {
       type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
     } else {
-      const playerCouldWin = maxHangingGain(rm.fenBefore) >= 200 && playedUci !== before.bestUci
-      if (playerCouldWin) {
+      const playedDiffersFromBest = playedUci !== before.bestUci
+      const missedHit = playedDiffersFromBest ? detectMotif(rm.fenBefore, before.pv) : null
+      if (missedHit) {
         missed = true
-        const hit = detectMotif(rm.fenBefore, before.pv)
-        type = hit ? hit.motif : 'missed_tactic'
+        type = missedHit.motif
       } else {
-        const hit = detectMotif(fenAfter, after.pv)
-        type = hit ? hit.motif : classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
+        const allowedHit = detectMotif(fenAfter, after.pv)
+        if (allowedHit) {
+          missed = false
+          type = allowedHit.motif
+        } else if (maxHangingGain(rm.fenBefore) >= 200 && playedDiffersFromBest) {
+          missed = true
+          type = 'missed_tactic'
+        } else {
+          missed = false
+          type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
+        }
       }
     }
 
