@@ -10,9 +10,9 @@ export function MistakeTypesChart({ stats }: { stats: Stats }) {
     <section>
       <h2>Mistake types</h2>
       <BarChart width={480} height={240} data={data}>
-        <XAxis dataKey="type" angle={-30} textAnchor="end" height={70} interval={0} fontSize={10} />
-        <YAxis allowDecimals={false} />
-        <Tooltip /><Legend />
+        <XAxis dataKey="type" angle={-30} textAnchor="end" height={70} interval={0} fontSize={10} tick={{ fill: '#bbb' }} stroke="#555" />
+        <YAxis allowDecimals={false} tick={{ fill: '#bbb' }} stroke="#555" />
+        <Tooltip /><Legend wrapperStyle={{ color: '#bbb' }} />
         <Bar dataKey="allowed" stackId="a" fill="#c66" />
         <Bar dataKey="missed" stackId="a" fill="#69c" />
       </BarChart>

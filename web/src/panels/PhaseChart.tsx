@@ -7,7 +7,7 @@ export function PhaseChart({ stats }: { stats: Stats }) {
     <section>
       <h2>Mistakes by phase</h2>
       <BarChart width={480} height={240} data={data}>
-        <XAxis dataKey="phase" /><YAxis allowDecimals={false} /><Tooltip />
+        <XAxis dataKey="phase" tick={{ fill: '#bbb' }} stroke="#555" /><YAxis allowDecimals={false} tick={{ fill: '#bbb' }} stroke="#555" /><Tooltip />
         <Bar dataKey="mistakes" fill="#69c" />
       </BarChart>
     </section>
