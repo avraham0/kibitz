@@ -11,12 +11,15 @@ function mockRes() {
   const chunks: string[] = []
   let statusCode = 200
   const headers: Record<string, string> = {}
+  let resolveEnd: () => void
+  const ended = new Promise<void>((r) => { resolveEnd = r })
   return {
     chunks, get body() { return chunks.join('') }, get statusCode() { return statusCode },
     setHeader: (k: string, v: string) => { headers[k] = v }, get headers() { return headers },
     writeHead: (s: number, h?: Record<string, string>) => { statusCode = s; Object.assign(headers, h ?? {}) },
     write: (c: string) => { chunks.push(c); return true },
-    end: (c?: string) => { if (c) chunks.push(c) },
+    end: (c?: string) => { if (c) chunks.push(c); resolveEnd() },
+    ended,
   } as any
 }
 
@@ -30,7 +33,7 @@ describe('createHandler — /api/analyze', () => {
     const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
     const res = mockRes()
     handler(mockReq('/api/analyze?user=bob&depth=8'), res)
-    await new Promise((r) => setTimeout(r, 10))
+    await res.ended
     expect(res.headers['Content-Type']).toContain('text/event-stream')
     expect(res.body).toContain('event: progress')
     expect(res.body).toContain('"done":1')
@@ -43,7 +46,7 @@ describe('createHandler — /api/analyze', () => {
     const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
     const res = mockRes()
     handler(mockReq('/api/analyze?depth=8'), res)
-    await new Promise((r) => setTimeout(r, 10))
+    await res.ended
     expect(res.statusCode).toBe(400)
   })
 })
@@ -53,7 +56,7 @@ describe('createHandler — static', () => {
     const handler = createHandler({ analyze: async () => sample, staticDir: '/nonexistent', nowISO: () => '' })
     const res = mockRes()
     handler(mockReq('/'), res)
-    await new Promise((r) => setTimeout(r, 10))
+    await res.ended
     expect(res.body.toLowerCase()).toContain('build')
   })
 
@@ -63,7 +66,7 @@ describe('createHandler — static', () => {
     const handler = createHandler({ analyze: async () => sample, staticDir: dir, nowISO: () => '' })
     const res = mockRes()
     handler(mockReq('/'), res)
-    await new Promise((r) => setTimeout(r, 10))
+    await res.ended
     expect(res.body).toContain('<title>cc</title>')
   })
 })
