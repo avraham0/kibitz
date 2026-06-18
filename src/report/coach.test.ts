@@ -35,6 +35,20 @@ describe('coach', () => {
     expect(s.length).toBeLessThanOrEqual(5)
   })
 
+  it('does not suggest studying an opening named Unknown', () => {
+    const withUnknown: Stats = {
+      ...base,
+      openings: [
+        { eco: 'A00', name: 'Unknown', games: 5, wins: 1, winPct: 20, avgMistakes: 3.0 },
+        { eco: 'C50', name: 'Italian', games: 4, wins: 1, winPct: 25, avgMistakes: 2.0 },
+      ],
+    }
+    const s = coach(withUnknown)
+    const titles = s.map((x) => x.title.toLowerCase()).join(' | ')
+    expect(titles).not.toContain('unknown')
+    expect(titles).toContain('italian') // named losing opening still fires
+  })
+
   it('returns nothing actionable when there are no mistakes', () => {
     const empty: Stats = { ...base, mistakeCount: 0,
       byPhase: { opening: 0, middlegame: 0, endgame: 0 },

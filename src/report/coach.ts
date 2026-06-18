@@ -75,7 +75,7 @@ export function coach(stats: Stats): Suggestion[] {
 
   // Rule 3: losing openings.
   for (const o of stats.openings) {
-    if (o.games >= 3 && o.winPct < 40) {
+    if (o.name !== 'Unknown' && o.games >= 3 && o.winPct < 40) {
       out.push({
         title: `You struggle in the ${o.name} (${o.winPct}% over ${o.games} games)`,
         why: `Low score with this opening drags your rating; ${o.avgMistakes} mistakes per game on average.`,

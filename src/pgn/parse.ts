@@ -100,7 +100,14 @@ export function parseGame(raw: any, user: string): RawGame | null {
     color,
     result,
     eco: header.ECO ?? 'Unknown',
-    openingName: header.Opening ?? 'Unknown',
+    openingName: (() => {
+      if (header.Opening && header.Opening.trim()) return header.Opening.trim()
+      if (header.ECOUrl) {
+        const m = header.ECOUrl.match(/\/openings\/([^/?#]+)/)
+        if (m) return m[1].replace(/-/g, ' ')
+      }
+      return 'Unknown'
+    })(),
     moves,
   }
 }

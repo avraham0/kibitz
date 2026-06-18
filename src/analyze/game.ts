@@ -6,6 +6,8 @@ import { classifyMistake } from './classify.js'
 
 export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string }>
 
+export const MAX_CPLOSS = 2000
+
 export function cpFromMoverPov(ev: Eval): number {
   if (ev.mate !== null) {
     return ev.mate > 0 ? 100000 - ev.mate * 100 : -100000 - ev.mate * 100
@@ -52,7 +54,7 @@ export async function analyzeGame(
     const playedCpMoverPov = -cpFromMoverPov(after.eval)
     const evalAfterPlayed: Eval = after.eval
 
-    const cpLoss = Math.max(0, bestCp - playedCpMoverPov)
+    const cpLoss = Math.min(MAX_CPLOSS, Math.max(0, bestCp - playedCpMoverPov))
     const severity = cpLossToSeverity(cpLoss)
     const type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
 

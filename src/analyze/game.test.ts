@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { analyzeGame, cpFromMoverPov } from './game.js'
+import { analyzeGame, cpFromMoverPov, MAX_CPLOSS } from './game.js'
 import type { RawGame } from '../types.js'
 
 describe('cpFromMoverPov', () => {
@@ -33,5 +33,29 @@ describe('analyzeGame', () => {
     expect(g.moves[0].isPlayerMove).toBe(true)  // white move, player is white
     expect(g.moves[1].isPlayerMove).toBe(false) // black move
     expect(g.depth).toBe(12)
+  })
+
+  it('caps cpLoss at MAX_CPLOSS on a mate swing and still classifies as blunder', async () => {
+    // fenBefore: white to move; evaluator says +50 cp (normal eval)
+    // After played move (e4), opponent has a forced mate in 1 → cpFromMoverPov returns a large negative value from mover's pov
+    const raw: RawGame = {
+      gameId: 'g2', url: 'g2', playedAt: '2026-01-01T00:00:00.000Z',
+      color: 'white', result: 'loss', eco: 'C20', openingName: 'KP',
+      moves: [
+        { san: 'e4', fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', clockSeconds: 180 },
+      ],
+    }
+    // fenBefore (white to move): eval is +50 cp → bestCp = 50
+    // fenAfter (black to move): mate: 1 for black (opponent) → cpFromMoverPov = large positive for black
+    //   negated for white mover pov → playedCpMoverPov = -(100000 - 1*100) = -99900
+    // raw cpLoss = 50 - (-99900) = 99950 → clamped to MAX_CPLOSS = 2000
+    const evaluate = async (fen: string) => {
+      if (fen.includes(' w ')) return { eval: { cp: 50, mate: null }, bestUci: 'e2e4' }
+      // After e4, black to move — black has mate in 1
+      return { eval: { cp: null, mate: 1 }, bestUci: 'e7e5' }
+    }
+    const g = await analyzeGame(raw, 12, evaluate as any)
+    expect(g.moves[0].cpLoss).toBe(MAX_CPLOSS)
+    expect(g.moves[0].severity).toBe('blunder')
   })
 })
