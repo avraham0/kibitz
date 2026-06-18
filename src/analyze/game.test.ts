@@ -27,7 +27,8 @@ describe('analyzeGame', () => {
     }
     const g = await analyzeGame(raw, 12, evaluate as any)
     expect(g.moves).toHaveLength(2)
-    expect(g.moves[0].cpLoss).toBeGreaterThanOrEqual(0)
+    expect(g.moves[0].cpLoss).toBe(50)
+    expect(g.moves[1].cpLoss).toBe(50)
     expect(g.moves[0].severity).toBeDefined()
     expect(g.moves[0].isPlayerMove).toBe(true)  // white move, player is white
     expect(g.moves[1].isPlayerMove).toBe(false) // black move
