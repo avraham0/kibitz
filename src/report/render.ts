@@ -9,7 +9,10 @@ export function analysisLink(_url: string, fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
 }
 
-const TYPES: CoachableMistakeType[] = ['hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional']
+const TYPES: CoachableMistakeType[] = [
+  'hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional',
+  'fork', 'pin', 'skewer', 'discovered_attack', 'trapped_piece', 'back_rank',
+]
 const PHASES: Phase[] = ['opening', 'middlegame', 'endgame']
 
 function recordStr(r: Stats['record']): string {
@@ -48,9 +51,13 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push('')
 
   lines.push('## Mistake types')
-  lines.push('| Type | Count | Avg cpLoss |')
-  lines.push('|---|---|---|')
-  for (const t of TYPES) lines.push(`| ${t} | ${stats.byType[t].count} | ${stats.byType[t].avgCpLoss} |`)
+  lines.push('| Type | Count | Avg cpLoss | Missed / Allowed |')
+  lines.push('|---|---|---|---|')
+  for (const t of TYPES) {
+    const e = stats.byType[t]
+    if (e.count === 0) continue
+    lines.push(`| ${t} | ${e.count} | ${e.avgCpLoss} | ${e.missed} / ${e.allowed} |`)
+  }
   lines.push('')
 
   lines.push('## Openings')
@@ -86,7 +93,10 @@ export function renderTerminal(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push('')
   lines.push('Mistake types:')
   for (const t of TYPES) {
-    if (stats.byType[t].count) lines.push(`  ${t}: ${stats.byType[t].count} (avg ${stats.byType[t].avgCpLoss}cp)`)
+    const e = stats.byType[t]
+    if (!e.count) continue
+    const split = (e.missed || e.allowed) ? ` [${e.missed} missed / ${e.allowed} allowed]` : ''
+    lines.push(`  ${t}: ${e.count} (avg ${e.avgCpLoss}cp)${split}`)
   }
   lines.push('')
   lines.push('Top suggestions:')

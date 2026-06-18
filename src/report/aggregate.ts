@@ -15,19 +15,22 @@ export type Stats = {
   record: { wins: number; losses: number; draws: number }
   mistakeCount: number
   byPhase: Record<Phase, number>
-  byType: Record<CoachableMistakeType, { count: number; avgCpLoss: number }>
+  byType: Record<CoachableMistakeType, { count: number; avgCpLoss: number; missed: number; allowed: number }>
   openings: OpeningStat[]
   topBlunders: BlunderRef[]
   lostPositionMoves: number
 }
 
-const TYPES: CoachableMistakeType[] = ['hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional']
+const TYPES: CoachableMistakeType[] = [
+  'hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional',
+  'fork', 'pin', 'skewer', 'discovered_attack', 'trapped_piece', 'back_rank',
+]
 
 export function aggregate(games: GameAnalysis[]): Stats {
   const record = { wins: 0, losses: 0, draws: 0 }
   const byPhase: Record<Phase, number> = { opening: 0, middlegame: 0, endgame: 0 }
-  const typeAcc: Record<CoachableMistakeType, { count: number; sum: number }> =
-    Object.fromEntries(TYPES.map((t) => [t, { count: 0, sum: 0 }])) as any
+  const typeAcc: Record<string, { count: number; sum: number; missed: number; allowed: number }> =
+    Object.fromEntries(TYPES.map((t) => [t, { count: 0, sum: 0, missed: 0, allowed: 0 }]))
   const openingMap = new Map<string, { eco: string; name: string; games: number; wins: number; mistakes: number }>()
   const blunders: BlunderRef[] = []
   let mistakeCount = 0
@@ -53,8 +56,10 @@ export function aggregate(games: GameAnalysis[]): Stats {
       mistakeCount++
       o.mistakes++
       byPhase[m.phase]++
-      typeAcc[m.type as CoachableMistakeType].count++
-      typeAcc[m.type as CoachableMistakeType].sum += m.cpLoss
+      typeAcc[m.type].count++
+      typeAcc[m.type].sum += m.cpLoss
+      if (m.missed) typeAcc[m.type].missed++
+      else typeAcc[m.type].allowed++
       if (m.severity === 'blunder') {
         blunders.push({
           url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan,
@@ -69,8 +74,10 @@ export function aggregate(games: GameAnalysis[]): Stats {
     TYPES.map((t) => [t, {
       count: typeAcc[t].count,
       avgCpLoss: typeAcc[t].count ? Math.round(typeAcc[t].sum / typeAcc[t].count) : 0,
+      missed: typeAcc[t].missed,
+      allowed: typeAcc[t].allowed,
     }]),
-  ) as Record<CoachableMistakeType, { count: number; avgCpLoss: number }>
+  ) as Stats['byType']
 
   const openings: OpeningStat[] = [...openingMap.values()]
     .map((o) => ({

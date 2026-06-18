@@ -5,7 +5,16 @@ export type Eval = { cp: number | null; mate: number | null }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
 
 export type MistakeType =
-  | 'hung_piece' | 'missed_tactic' | 'bad_trade' | 'king_safety' | 'positional' | 'lost_position'
+  | 'hung_piece' | 'missed_tactic' | 'bad_trade' | 'king_safety'
+  | 'positional' | 'lost_position'
+  | 'fork' | 'pin' | 'skewer' | 'discovered_attack' | 'trapped_piece' | 'back_rank'
+
+export type Motif =
+  | 'fork' | 'pin' | 'skewer' | 'discovered_attack' | 'trapped_piece' | 'back_rank'
+
+export const MOTIFS: Motif[] = [
+  'back_rank', 'fork', 'discovered_attack', 'skewer', 'pin', 'trapped_piece',
+]
 
 export type Phase = 'opening' | 'middlegame' | 'endgame'
 
@@ -47,6 +56,7 @@ export type MoveAnalysis = {
   cpLoss: number
   severity: Severity
   type: MistakeType
+  missed: boolean
   phase: Phase
   clockSeconds: number | null
   isPlayerMove: boolean // true if this move was made by the analyzed player
