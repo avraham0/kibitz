@@ -74,11 +74,12 @@ export class Engine {
     })
   }
 
-  async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string }> {
+  async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }> {
     this.sf.queue.put(`position fen ${fen}`)
     const lines = await this._send(`go depth ${depth}`, (l) => l.startsWith('bestmove'))
     let cp: number | null = null
     let mate: number | null = null
+    let pv: string[] = []
     for (const line of lines) {
       const mateM = line.match(/\bscore mate (-?\d+)/)
       const cpM = line.match(/\bscore cp (-?\d+)/)
@@ -89,10 +90,12 @@ export class Engine {
         cp = Number(cpM[1])
         mate = null
       }
+      const pvM = line.match(/ pv (.+)$/)
+      if (pvM) pv = pvM[1].trim().split(/\s+/)
     }
     const bestLine = lines.find((l) => l.startsWith('bestmove')) ?? 'bestmove 0000'
-    const bestUci = bestLine.split(/\s+/)[1] ?? '0000'
-    return { eval: { cp, mate }, bestUci }
+    const bestUci = pv[0] ?? (bestLine.split(/\s+/)[1] ?? '0000')
+    return { eval: { cp, mate }, bestUci, pv }
   }
 
   quit(): void {

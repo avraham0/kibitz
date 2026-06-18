@@ -18,6 +18,15 @@ describe('Engine', () => {
     const { bestUci } = await engine.evaluate(start, 8)
     expect(bestUci).toMatch(/^[a-h][1-8][a-h][1-8][qrbn]?$/)
   }, 30_000)
+
+  it('returns a principal variation whose first move is the best move', async () => {
+    const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    const { bestUci, pv } = await engine.evaluate(start, 8)
+    expect(Array.isArray(pv)).toBe(true)
+    expect(pv.length).toBeGreaterThanOrEqual(1)
+    expect(pv[0]).toBe(bestUci)
+    expect(pv[0]).toMatch(/^[a-h][1-8][a-h][1-8][qrbn]?$/)
+  }, 30_000)
 })
 
 afterAll(() => engine?.quit())
