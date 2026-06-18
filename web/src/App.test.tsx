@@ -13,7 +13,7 @@ class MockES {
 beforeEach(() => { (globalThis as any).EventSource = MockES as any })
 
 const result = {
-  meta: { user: 'bob', since: '2025-06', depth: 8 }, suggestions: [],
+  meta: { user: 'bob', since: '2025-06', depth: 8 }, suggestions: [], games: [],
   stats: { gamesAnalyzed: 1, record: { wins: 1, losses: 0, draws: 0 }, mistakeCount: 0,
     byPhase: { opening: 0, middlegame: 0, endgame: 0 },
     byType: Object.fromEntries(['hung_piece','missed_tactic','bad_trade','king_safety','positional','fork','pin','skewer','discovered_attack','trapped_piece','back_rank'].map((t) => [t, { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 }])),

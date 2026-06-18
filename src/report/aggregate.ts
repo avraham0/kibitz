@@ -51,6 +51,40 @@ const TYPES: CoachableMistakeType[] = [
   'fork', 'pin', 'skewer', 'discovered_attack', 'trapped_piece', 'back_rank',
 ]
 
+export type GameMove = {
+  ply: number; san: string; evalCp: number; cpLoss: number; isPlayerMove: boolean; fenBefore: string
+}
+export type GameSummary = {
+  gameId: string; url: string; playedAt: string; color: 'white' | 'black'
+  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; accuracy: number
+  moves: GameMove[]
+}
+
+// Per-game move list for the review/eval-graph UI. `evalCp` is white-POV centipawns
+// (clamped to ±1500 for a readable graph); accuracy is this game's player accuracy.
+export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
+  return games.map((g) => {
+    let accSum = 0
+    let accN = 0
+    const moves: GameMove[] = g.moves.map((m) => {
+      const moverPov = cpFromMoverPov(m.evalBefore)
+      const whitePov = m.fenBefore.split(' ')[1] === 'w' ? moverPov : -moverPov
+      if (m.isPlayerMove && m.type !== 'lost_position') {
+        accSum += moveAccuracy(winPct(moverPov), winPct(-cpFromMoverPov(m.evalAfterPlayed)))
+        accN++
+      }
+      return {
+        ply: m.ply, san: m.san, cpLoss: m.cpLoss, isPlayerMove: m.isPlayerMove, fenBefore: m.fenBefore,
+        evalCp: Math.max(-1500, Math.min(1500, whitePov)),
+      }
+    })
+    return {
+      gameId: g.gameId, url: g.url, playedAt: g.playedAt, color: g.color, result: g.result,
+      eco: g.eco, openingName: g.openingName, accuracy: accN ? Math.round(accSum / accN) : 100, moves,
+    }
+  })
+}
+
 export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }): Stats {
   // By default, group openings by ECO code (all C50 lines together), labelling each
   // row with the shortest opening name in the group. With `variations: true`, keep

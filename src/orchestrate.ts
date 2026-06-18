@@ -2,7 +2,7 @@ import { fetchGamesSince } from './api/chesscom.js'
 import { parseGame } from './pgn/parse.js'
 import { analyzeGame, type Evaluator } from './analyze/game.js'
 import { readCached, writeCached } from './cache/store.js'
-import { aggregate, type Stats } from './report/aggregate.js'
+import { aggregate, perGameSummaries, type Stats, type GameSummary } from './report/aggregate.js'
 import { coach, type Suggestion } from './report/coach.js'
 import { renderMarkdown, renderTerminal } from './report/render.js'
 import type { GameAnalysis } from './types.js'
@@ -29,6 +29,7 @@ export type AnalyzeResult = {
   stats: Stats
   suggestions: Suggestion[]
   meta: { user: string; since: string; depth: number }
+  games: GameSummary[]
 }
 
 export async function analyze(
@@ -72,7 +73,8 @@ export async function analyze(
 
   const stats = aggregate(analyses, { variations: opts.variations })
   const suggestions = coach(stats)
-  return { stats, suggestions, meta: { user: opts.user, since: opts.since, depth: opts.depth } }
+  const gameSummaries = perGameSummaries(analyses)
+  return { stats, suggestions, meta: { user: opts.user, since: opts.since, depth: opts.depth }, games: gameSummaries }
 }
 
 export async function run(opts: AnalyzeOpts): Promise<{ markdown: string; terminal: string }> {
