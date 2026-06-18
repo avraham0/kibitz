@@ -22,6 +22,13 @@ const stats: Stats = {
   openings: [{ eco: 'B20', name: 'Sicilian', games: 3, wins: 1, winPct: 33, avgMistakes: 1.3 }],
   topBlunders: [{ url: 'https://chess.com/game/1', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: '8/8/8 w - - 0 1', cpLoss: 400, type: 'hung_piece' }],
   lostPositionMoves: 7,
+  byTimeBucket: {
+    '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+    '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+    '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+    '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+  },
+  gamesWithClock: 0,
 }
 const sugg: Suggestion[] = [{ title: 'Hung pieces', why: 'w', drill: 'd', impact: 900, examples: [] }]
 
@@ -78,5 +85,31 @@ describe('render', () => {
     const md = renderMarkdown(s, [], { user: 'bob', since: '2025-06', depth: 15 })
     expect(md).toContain('fork')
     expect(md).toMatch(/3\s*\/\s*1|3 missed.*1 allowed/) // missed/allowed shown
+  })
+
+  it('renders the time-pressure table when clock data exists', () => {
+    const s: Stats = {
+      ...stats,
+      gamesWithClock: 3,
+      byTimeBucket: {
+        '<10s': { moves: 8, mistakes: 4, blunders: 3, avgCpLoss: 400 },
+        '10-30s': { moves: 10, mistakes: 2, blunders: 1, avgCpLoss: 200 },
+        '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+        '60s+': { moves: 20, mistakes: 1, blunders: 0, avgCpLoss: 100 },
+      },
+    }
+    const md = renderMarkdown(s, [], { user: 'bob', since: '2025-06', depth: 15 })
+    expect(md).toContain('## Time pressure')
+    expect(md).toContain('Clock data: 3 of')
+    expect(md).toContain('<10s')
+    expect(md).toContain('38%') // 3/8 blunder rate rounds to 38%
+    expect(md).not.toContain('| 30-60s |') // zero-move bucket skipped
+  })
+
+  it('omits the time-pressure table when there is no clock data', () => {
+    const s: Stats = { ...stats, gamesWithClock: 0 }
+    const md = renderMarkdown(s, [], { user: 'bob', since: '2025-06', depth: 15 })
+    expect(md).toContain('No clock data in these games')
+    expect(md).not.toContain('| Clock |')
   })
 })

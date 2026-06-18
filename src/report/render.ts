@@ -1,4 +1,5 @@
-import type { Stats } from './aggregate.js'
+import type { Stats, TimeBucket } from './aggregate.js'
+import { TIME_BUCKETS } from './aggregate.js'
 import type { Suggestion } from './coach.js'
 import type { MistakeType, Phase } from '../types.js'
 
@@ -60,6 +61,24 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   }
   lines.push('')
 
+  lines.push('## Time pressure')
+  if (stats.gamesWithClock === 0) {
+    lines.push('')
+    lines.push('_No clock data in these games._')
+  } else {
+    lines.push(`Clock data: ${stats.gamesWithClock} of ${stats.gamesAnalyzed} games`)
+    lines.push('')
+    lines.push('| Clock | Moves | Mistakes | Blunders | Blunder rate | Avg cpLoss |')
+    lines.push('|---|---|---|---|---|---|')
+    for (const b of TIME_BUCKETS) {
+      const e = stats.byTimeBucket[b]
+      if (e.moves === 0) continue
+      const rate = `${Math.round((e.blunders / e.moves) * 100)}%`
+      lines.push(`| ${b} | ${e.moves} | ${e.mistakes} | ${e.blunders} | ${rate} | ${e.avgCpLoss} |`)
+    }
+  }
+  lines.push('')
+
   lines.push('## Openings')
   lines.push('| ECO | Opening | Games | Win % | Avg mistakes |')
   lines.push('|---|---|---|---|---|')
@@ -99,6 +118,16 @@ export function renderTerminal(stats: Stats, suggestions: Suggestion[], meta: Me
     lines.push(`  ${t}: ${e.count} (avg ${e.avgCpLoss}cp)${split}`)
   }
   lines.push('')
+  if (stats.gamesWithClock > 0) {
+    lines.push(`Time pressure (clock data: ${stats.gamesWithClock}/${stats.gamesAnalyzed} games):`)
+    for (const b of TIME_BUCKETS) {
+      const e = stats.byTimeBucket[b]
+      if (!e.moves) continue
+      const rate = Math.round((e.blunders / e.moves) * 100)
+      lines.push(`  ${b}: ${e.moves} moves, ${e.blunders} blunders (${rate}%)`)
+    }
+    lines.push('')
+  }
   lines.push('Top suggestions:')
   if (!suggestions.length) lines.push('  None — no high-priority issues found.')
   suggestions.forEach((s, i) => {
