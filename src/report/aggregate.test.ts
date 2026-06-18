@@ -76,3 +76,36 @@ describe('aggregate', () => {
     expect(s.byType.fork.avgCpLoss).toBe(275)
   })
 })
+
+describe('aggregate — time buckets', () => {
+  it('buckets clocked player moves; excludes opponent and clockless moves', () => {
+    const g = game({
+      moves: [
+        mv({ isPlayerMove: true, clockSeconds: 5, severity: 'blunder', cpLoss: 400, type: 'hung_piece' }),
+        mv({ isPlayerMove: true, clockSeconds: 20, severity: 'mistake', cpLoss: 100, type: 'positional' }),
+        mv({ isPlayerMove: true, clockSeconds: 120, severity: 'ok', cpLoss: 0, type: 'positional' }),
+        mv({ isPlayerMove: true, clockSeconds: 8, severity: 'blunder', cpLoss: 600, type: 'lost_position' }),
+        mv({ isPlayerMove: false, clockSeconds: 5, severity: 'blunder', cpLoss: 900, type: 'fork' }),
+        mv({ isPlayerMove: true, clockSeconds: null, severity: 'blunder', cpLoss: 300, type: 'fork' }),
+      ],
+    })
+    const s = aggregate([g])
+    // <10s: clock 5 (mistake/blunder) + clock 8 (lost_position → denominator only)
+    expect(s.byTimeBucket['<10s'].moves).toBe(2)
+    expect(s.byTimeBucket['<10s'].mistakes).toBe(1)
+    expect(s.byTimeBucket['<10s'].blunders).toBe(1)
+    expect(s.byTimeBucket['<10s'].avgCpLoss).toBe(400)
+    // 10-30s: the cp100 mistake
+    expect(s.byTimeBucket['10-30s'].moves).toBe(1)
+    expect(s.byTimeBucket['10-30s'].mistakes).toBe(1)
+    // 60s+: the ok move is a decision but not a mistake
+    expect(s.byTimeBucket['60s+'].moves).toBe(1)
+    expect(s.byTimeBucket['60s+'].mistakes).toBe(0)
+    expect(s.gamesWithClock).toBe(1)
+  })
+
+  it('does not count a game without any clock data', () => {
+    const g = game({ moves: [mv({ isPlayerMove: true, clockSeconds: null, severity: 'blunder', cpLoss: 300, type: 'fork' })] })
+    expect(aggregate([g]).gamesWithClock).toBe(0)
+  })
+})

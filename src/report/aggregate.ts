@@ -8,6 +8,16 @@ export type OpeningStat = {
   eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number
 }
 
+export type TimeBucket = '<10s' | '10-30s' | '30-60s' | '60s+'
+export const TIME_BUCKETS: TimeBucket[] = ['<10s', '10-30s', '30-60s', '60s+']
+
+function clockBucket(sec: number): TimeBucket {
+  if (sec < 10) return '<10s'
+  if (sec < 30) return '10-30s'
+  if (sec < 60) return '30-60s'
+  return '60s+'
+}
+
 type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
 
 export type Stats = {
@@ -19,6 +29,8 @@ export type Stats = {
   openings: OpeningStat[]
   topBlunders: BlunderRef[]
   lostPositionMoves: number
+  byTimeBucket: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; avgCpLoss: number }>
+  gamesWithClock: number
 }
 
 const TYPES: CoachableMistakeType[] = [
@@ -35,6 +47,9 @@ export function aggregate(games: GameAnalysis[]): Stats {
   const blunders: BlunderRef[] = []
   let mistakeCount = 0
   let lostPositionMoves = 0
+  const timeAcc: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; sum: number }> =
+    Object.fromEntries(TIME_BUCKETS.map((b) => [b, { moves: 0, mistakes: 0, blunders: 0, sum: 0 }])) as Record<TimeBucket, { moves: number; mistakes: number; blunders: number; sum: number }>
+  let gamesWithClock = 0
 
   for (const g of games) {
     if (g.result === 'win') record.wins++
@@ -46,8 +61,20 @@ export function aggregate(games: GameAnalysis[]): Stats {
     o.games++
     if (g.result === 'win') o.wins++
 
+    let gameHadClock = false
+
     for (const m of g.moves) {
       if (!m.isPlayerMove) continue
+      if (m.clockSeconds != null) {
+        gameHadClock = true
+        const tb = clockBucket(m.clockSeconds)
+        timeAcc[tb].moves++
+        if (m.type !== 'lost_position' && m.severity !== 'ok') {
+          timeAcc[tb].mistakes++
+          timeAcc[tb].sum += m.cpLoss
+          if (m.severity === 'blunder') timeAcc[tb].blunders++
+        }
+      }
       if (m.type === 'lost_position') {
         lostPositionMoves++
         continue
@@ -67,6 +94,7 @@ export function aggregate(games: GameAnalysis[]): Stats {
         })
       }
     }
+    if (gameHadClock) gamesWithClock++
     openingMap.set(key, o)
   }
 
@@ -78,6 +106,15 @@ export function aggregate(games: GameAnalysis[]): Stats {
       allowed: typeAcc[t].allowed,
     }]),
   ) as Stats['byType']
+
+  const byTimeBucket = Object.fromEntries(
+    TIME_BUCKETS.map((b) => [b, {
+      moves: timeAcc[b].moves,
+      mistakes: timeAcc[b].mistakes,
+      blunders: timeAcc[b].blunders,
+      avgCpLoss: timeAcc[b].mistakes ? Math.round(timeAcc[b].sum / timeAcc[b].mistakes) : 0,
+    }]),
+  ) as Stats['byTimeBucket']
 
   const openings: OpeningStat[] = [...openingMap.values()]
     .map((o) => ({
@@ -92,5 +129,6 @@ export function aggregate(games: GameAnalysis[]): Stats {
   return {
     gamesAnalyzed: games.length,
     record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
+    byTimeBucket, gamesWithClock,
   }
 }

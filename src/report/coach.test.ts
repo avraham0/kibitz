@@ -28,6 +28,13 @@ const base: Stats = {
     { url: 'u1', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: 'f1', cpLoss: 500, type: 'hung_piece' },
   ],
   lostPositionMoves: 0,
+  byTimeBucket: {
+    '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+    '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+    '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+    '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+  },
+  gamesWithClock: 0,
 }
 
 describe('coach', () => {
@@ -86,5 +93,36 @@ describe('coach', () => {
     expect(fork).toBeTruthy()
     expect(fork!.why).toMatch(/4 .*missed/i)
     expect(fork!.why).toMatch(/2 .*allowed/i)
+  })
+
+  it('coaches on time pressure when blunders cluster under 30s', () => {
+    const s: Stats = {
+      ...base,
+      byTimeBucket: {
+        '<10s': { moves: 10, mistakes: 4, blunders: 3, avgCpLoss: 400 },
+        '10-30s': { moves: 10, mistakes: 2, blunders: 1, avgCpLoss: 200 },
+        '30-60s': { moves: 10, mistakes: 1, blunders: 1, avgCpLoss: 150 },
+        '60s+': { moves: 20, mistakes: 1, blunders: 0, avgCpLoss: 100 },
+      },
+    }
+    // clockedBlunders = 5, lowClock = 4 → 80% ≥ 40%, ≥3 → fires
+    const tp = coach(s).find((x) => x.title === 'Time pressure is costing you')
+    expect(tp).toBeTruthy()
+    expect(tp!.why).toMatch(/80%/)
+    expect(tp!.why).toMatch(/4 of 5/)
+  })
+
+  it('does not coach time pressure below threshold', () => {
+    const s: Stats = {
+      ...base,
+      byTimeBucket: {
+        '<10s': { moves: 5, mistakes: 1, blunders: 1, avgCpLoss: 400 },
+        '10-30s': { moves: 5, mistakes: 0, blunders: 0, avgCpLoss: 0 },
+        '30-60s': { moves: 5, mistakes: 1, blunders: 1, avgCpLoss: 150 },
+        '60s+': { moves: 5, mistakes: 1, blunders: 1, avgCpLoss: 100 },
+      },
+    }
+    // clockedBlunders = 3, lowClock = 1 → 33% < 40% → no fire
+    expect(coach(s).find((x) => x.title === 'Time pressure is costing you')).toBeFalsy()
   })
 })
