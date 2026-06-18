@@ -7,7 +7,7 @@ function mv(p: Partial<MoveAnalysis>): MoveAnalysis {
     ply: 1, fenBefore: 'x', san: 'e4', bestSan: 'd4',
     evalBefore: { cp: 0, mate: null }, evalAfterPlayed: { cp: 0, mate: null },
     cpLoss: 0, severity: 'ok', type: 'positional', phase: 'middlegame',
-    clockSeconds: null, isPlayerMove: true, ...p,
+    clockSeconds: null, isPlayerMove: true, missed: false, ...p,
   }
 }
 
@@ -58,5 +58,21 @@ describe('aggregate', () => {
     expect(Object.keys(s.byType)).not.toContain('lost_position')
     expect(s.lostPositionMoves).toBe(2) // both lost_position isPlayerMove moves
     expect(s.topBlunders.every((b) => b.type !== 'lost_position')).toBe(true)
+  })
+
+  it('splits motif mistakes into missed and allowed', () => {
+    const g = game({
+      result: 'loss',
+      moves: [
+        mv({ severity: 'blunder', cpLoss: 400, type: 'fork', missed: false, isPlayerMove: true }),
+        mv({ severity: 'mistake', cpLoss: 150, type: 'fork', missed: true, isPlayerMove: true }),
+        mv({ severity: 'blunder', cpLoss: 900, type: 'fork', missed: true, isPlayerMove: false }), // opponent, ignored
+      ],
+    })
+    const s = aggregate([g])
+    expect(s.byType.fork.count).toBe(2)
+    expect(s.byType.fork.allowed).toBe(1)
+    expect(s.byType.fork.missed).toBe(1)
+    expect(s.byType.fork.avgCpLoss).toBe(275)
   })
 })
