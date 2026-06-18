@@ -9,11 +9,12 @@ async function main() {
   // Capture real fetch BEFORE the engine module loads (it clobbers globalThis.fetch).
   const realFetch = globalThis.fetch.bind(globalThis)
 
-  const { values } = parseArgs({ options: { port: { type: 'string', default: '5173' } } })
+  const { values } = parseArgs({ options: { port: { type: 'string', default: '5173' }, concurrency: { type: 'string' } } })
   const port = Number(values.port)
 
-  const { Engine } = await import('../engine/stockfish.js')
-  const engine = await Engine.create()
+  const { EnginePool, autoConcurrency } = await import('../engine/pool.js')
+  const concurrency = values.concurrency ? Number(values.concurrency) : autoConcurrency()
+  const pool = await EnginePool.create(concurrency)
 
   // web/dist sits two levels up from src/server/
   const here = dirname(fileURLToPath(import.meta.url))
@@ -23,16 +24,16 @@ async function main() {
     staticDir,
     nowISO: () => new Date().toISOString(),
     analyze: (opts, onProgress) => analyze(
-      { ...opts, evaluate: (fen, d) => engine.evaluate(fen, d), fetchFn: realFetch },
+      { ...opts, evaluate: pool.evaluators[0], evaluators: pool.evaluators, fetchFn: realFetch },
       onProgress,
     ),
   })
 
   const server = createServer(handler)
   server.listen(port, '127.0.0.1', () => {
-    console.log(`chess-coach web UI on http://127.0.0.1:${port}`)
+    console.log(`chess-coach web UI on http://127.0.0.1:${port} (engines: ${pool.size})`)
   })
-  const shutdown = () => { engine.quit(); server.close(() => process.exit(0)) }
+  const shutdown = () => { pool.quit(); server.close(() => process.exit(0)) }
   process.on('SIGINT', shutdown)
   process.on('SIGTERM', shutdown)
 }

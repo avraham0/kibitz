@@ -75,6 +75,10 @@ export class Engine {
   }
 
   async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }> {
+    // Clear the transposition table before each position so the result depends only on
+    // the position + depth — not on what this engine searched before. This makes analysis
+    // reproducible regardless of how games are split across a parallel engine pool.
+    this.sf.queue.put('ucinewgame')
     this.sf.queue.put(`position fen ${fen}`)
     const lines = await this._send(`go depth ${depth}`, (l) => l.startsWith('bestmove'))
     let cp: number | null = null
