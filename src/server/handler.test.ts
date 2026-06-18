@@ -1,0 +1,69 @@
+import { describe, it, expect } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { createHandler } from './handler.js'
+import type { AnalyzeResult } from '../orchestrate.js'
+
+// minimal mock req/res
+function mockReq(url: string) { return { url, method: 'GET' } as any }
+function mockRes() {
+  const chunks: string[] = []
+  let statusCode = 200
+  const headers: Record<string, string> = {}
+  return {
+    chunks, get body() { return chunks.join('') }, get statusCode() { return statusCode },
+    setHeader: (k: string, v: string) => { headers[k] = v }, get headers() { return headers },
+    writeHead: (s: number, h?: Record<string, string>) => { statusCode = s; Object.assign(headers, h ?? {}) },
+    write: (c: string) => { chunks.push(c); return true },
+    end: (c?: string) => { if (c) chunks.push(c) },
+  } as any
+}
+
+const sample: AnalyzeResult = {
+  stats: { gamesAnalyzed: 1 } as any, suggestions: [], meta: { user: 'bob', since: '2025-06', depth: 15 },
+}
+
+describe('createHandler — /api/analyze', () => {
+  it('streams progress then result', async () => {
+    const analyze = async (_opts: any, onProgress: any) => { onProgress(1, 1); return sample }
+    const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
+    const res = mockRes()
+    handler(mockReq('/api/analyze?user=bob&depth=8'), res)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(res.headers['Content-Type']).toContain('text/event-stream')
+    expect(res.body).toContain('event: progress')
+    expect(res.body).toContain('"done":1')
+    expect(res.body).toContain('event: result')
+    expect(res.body).toContain('"user":"bob"')
+  })
+
+  it('returns 400 when user is missing', async () => {
+    const analyze = async () => sample
+    const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
+    const res = mockRes()
+    handler(mockReq('/api/analyze?depth=8'), res)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('createHandler — static', () => {
+  it('serves index.html for / and a build-missing note when absent', async () => {
+    const handler = createHandler({ analyze: async () => sample, staticDir: '/nonexistent', nowISO: () => '' })
+    const res = mockRes()
+    handler(mockReq('/'), res)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(res.body.toLowerCase()).toContain('build')
+  })
+
+  it('serves an existing index.html', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cc-static-'))
+    writeFileSync(join(dir, 'index.html'), '<!doctype html><title>cc</title>')
+    const handler = createHandler({ analyze: async () => sample, staticDir: dir, nowISO: () => '' })
+    const res = mockRes()
+    handler(mockReq('/'), res)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(res.body).toContain('<title>cc</title>')
+  })
+})
