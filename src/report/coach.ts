@@ -1,4 +1,4 @@
-import type { Stats, BlunderRef } from './aggregate.js'
+import type { Stats, BlunderRef, TimeBucket } from './aggregate.js'
 import type { MistakeType, Phase } from '../types.js'
 
 export type Suggestion = {
@@ -101,6 +101,21 @@ export function coach(stats: Stats): Suggestion[] {
         examples: examplesFor(stats.topBlunders),
       })
     }
+  }
+
+  // Rule 4: time pressure.
+  const buckets = Object.keys(stats.byTimeBucket) as TimeBucket[]
+  const clockedBlunders = buckets.reduce((sum, b) => sum + stats.byTimeBucket[b].blunders, 0)
+  const lowClockBlunders = stats.byTimeBucket['<10s'].blunders + stats.byTimeBucket['10-30s'].blunders
+  if (clockedBlunders >= 3 && lowClockBlunders / clockedBlunders >= 0.4) {
+    const pct = Math.round((lowClockBlunders / clockedBlunders) * 100)
+    out.push({
+      title: 'Time pressure is costing you',
+      why: `${pct}% of your blunders (${lowClockBlunders} of ${clockedBlunders}) come with under 30 seconds left.`,
+      drill: 'Manage your clock: decide on candidate moves faster in the opening and middlegame so you keep time for critical positions; practice with increment.',
+      impact: lowClockBlunders * 100,
+      examples: examplesFor(stats.topBlunders),
+    })
   }
 
   return out.sort((a, b) => b.impact - a.impact).slice(0, 5)
