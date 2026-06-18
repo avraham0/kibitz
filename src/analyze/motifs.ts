@@ -195,10 +195,9 @@ function pin(ctx: Ctx): boolean {
       const atks = after.attackers(sq.square as any, mover) as unknown as string[]
       if (!atks.includes(m.to)) continue
       const behind = firstPieceBeyond(after, m.to, sq.square)
-      if (behind && behind.piece.color === victim
-          && (behind.piece.type === 'k' || pieceValue(behind.piece.type) > pieceValue(sq.type))) {
-        return true
-      }
+      if (!behind || behind.piece.color !== victim) continue
+      if (behind.piece.type === 'k') return true
+      if (pieceValue(behind.piece.type) > pieceValue(sq.type) && beneficiaryGain(ctx, 3) >= 200) return true
     }
   }
   return false
@@ -217,7 +216,8 @@ function trappedPiece(ctx: Ctx): boolean {
       const hasSafe = escapes.some((e) => !landingAttacked(after.fen(), e, mover))
       if (hasSafe) continue
       // captured at least two plies after this move (owner had a move in between)
-      if (capturedLater(ctx, sq.square)) return true
+      // and the capture must win meaningful material
+      if (capturedLater(ctx, sq.square) && beneficiaryGain(ctx, 4) >= 200) return true
     }
   }
   return false

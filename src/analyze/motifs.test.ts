@@ -59,3 +59,28 @@ describe('detectMotif — none', () => {
     expect(detectMotif('8/8/8/8/8/8/8/4K2k w - - 0 1', [])).toBeNull()
   })
 })
+
+describe('detectMotif — pin tightening (relative pin, no material won)', () => {
+  it('does NOT detect pin when a relative pin wins no material within 3 plies', () => {
+    // White rook on d1 plays Rd3, attacking the black knight on d5 with the black queen
+    // on d8 behind it on the same file (queen > knight: relative pin geometry is present).
+    // PV is only 1 move long so beneficiaryGain(ctx, 3) = 0 — the pin nets nothing.
+    // Expected: motif is NOT 'pin' (should be null since no higher-priority motif fires).
+    const fen = '3qk3/8/8/3n4/8/8/8/3RK3 w - - 0 1'
+    const result = detectMotif(fen, ['d1d3'])
+    expect(result?.motif).not.toBe('pin')
+  })
+})
+
+describe('detectMotif — trapped_piece tightening (even trade → not trapped)', () => {
+  it('does NOT detect trapped_piece when the capture only wins a pawn (< 200 cp gain)', () => {
+    // White king on e1, white rook on b1, black pawn on b6 (attacked by Rb1, only escape
+    // is b5 which is also attacked by Rb1 — the pawn is genuinely trapped).
+    // White plays Ke1d1 (quiet king move). Black plays Ke8e7. White then Rb1xb6, winning a
+    // pawn (+100 cp). beneficiaryGain(ctx, 4) = 100 < 200 — an insignificant capture.
+    // Expected: motif is NOT 'trapped_piece'.
+    const fen = '4k3/8/1p6/8/8/8/8/1R2K3 w - - 0 1'
+    const result = detectMotif(fen, ['e1d1', 'e8e7', 'b1b6'])
+    expect(result?.motif).not.toBe('trapped_piece')
+  })
+})
