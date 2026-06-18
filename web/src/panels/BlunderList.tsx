@@ -1,0 +1,34 @@
+import { Chessboard } from 'react-chessboard'
+import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
+import type { BlunderRef } from '../api-types.js'
+import { sanToSquares } from '../sanToSquares.js'
+
+function analysisLink(fen: string): string {
+  return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
+}
+
+export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
+  return (
+    <section>
+      <h2>Top blunders</h2>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+        {blunders.map((b, i) => {
+          const played = sanToSquares(b.fenBefore, b.san)
+          const best = sanToSquares(b.fenBefore, b.bestSan)
+          const arrows: Arrow[] = []
+          if (played) arrows.push([played.from as Arrow[0], played.to as Arrow[1], 'rgb(200,80,80)'])
+          if (best) arrows.push([best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'])
+          return (
+            <div key={i} style={{ width: 260 }}>
+              <Chessboard position={b.fenBefore} customArrows={arrows} arePiecesDraggable={false} boardWidth={260} />
+              <div style={{ fontSize: 13 }}>
+                Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp · {b.type}{' '}
+                <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
