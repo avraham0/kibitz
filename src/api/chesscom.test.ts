@@ -31,4 +31,12 @@ describe('fetchGamesSince', () => {
       fetchGamesSince('nobody', '2026-01', '2026-01-10T00:00:00Z', fetchFn as any),
     ).rejects.toThrow('Unknown chess.com user: nobody')
   })
+
+  it('percent-encodes a username containing a slash in the request URL', async () => {
+    const fetchFn = vi.fn(async () => new Response(JSON.stringify({ games: [] }), { status: 200 }))
+    await fetchGamesSince('a/b', '2026-01', '2026-01-10T00:00:00Z', fetchFn as any)
+    const calledUrl: string = fetchFn.mock.calls[0][0]
+    expect(calledUrl).toContain('a%2Fb')
+    expect(calledUrl).not.toMatch(/\/a\/b\//)
+  })
 })

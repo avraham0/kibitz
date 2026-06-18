@@ -15,6 +15,10 @@ function recordStr(r: Stats['record']): string {
   return `${r.wins}W-${r.losses}L-${r.draws}D`
 }
 
+function escapeCell(s: string): string {
+  return s.replace(/\|/g, '\\|')
+}
+
 export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Meta): string {
   const lines: string[] = []
   lines.push(`# chess-coach report for ${meta.user}`)
@@ -31,7 +35,7 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push('| Move | Played | Best | cpLoss | Type | Analyze |')
   lines.push('|---|---|---|---|---|---|')
   for (const b of stats.topBlunders) {
-    lines.push(`| ${b.ply} | ${b.san} | ${b.bestSan} | ${b.cpLoss} | ${b.type} | [board](${analysisLink(b.url, b.fenBefore)}) |`)
+    lines.push(`| ${b.ply} | ${escapeCell(b.san)} | ${escapeCell(b.bestSan)} | ${b.cpLoss} | ${escapeCell(b.type)} | [board](${analysisLink(b.url, b.fenBefore)}) |`)
   }
   lines.push('')
 
@@ -50,7 +54,7 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push('## Openings')
   lines.push('| ECO | Opening | Games | Win % | Avg mistakes |')
   lines.push('|---|---|---|---|---|')
-  for (const o of stats.openings) lines.push(`| ${o.eco} | ${o.name} | ${o.games} | ${o.winPct} | ${o.avgMistakes} |`)
+  for (const o of stats.openings) lines.push(`| ${o.eco} | ${escapeCell(o.name)} | ${o.games} | ${o.winPct} | ${o.avgMistakes} |`)
   lines.push('')
 
   lines.push('## Coaching')

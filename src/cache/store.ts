@@ -10,7 +10,7 @@ function sanitize(id: string): string {
 }
 
 export function cachePath(user: string, gameId: string, depth: number, root = DEFAULT_ROOT): string {
-  return join(root, user, `${sanitize(gameId)}-d${depth}.json`)
+  return join(root, sanitize(user), `${sanitize(gameId)}-d${depth}.json`)
 }
 
 export async function readCached(

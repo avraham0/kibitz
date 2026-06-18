@@ -20,6 +20,13 @@ describe('cache store', () => {
     expect(p).toBe(join(root, 'bob', 'https___chess_com_game_live_42-d15.json'))
   })
 
+  it('sanitizes path-traversal characters in user', () => {
+    const p = cachePath('../evil', 'game42', 15, root)
+    expect(p).not.toContain('..')
+    expect(p.startsWith(root)).toBe(true)
+    expect(p).toContain('___evil')
+  })
+
   it('returns null on miss, then round-trips after write', async () => {
     expect(await readCached('bob', sample.gameId, 15, root)).toBeNull()
     await writeCached(sample, 'bob', root)

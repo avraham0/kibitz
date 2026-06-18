@@ -38,4 +38,13 @@ describe('render', () => {
   it('analysisLink encodes the FEN', () => {
     expect(analysisLink('x', 'r n/8 w - - 0 1')).toContain('fen=r%20n')
   })
+
+  it('escapes pipe characters in opening names to avoid breaking markdown tables', () => {
+    const pipeStats: Stats = {
+      ...stats,
+      openings: [{ eco: 'B90', name: 'Sicilian | Najdorf', games: 2, wins: 1, winPct: 50, avgMistakes: 1.0 }],
+    }
+    const md = renderMarkdown(pipeStats, [], { user: 'bob', since: '2025-06', depth: 15 })
+    expect(md).toContain('Sicilian \\| Najdorf')
+  })
 })

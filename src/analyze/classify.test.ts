@@ -32,4 +32,19 @@ describe('classifyMistake', () => {
     const t = classifyMistake({ fenBefore, san: 'a3', bestUci: 'e2e4' })
     expect(t).toBe('positional')
   })
+
+  it('flags missed_tactic when a winning capture is available but not played', () => {
+    // White can win the queen for free with Bxd5 (g2d5) but plays a quiet king move.
+    const fenBefore = '4k3/8/8/3q4/8/8/6B1/4K3 w - - 0 1'
+    const t = classifyMistake({ fenBefore, san: 'Kf2', bestUci: 'g2d5' })
+    expect(t).toBe('missed_tactic')
+  })
+
+  it('flags bad_trade when a capture loses material on a defended square', () => {
+    // Bxd5 (bishop takes knight) loses material: d5 is defended by the a8 bishop,
+    // and there is no winning tactic available beforehand, so it is a bad trade, not a hung piece.
+    const fenBefore = 'b3k3/8/8/3n4/8/8/6B1/3RK3 w - - 0 1'
+    const t = classifyMistake({ fenBefore, san: 'Bxd5', bestUci: 'd1d5' })
+    expect(t).toBe('bad_trade')
+  })
 })

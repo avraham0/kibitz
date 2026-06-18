@@ -32,7 +32,7 @@ async function getJson(url: string, fetchFn: FetchFn, user: string): Promise<any
 }
 
 export async function archiveUrls(user: string, fetchFn: FetchFn = fetch): Promise<string[]> {
-  const data = await getJson(`${BASE}/${user}/games/archives`, fetchFn, user)
+  const data = await getJson(`${BASE}/${encodeURIComponent(user)}/games/archives`, fetchFn, user)
   return data.archives ?? []
 }
 
@@ -50,7 +50,7 @@ export async function fetchGamesSince(
   const wanted = new Set(monthsSince(sinceYYYYMM, nowISO))
   const all: any[] = []
   for (const ym of wanted) {
-    const games = await fetchArchive(`${BASE}/${user}/games/${ym}`, fetchFn, user)
+    const games = await fetchArchive(`${BASE}/${encodeURIComponent(user)}/games/${ym}`, fetchFn, user)
     all.push(...games)
   }
   return all
