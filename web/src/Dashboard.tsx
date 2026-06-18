@@ -1,6 +1,7 @@
 import type { AnalyzeResult } from './api-types.js'
 import { SummaryCard } from './panels/SummaryCard.js'
 import { OpeningsTable } from './panels/OpeningsTable.js'
+import { BlunderList } from './panels/BlunderList.js'
 import { CoachingCards } from './panels/CoachingCards.js'
 import { MistakeTypesChart } from './panels/MistakeTypesChart.js'
 import { PhaseChart } from './panels/PhaseChart.js'
@@ -15,7 +16,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       <PhaseChart stats={stats} />
       <TimePressureChart stats={stats} />
       <OpeningsTable openings={stats.openings} />
-      {/* BlunderList slots here (Task 9) */}
+      <BlunderList blunders={stats.topBlunders} />
       <CoachingCards suggestions={suggestions} />
     </div>
   )
