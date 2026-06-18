@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { join, extname, normalize } from 'node:path'
+import { join, extname, normalize, resolve, sep } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { writeSse } from './sse.js'
 import { defaultSince, type AnalyzeResult } from '../orchestrate.js'
@@ -71,7 +71,10 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
 
 async function handleStatic(staticDir: string, pathname: string, res: ServerResponse): Promise<void> {
   const rel = pathname === '/' ? 'index.html' : normalize(pathname).replace(/^(\.\.[/\\])+/, '').replace(/^\//, '')
-  const tryPaths = [join(staticDir, rel), join(staticDir, 'index.html')] // SPA fallback
+  const requested = resolve(staticDir, rel)
+  const root = resolve(staticDir)
+  const safeRequested = (requested === root || requested.startsWith(root + sep)) ? requested : null
+  const tryPaths = [safeRequested, join(staticDir, 'index.html')].filter((p): p is string => p !== null)
   for (const p of tryPaths) {
     try {
       const buf = await readFile(p)

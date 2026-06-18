@@ -49,6 +49,18 @@ describe('createHandler — /api/analyze', () => {
     await res.ended
     expect(res.statusCode).toBe(400)
   })
+
+  it('returns 409 when an analysis is already running', async () => {
+    let release!: () => void
+    const gate = new Promise<void>((r) => { release = r })
+    const analyze = async (_o: any, onP: any) => { await gate; onP(1, 1); return sample }
+    const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
+    const res1 = mockRes(); handler(mockReq('/api/analyze?user=a'), res1) // starts, holds busy
+    const res2 = mockRes(); handler(mockReq('/api/analyze?user=b'), res2) // busy → 409
+    await res2.ended
+    expect(res2.statusCode).toBe(409)
+    release(); await res1.ended // release lock so other tests aren't affected
+  })
 })
 
 describe('createHandler — static', () => {
