@@ -2,3 +2,4 @@ node_modules/
 dist/
 *.log
 chess-coach-report.md
+*-report.md

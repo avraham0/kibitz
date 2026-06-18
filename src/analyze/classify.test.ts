@@ -1,0 +1,50 @@
+import { describe, it, expect } from 'vitest'
+import { maxHangingGain, classifyMistake } from './classify.js'
+
+describe('maxHangingGain', () => {
+  it('detects a free undefended queen capture', () => {
+    // White to move; black queen on d5 undefended, white bishop on g2 can take.
+    const fen = '4k3/8/8/3q4/8/8/6B1/4K3 w - - 0 1'
+    expect(maxHangingGain(fen)).toBe(900)
+  })
+  it('is zero when nothing hangs', () => {
+    const fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    expect(maxHangingGain(fen)).toBe(0)
+  })
+})
+
+describe('classifyMistake', () => {
+  it('flags hung_piece when the move leaves a piece free to take', () => {
+    // White plays Qg4, legal, but the queen is then taken for free by the h5 pawn.
+    const fenBefore = 'rnbqkbnr/pppp1pp1/8/4p2p/4P3/8/PPPP1PPP/RNBQKBNR w KQkq h6 0 3'
+    const t = classifyMistake({ fenBefore, san: 'Qg4', bestUci: 'g1f3' })
+    expect(t).toBe('hung_piece')
+  })
+
+  it('flags king_safety when a non-castling king move forfeits castling rights', () => {
+    const fenBefore = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2'
+    const t = classifyMistake({ fenBefore, san: 'Ke2', bestUci: 'g1f3' })
+    expect(t).toBe('king_safety')
+  })
+
+  it('falls back to positional when no motif matches', () => {
+    const fenBefore = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    const t = classifyMistake({ fenBefore, san: 'a3', bestUci: 'e2e4' })
+    expect(t).toBe('positional')
+  })
+
+  it('flags missed_tactic when a winning capture is available but not played', () => {
+    // White can win the queen for free with Bxd5 (g2d5) but plays a quiet king move.
+    const fenBefore = '4k3/8/8/3q4/8/8/6B1/4K3 w - - 0 1'
+    const t = classifyMistake({ fenBefore, san: 'Kf2', bestUci: 'g2d5' })
+    expect(t).toBe('missed_tactic')
+  })
+
+  it('flags bad_trade when a capture loses material on a defended square', () => {
+    // Bxd5 (bishop takes knight) loses material: d5 is defended by the a8 bishop,
+    // and there is no winning tactic available beforehand, so it is a bad trade, not a hung piece.
+    const fenBefore = 'b3k3/8/8/3n4/8/8/6B1/3RK3 w - - 0 1'
+    const t = classifyMistake({ fenBefore, san: 'Bxd5', bestUci: 'd1d5' })
+    expect(t).toBe('bad_trade')
+  })
+})
