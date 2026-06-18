@@ -18,8 +18,16 @@ describe('BlunderList', () => {
 
   it('filters the shown blunders by mistake type', () => {
     render(<BlunderList blunders={blunders} />)
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fork' } })
+    fireEvent.change(screen.getByLabelText(/filter by type/), { target: { value: 'fork' } })
     expect(screen.queryByText(/Played Qd5/)).toBeNull() // hung_piece hidden
     expect(screen.getByText(/Played a4/)).toBeTruthy()   // fork shown
+  })
+
+  it('switches to puzzle (solve) mode', () => {
+    render(<BlunderList blunders={blunders} />)
+    expect(screen.queryByText(/Your move/)).toBeNull() // review mode by default
+    fireEvent.change(screen.getByLabelText(/mode/), { target: { value: 'solve' } })
+    expect(screen.getAllByText(/Your move/).length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Played Qd5/)).toBeNull() // review captions gone
   })
 })
