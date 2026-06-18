@@ -14,7 +14,7 @@ export function TimePressureChart({ stats }: { stats: Stats }) {
       <h2>Time pressure</h2>
       <p>Clock data: {stats.gamesWithClock} of {stats.gamesAnalyzed} games</p>
       <BarChart width={480} height={240} data={data}>
-        <XAxis dataKey="bucket" /><YAxis allowDecimals={false} unit="%" /><Tooltip />
+        <XAxis dataKey="bucket" tick={{ fill: '#bbb' }} stroke="#555" /><YAxis allowDecimals={false} unit="%" tick={{ fill: '#bbb' }} stroke="#555" /><Tooltip />
         <Bar dataKey="rate" name="blunder rate %" fill="#c66" />
       </BarChart>
     </section>

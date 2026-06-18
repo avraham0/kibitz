@@ -2,6 +2,7 @@ import { Chessboard } from 'react-chessboard'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { BlunderRef } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
+import { orientationFromFen } from '../orientationFromFen.js'
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
@@ -20,7 +21,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           if (best) arrows.push([best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'])
           return (
             <div key={i} style={{ width: 260 }}>
-              <Chessboard position={b.fenBefore} customArrows={arrows} arePiecesDraggable={false} boardWidth={260} />
+              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={260} />
               <div style={{ fontSize: 13 }}>
                 Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp · {b.type}{' '}
                 <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>

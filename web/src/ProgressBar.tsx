@@ -3,7 +3,7 @@ export function ProgressBar({ done, total }: { done: number; total: number }) {
   return (
     <div>
       <div>Analyzing… {done}/{total} games</div>
-      <div style={{ background: '#eee', height: 8, borderRadius: 4 }}>
+      <div style={{ background: '#333', height: 8, borderRadius: 4 }}>
         <div style={{ width: `${pct}%`, height: 8, background: '#4a8', borderRadius: 4 }} />
       </div>
     </div>
