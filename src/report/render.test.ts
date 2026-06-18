@@ -7,9 +7,17 @@ const stats: Stats = {
   gamesAnalyzed: 5, record: { wins: 2, losses: 3, draws: 0 }, mistakeCount: 4,
   byPhase: { opening: 0, middlegame: 1, endgame: 3 },
   byType: {
-    hung_piece: { count: 3, avgCpLoss: 300 }, missed_tactic: { count: 1, avgCpLoss: 200 },
-    bad_trade: { count: 0, avgCpLoss: 0 }, king_safety: { count: 0, avgCpLoss: 0 },
-    positional: { count: 0, avgCpLoss: 0 },
+    hung_piece: { count: 3, avgCpLoss: 300, missed: 2, allowed: 1 },
+    missed_tactic: { count: 1, avgCpLoss: 200, missed: 1, allowed: 0 },
+    bad_trade: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    king_safety: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    positional: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    fork: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    pin: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    skewer: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    discovered_attack: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    trapped_piece: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    back_rank: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
   },
   openings: [{ eco: 'B20', name: 'Sicilian', games: 3, wins: 1, winPct: 33, avgMistakes: 1.3 }],
   topBlunders: [{ url: 'https://chess.com/game/1', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: '8/8/8 w - - 0 1', cpLoss: 400, type: 'hung_piece' }],
@@ -57,5 +65,18 @@ describe('render', () => {
     }
     const md = renderMarkdown(pipeStats, [], { user: 'bob', since: '2025-06', depth: 15 })
     expect(md).toContain('Sicilian \\| Najdorf')
+  })
+
+  it('renders motif rows with a missed/allowed split', () => {
+    const s: Stats = {
+      ...stats,
+      byType: {
+        ...stats.byType,
+        fork: { count: 4, avgCpLoss: 300, missed: 3, allowed: 1 },
+      },
+    }
+    const md = renderMarkdown(s, [], { user: 'bob', since: '2025-06', depth: 15 })
+    expect(md).toContain('fork')
+    expect(md).toMatch(/3\s*\/\s*1|3 missed.*1 allowed/) // missed/allowed shown
   })
 })
