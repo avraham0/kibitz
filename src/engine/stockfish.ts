@@ -35,12 +35,14 @@ type Listener = (line: string) => void
 export class Engine {
   private sf: StockfishEngine
   private listeners: Listener[] = []
+  private dispatcher: (line: string) => void
 
   private constructor(sf: StockfishEngine) {
     this.sf = sf
-    this.sf.addMessageListener((line: string) => {
+    this.dispatcher = (line: string) => {
       for (const l of this.listeners) l(line)
-    })
+    }
+    this.sf.addMessageListener(this.dispatcher)
   }
 
   static async create(): Promise<Engine> {
@@ -48,8 +50,9 @@ export class Engine {
       locateFile: (f: string) => (f.endsWith('.wasm') ? _wasmPath : f),
     }
     // @ts-ignore - dynamic typing from untyped package
-    StockfishOuter()(mod)
-    const sf = await (mod as { ready: Promise<StockfishEngine> }).ready
+    const result = StockfishOuter()(mod)
+    const sf = await ((result && result.ready) ? result.ready : (mod as any).ready)
+    if (!sf) throw new Error('Stockfish failed to initialize (no ready module)')
     const engine = new Engine(sf)
     await engine._send('uci', (l) => l === 'uciok')
     await engine._send('isready', (l) => l === 'readyok')
@@ -93,6 +96,11 @@ export class Engine {
   }
 
   quit(): void {
+    try {
+      this.sf.removeMessageListener(this.dispatcher)
+    } catch {
+      /* ignore */
+    }
     try {
       this.sf.queue.put('quit')
     } catch {
