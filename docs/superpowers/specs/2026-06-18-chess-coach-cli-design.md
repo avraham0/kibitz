@@ -152,7 +152,9 @@ chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--out repor
 - `--since` (default: 12 months ago): start month for analysis window.
 - `--last N`: cap to most recent N games (overrides `--since` window size).
 - `--depth` (default 15): Stockfish search depth per position.
-- `--out` (default `./chess-coach-report.md`): markdown output path.
+- `--out` (optional, no default): markdown output path. If omitted, the report is
+  printed to the terminal only and no file is written. If provided, the full markdown
+  report is written to that path (terminal still shows the condensed summary).
 
 ## Caching
 
@@ -164,7 +166,8 @@ chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--out repor
 
 ## Report Output
 
-Markdown file + condensed terminal summary:
+Always prints a report to the terminal. When `--out` is given, the full markdown
+report is also written to that file. Report sections:
 1. **Summary** — games analyzed, record, overall accuracy proxy.
 2. **Top blunders** — move, position FEN, your move vs best, cpLoss, link to chess.com
    analysis board.
