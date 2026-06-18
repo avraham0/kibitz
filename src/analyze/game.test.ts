@@ -19,28 +19,28 @@ describe('cpFromMoverPov', () => {
 })
 
 describe('analyzeGame', () => {
-  it('computes cpLoss and severity per move using the injected evaluator', async () => {
-    const raw: RawGame = {
-      gameId: 'g', url: 'g', playedAt: '2026-01-01T00:00:00.000Z',
-      color: 'white', result: 'loss', eco: 'C20', openingName: 'KP',
-      moves: [
-        { san: 'e4', fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', clockSeconds: 180 },
-        { san: 'e5', fenBefore: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1', clockSeconds: 178 },
-      ],
-    }
-    // Evaluator: first ply best is e4 (no loss); after e4 opponent eval small.
+  it('skips the after-position search and reports 0 cpLoss when the played move is the engine best', async () => {
+    const fenBefore = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    const raw = oneMoveGame('e4', fenBefore, 'white') // e4 == best (e2e4)
+    let calls = 0
+    const evaluate = async (_fen: string) => { calls++; return { eval: { cp: 30, mate: null }, bestUci: 'e2e4', pv: [] } }
+    const g = await analyzeGame(raw, 12, evaluate as any)
+    expect(calls).toBe(1) // only fenBefore evaluated; the redundant after-search is skipped
+    expect(g.moves[0].cpLoss).toBe(0)
+    expect(g.moves[0].severity).toBe('ok')
+    expect(g.moves[0].isPlayerMove).toBe(true)
+    expect(g.depth).toBe(12)
+  })
+
+  it('computes cpLoss with POV negation when the played move is not the best', async () => {
+    const fenBefore = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    const raw = oneMoveGame('a3', fenBefore, 'white') // a3 != best (e2e4) → after-search runs
     const evaluate = async (fen: string) => {
-      if (fen.includes(' w ')) return { eval: { cp: 30, mate: null }, bestUci: 'e2e4' }
-      return { eval: { cp: 20, mate: null }, bestUci: 'e7e5' }
+      if (fen.includes(' w ')) return { eval: { cp: 30, mate: null }, bestUci: 'e2e4', pv: ['e2e4'] }
+      return { eval: { cp: 20, mate: null }, bestUci: 'e7e5', pv: [] } // after a3: black +20 → mover pov -20
     }
     const g = await analyzeGame(raw, 12, evaluate as any)
-    expect(g.moves).toHaveLength(2)
-    expect(g.moves[0].cpLoss).toBe(50)
-    expect(g.moves[1].cpLoss).toBe(50)
-    expect(g.moves[0].severity).toBeDefined()
-    expect(g.moves[0].isPlayerMove).toBe(true)  // white move, player is white
-    expect(g.moves[1].isPlayerMove).toBe(false) // black move
-    expect(g.depth).toBe(12)
+    expect(g.moves[0].cpLoss).toBe(50) // 30 - (-20)
   })
 
   it('marks moves as lost_position when best eval at fenBefore is <= LOST_POSITION_CP', async () => {
@@ -71,9 +71,10 @@ describe('analyzeGame', () => {
       gameId: 'g2', url: 'g2', playedAt: '2026-01-01T00:00:00.000Z',
       color: 'white', result: 'loss', eco: 'C20', openingName: 'KP',
       moves: [
-        { san: 'e4', fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', clockSeconds: 180 },
+        { san: 'a3', fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', clockSeconds: 180 },
       ],
     }
+    // a3 != best (e2e4) so the after-search runs.
     // fenBefore (white to move): eval is +50 cp → bestCp = 50
     // fenAfter (black to move): mate: 1 for black (opponent) → cpFromMoverPov = large positive for black
     //   negated for white mover pov → playedCpMoverPov = -(100000 - 1*100) = -99900

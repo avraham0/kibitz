@@ -16,6 +16,9 @@ export function defaultSince(nowISO: string): string {
 type AnalyzeOpts = {
   user: string; since: string; depth: number; last?: number
   root?: string; nowISO: string; evaluate: Evaluator; fetchFn?: typeof fetch
+  // Optional pool of evaluators (one per engine) for parallel game analysis.
+  // Defaults to [evaluate] → concurrency 1, preserving single-engine behavior.
+  evaluators?: Evaluator[]
 }
 
 export type AnalyzeResult = {
@@ -33,17 +36,32 @@ export async function analyze(
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
   if (opts.last && opts.last > 0) parsed = parsed.slice(-opts.last)
 
-  const analyses: GameAnalysis[] = []
-  for (let i = 0; i < parsed.length; i++) {
-    const g = parsed[i]
-    let analysis = await readCached(opts.user, g.gameId, opts.depth, opts.root)
-    if (!analysis) {
-      analysis = await analyzeGame(g, opts.depth, opts.evaluate)
-      await writeCached(analysis, opts.user, opts.root)
+  const evaluators = opts.evaluators && opts.evaluators.length > 0 ? opts.evaluators : [opts.evaluate]
+  const total = parsed.length
+  const analyses: GameAnalysis[] = new Array(total)
+  let cursor = 0
+  let done = 0
+
+  // One worker per evaluator (= per engine). Each worker pulls the next game
+  // index and analyzes it on its own engine, so up to `evaluators.length` games
+  // run concurrently. Results are stored by game index (order-stable).
+  async function worker(evaluate: Evaluator): Promise<void> {
+    while (true) {
+      const i = cursor++
+      if (i >= total) return
+      const g = parsed[i]
+      let analysis = await readCached(opts.user, g.gameId, opts.depth, opts.root)
+      if (!analysis) {
+        analysis = await analyzeGame(g, opts.depth, evaluate)
+        await writeCached(analysis, opts.user, opts.root)
+      }
+      analyses[i] = analysis
+      done++
+      onProgress?.(done, total)
     }
-    analyses.push(analysis)
-    onProgress?.(i + 1, parsed.length)
   }
+
+  await Promise.all(evaluators.slice(0, Math.max(1, total)).map((e) => worker(e)))
 
   const stats = aggregate(analyses)
   const suggestions = coach(stats)

@@ -14,11 +14,12 @@ async function main() {
       last: { type: 'string' },
       depth: { type: 'string', default: '15' },
       out: { type: 'string' },
+      concurrency: { type: 'string' },
     },
   })
 
   if (!values.user) {
-    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--out report.md]')
+    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--out report.md]')
     process.exit(2)
   }
 
@@ -28,12 +29,14 @@ async function main() {
   const last = values.last ? Number(values.last) : undefined
 
   // Dynamic import AFTER capturing realFetch — this is where fetch gets clobbered.
-  const { Engine } = await import('./engine/stockfish.js')
-  const engine = await Engine.create()
+  const { EnginePool, autoConcurrency } = await import('./engine/pool.js')
+  const concurrency = values.concurrency ? Number(values.concurrency) : autoConcurrency()
+  const pool = await EnginePool.create(concurrency)
   try {
     const out = await run({
       user: values.user, since, depth, last, nowISO,
-      evaluate: (fen, d) => engine.evaluate(fen, d),
+      evaluate: pool.evaluators[0],
+      evaluators: pool.evaluators,
       fetchFn: realFetch,
     })
     console.log(out.terminal)
@@ -42,7 +45,7 @@ async function main() {
       console.log(`\nFull report written to ${values.out}`)
     }
   } finally {
-    engine.quit()
+    pool.quit()
   }
 }
 

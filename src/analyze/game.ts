@@ -48,19 +48,32 @@ export async function analyzeGame(
     const before = await evaluate(rm.fenBefore, depth)
     const bestCp = cpFromMoverPov(before.eval)
 
-    // Position after the played move (opponent to move): negate to mover POV.
-    const chess = new Chess(rm.fenBefore)
-    chess.move(rm.san)
-    const fenAfter = chess.fen()
-    const after = await evaluate(fenAfter, depth)
-    const playedCpMoverPov = -cpFromMoverPov(after.eval)
-    const evalAfterPlayed: Eval = after.eval
-
-    const cpLoss = Math.min(MAX_CPLOSS, Math.max(0, bestCp - playedCpMoverPov))
-    const severity = cpLossToSeverity(cpLoss)
-
     const playedV = (new Chess(rm.fenBefore).moves({ verbose: true }) as any[]).find((m) => m.san === rm.san)
     const playedUci = playedV ? `${playedV.from}${playedV.to}${playedV.promotion ?? ''}` : ''
+    const playedIsBest = playedUci !== '' && playedUci === before.bestUci
+
+    // The after-position search is only needed when the played move is NOT the engine's
+    // best move. Playing the best move means zero centipawn loss by definition — so we
+    // skip the second (expensive) engine search entirely. This also removes the small
+    // two-search horizon noise that otherwise showed up on best-move plies.
+    let cpLoss: number
+    let evalAfterPlayed: Eval
+    let fenAfter = ''
+    let afterPv: string[] | null = null
+    if (playedIsBest) {
+      cpLoss = 0
+      evalAfterPlayed = before.eval
+    } else {
+      const chess = new Chess(rm.fenBefore)
+      chess.move(rm.san)
+      fenAfter = chess.fen()
+      const after = await evaluate(fenAfter, depth)
+      afterPv = after.pv
+      evalAfterPlayed = after.eval
+      const playedCpMoverPov = -cpFromMoverPov(after.eval)
+      cpLoss = Math.min(MAX_CPLOSS, Math.max(0, bestCp - playedCpMoverPov))
+    }
+    const severity = cpLossToSeverity(cpLoss)
 
     let type: import('../types.js').MistakeType
     let missed = false
@@ -75,7 +88,7 @@ export async function analyzeGame(
         missed = true
         type = missedHit.motif
       } else {
-        const allowedHit = detectMotif(fenAfter, after.pv)
+        const allowedHit = afterPv ? detectMotif(fenAfter, afterPv) : null
         if (allowedHit) {
           missed = false
           type = allowedHit.motif
