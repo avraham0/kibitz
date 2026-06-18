@@ -1,0 +1,39 @@
+import { describe, it, expect } from 'vitest'
+import { parseGame } from './parse.js'
+
+const PGN = `[Event "Live Chess"]
+[White "alice"]
+[Black "bob"]
+[Result "0-1"]
+[ECO "C50"]
+[Opening "Italian Game"]
+
+1. e4 {[%clk 0:03:00]} e5 {[%clk 0:02:58]} 2. Nf3 {[%clk 0:02:55]} Nc6 {[%clk 0:02:50]} 0-1`
+
+const raw = {
+  url: 'https://www.chess.com/game/live/123',
+  end_time: 1_700_000_000,
+  white: { username: 'alice' },
+  black: { username: 'bob' },
+  pgn: PGN,
+}
+
+describe('parseGame', () => {
+  it('parses color, result, opening, and moves from the player POV', () => {
+    const g = parseGame(raw, 'BOB')! // case-insensitive
+    expect(g.color).toBe('black')
+    expect(g.result).toBe('win') // bob is black, black won
+    expect(g.eco).toBe('C50')
+    expect(g.openingName).toBe('Italian Game')
+    expect(g.gameId).toBe('https://www.chess.com/game/live/123')
+    expect(g.moves.length).toBe(4)
+    expect(g.moves[0].san).toBe('e4')
+    expect(g.moves[0].fenBefore).toContain('rnbqkbnr/pppppppp')
+    expect(g.moves[0].clockSeconds).toBe(180)
+    expect(g.moves[1].clockSeconds).toBe(178)
+  })
+
+  it('returns null on malformed pgn', () => {
+    expect(parseGame({ ...raw, pgn: 'not a real pgn @@@' }, 'bob')).toBeNull()
+  })
+})
