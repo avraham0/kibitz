@@ -36,4 +36,14 @@ describe('parseGame', () => {
   it('returns null on malformed pgn', () => {
     expect(parseGame({ ...raw, pgn: 'not a real pgn @@@' }, 'bob')).toBeNull()
   })
+
+  it('parses clocks correctly when PGN uses CRLF line endings', () => {
+    const crlfPgn = PGN.replace(/\n/g, '\r\n')
+    const crlfRaw = { ...raw, pgn: crlfPgn }
+    const g = parseGame(crlfRaw, 'alice')!
+    expect(g).not.toBeNull()
+    expect(g.moves.length).toBe(4)
+    expect(g.moves[0].clockSeconds).toBe(180)
+    expect(g.moves[1].clockSeconds).toBe(178)
+  })
 })

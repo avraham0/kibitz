@@ -20,9 +20,12 @@ function clockToSeconds(comment: string | undefined): number | null {
  *      comment.
  */
 function extractClocks(pgn: string): (string | null)[] {
+  // Normalize Windows CRLF to LF so the header/movetext boundary is found
+  // reliably regardless of the line-ending style used by the source API.
+  const normalized = pgn.replace(/\r\n/g, '\n')
   // Strip PGN headers — they end at the first blank line
-  const movetextStart = pgn.indexOf('\n\n')
-  const movetext = movetextStart >= 0 ? pgn.slice(movetextStart) : pgn
+  const movetextStart = normalized.indexOf('\n\n')
+  const movetext = movetextStart >= 0 ? normalized.slice(movetextStart) : normalized
 
   // Tokenise: pull out {...} comment blocks and bare words
   const tokens: string[] = []
