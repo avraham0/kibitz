@@ -30,6 +30,22 @@ describe('analyze', () => {
     expect(seen).toEqual([[1, 1]]) // one game → one progress callback at done=1,total=1
   })
 
+  it('filters games by time control when timeControl is set', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'cc-tc-'))
+    const pgn = `[White "bob"]\n[Black "x"]\n[Result "1-0"]\n[ECO "C50"]\n[Opening "Italian"]\n\n1. e4 e5 1-0`
+    const games = [
+      { url: 'g-blitz', end_time: 1, white: { username: 'bob' }, black: { username: 'x' }, pgn, time_class: 'blitz' },
+      { url: 'g-rapid', end_time: 2, white: { username: 'bob' }, black: { username: 'x' }, pgn, time_class: 'rapid' },
+    ]
+    const fetchFn = async (url: string) => {
+      if (url.endsWith('/archives')) return new Response(JSON.stringify({ archives: [] }), { status: 200 })
+      return new Response(JSON.stringify({ games }), { status: 200 })
+    }
+    const evaluate = async (fen: string) => ({ eval: { cp: fen.includes(' w ') ? 20 : -20, mate: null }, bestUci: 'e2e4', pv: [] })
+    const res = await analyze({ user: 'bob', since: '2026-06', depth: 8, root, nowISO: '2026-06-18T00:00:00Z', evaluate: evaluate as any, fetchFn: fetchFn as any, timeControl: 'blitz' })
+    expect(res.stats.gamesAnalyzed).toBe(1) // only the blitz game
+  })
+
   it('spreads games across a pool of evaluators (parallel) and analyzes them all', async () => {
     const root = mkdtempSync(join(tmpdir(), 'cc-pool-'))
     const mkPgn = (w: string) => `[White "${w}"]\n[Black "x"]\n[Result "1-0"]\n[ECO "C50"]\n[Opening "Italian"]\n\n1. e4 e5 2. Nf3 Nc6 1-0`

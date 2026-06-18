@@ -21,6 +21,8 @@ type AnalyzeOpts = {
   evaluators?: Evaluator[]
   // Group openings by specific variation instead of by family (default: family).
   variations?: boolean
+  // Only analyze games of this chess.com time class (bullet|blitz|rapid|daily).
+  timeControl?: string
 }
 
 export type AnalyzeResult = {
@@ -34,7 +36,10 @@ export async function analyze(
   onProgress?: (done: number, total: number) => void,
 ): Promise<AnalyzeResult> {
   const raw = await fetchGamesSince(opts.user, opts.since, opts.nowISO, opts.fetchFn ?? fetch)
-  let parsed = raw.map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
+  // chess.com tags each game with a time_class (bullet/blitz/rapid/daily).
+  const tc = opts.timeControl?.toLowerCase()
+  const rawFiltered = tc ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tc) : raw
+  let parsed = rawFiltered.map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
   if (opts.last && opts.last > 0) parsed = parsed.slice(-opts.last)
 
