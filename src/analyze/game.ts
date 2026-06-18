@@ -2,9 +2,10 @@ import { Chess } from 'chess.js'
 import type { RawGame, GameAnalysis, MoveAnalysis, Eval } from '../types.js'
 import { cpLossToSeverity } from '../types.js'
 import { detectPhase } from './phase.js'
-import { classifyMistake } from './classify.js'
+import { classifyMistake, maxHangingGain } from './classify.js'
+import { detectMotif } from './motifs.js'
 
-export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string }>
+export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string; pv: string[] }>
 
 export const MAX_CPLOSS = 2000
 export const LOST_POSITION_CP = -500
@@ -57,9 +58,27 @@ export async function analyzeGame(
 
     const cpLoss = Math.min(MAX_CPLOSS, Math.max(0, bestCp - playedCpMoverPov))
     const severity = cpLossToSeverity(cpLoss)
-    const type = bestCp <= LOST_POSITION_CP
-      ? 'lost_position' as const
-      : classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
+
+    const playedV = (new Chess(rm.fenBefore).moves({ verbose: true }) as any[]).find((m) => m.san === rm.san)
+    const playedUci = playedV ? `${playedV.from}${playedV.to}${playedV.promotion ?? ''}` : ''
+
+    let type: import('../types.js').MistakeType
+    let missed = false
+    if (bestCp <= LOST_POSITION_CP) {
+      type = 'lost_position'
+    } else if (severity === 'ok') {
+      type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
+    } else {
+      const playerCouldWin = maxHangingGain(rm.fenBefore) >= 200 && playedUci !== before.bestUci
+      if (playerCouldWin) {
+        missed = true
+        const hit = detectMotif(rm.fenBefore, before.pv)
+        type = hit ? hit.motif : 'missed_tactic'
+      } else {
+        const hit = detectMotif(fenAfter, after.pv)
+        type = hit ? hit.motif : classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
+      }
+    }
 
     moves.push({
       ply,
@@ -71,6 +90,7 @@ export async function analyzeGame(
       cpLoss,
       severity,
       type,
+      missed,
       phase: detectPhase(rm.fenBefore, ply),
       clockSeconds: rm.clockSeconds,
       isPlayerMove,

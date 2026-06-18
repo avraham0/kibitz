@@ -17,6 +17,12 @@ const TYPE_LABEL: Record<CoachableMistakeType, string> = {
   bad_trade: 'Bad trades',
   king_safety: 'King safety',
   positional: 'Positional errors',
+  fork: 'Forks',
+  pin: 'Pins',
+  skewer: 'Skewers',
+  discovered_attack: 'Discovered attacks',
+  trapped_piece: 'Trapped pieces',
+  back_rank: 'Back-rank tactics',
 }
 
 const TYPE_DRILL: Record<CoachableMistakeType, string> = {
@@ -25,6 +31,12 @@ const TYPE_DRILL: Record<CoachableMistakeType, string> = {
   bad_trade: 'Before capturing, count attackers vs defenders on the target square and compare piece values.',
   king_safety: 'Castle early; avoid king moves that forfeit castling rights; keep the pawn shield intact.',
   positional: 'Study pawn structure and piece activity; review annotated master games in your openings.',
+  fork: 'Drill fork patterns: knight forks, pawn forks, and royal forks. Before each move, check if your pieces fork two or more targets.',
+  pin: 'Practice pin patterns; learn when to break pins with tempo and when to exploit pinned pieces.',
+  skewer: 'Study skewer motifs with bishops, rooks, and queens; watch for king or queen exposed on open lines.',
+  discovered_attack: 'Train discovered attack patterns; look for pieces hiding behind other pieces on open lines.',
+  trapped_piece: 'After each move, verify all your pieces have safe retreat squares to avoid trapping.',
+  back_rank: 'Keep your back rank defended or create escape squares; watch for heavy-piece battery checkmates.',
 }
 
 const PHASE_DRILL: Record<Phase, string> = {
