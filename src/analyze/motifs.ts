@@ -93,7 +93,7 @@ function fork(ctx: Ctx): boolean {
   const mover = ctx.beneficiary
   const victim = mover === 'w' ? 'b' : 'w'
   const toSq = ctx.move.to
-  const attackerVal = PIECE_VALUE[ctx.move.piece as PieceSymbol]
+  const attackerVal = pieceValue(ctx.move.piece)
   let targets = 0
   for (const row of after.board()) {
     for (const sq of row) {
