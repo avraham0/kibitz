@@ -77,6 +77,49 @@ function uciToMove(uci: string): { from: string; to: string; promotion?: string 
 
 type Detector = (ctx: Ctx) => boolean
 
+// ---- helpers added in Task 4 ----
+function legalMovesFrom(chess: Chess, sq: string): any[] {
+  return (chess.moves({ verbose: true }) as any[]).filter((m) => m.from === sq)
+}
+// after applying move m in position `fen`, is m.to attacked by `byColor`?
+function landingAttacked(fen: string, m: any, byColor: 'w' | 'b'): boolean {
+  const c = new Chess(fen)
+  c.move({ from: m.from, to: m.to, promotion: m.promotion })
+  return (c.attackers(m.to as any, byColor) as unknown as string[]).length > 0
+}
+
+// the front piece (king) moves next ply; beneficiary then captures the piece that was
+// behind the front piece on the same line from `attackFrom`.
+function skewerConfirm(ctx: Ctx, attackFrom: string, frontSq: string): boolean {
+  const before = new Chess(ctx.fens[ctx.index + 1]) // before victim's reply
+  const behind = firstPieceBeyond(before, attackFrom, frontSq)
+  if (!behind) return false
+  // find the beneficiary capture (ctx.index+2) landing on `behind.sq`
+  const capIdx = ctx.index + 2
+  const capFen = ctx.fens[capIdx]
+  if (!capFen) return false
+  // the move played at capIdx is moves[capIdx]; we only have fens, so check the square emptied/occupied
+  const occupiedBefore = new Chess(ctx.fens[capIdx]).get(behind.sq as any)
+  const occupiedAfter = ctx.fens[capIdx + 1] ? new Chess(ctx.fens[capIdx + 1]).get(behind.sq as any) : null
+  // captured: behind square held a victim piece before and a beneficiary piece after
+  return !!occupiedBefore && occupiedBefore.color !== ctx.beneficiary
+      && !!occupiedAfter && occupiedAfter.color === ctx.beneficiary
+}
+
+function capturedLater(ctx: Ctx, sq: string): boolean {
+  // true if `sq` (a victim piece now) is captured by the beneficiary at ply >= index+2
+  for (let i = ctx.index + 2; i < ctx.fens.length - 1; i++) {
+    const before = new Chess(ctx.fens[i]).get(sq as any)
+    const afterFen = ctx.fens[i + 1]
+    if (!afterFen) break
+    const after = new Chess(afterFen).get(sq as any)
+    if (before && before.color !== ctx.beneficiary && after && after.color === ctx.beneficiary) return true
+    // if the victim piece left the square on its own, stop tracking
+    if (!before || before.color === ctx.beneficiary) break
+  }
+  return false
+}
+
 // ---- detectors (back_rank, fork here; rest registered in Task 4) ----
 function backRank(ctx: Ctx): boolean {
   const after = new Chess(ctx.fens[ctx.index + 1])
@@ -108,14 +151,85 @@ function fork(ctx: Ctx): boolean {
   return beneficiaryGain(ctx, 2) >= 200
 }
 
+function discoveredAttack(ctx: Ctx): boolean {
+  const after = new Chess(ctx.fens[ctx.index + 1])
+  if (!after.isCheck()) return false
+  const mover = ctx.beneficiary
+  const victim = mover === 'w' ? 'b' : 'w'
+  const ksq = kingSquare(after, victim)
+  const checkers = after.attackers(ksq as any, mover) as unknown as string[]
+  for (const c of checkers) {
+    if (c === ctx.move.to) continue // direct check by the moved piece, not discovered
+    const p = after.get(c as any)
+    if (p && (p.type === 'r' || p.type === 'b' || p.type === 'q')) {
+      // the moved piece's origin must lie between the revealed checker and the king
+      if (sameLine(c, ctx.move.from, ksq) && dir(c, ctx.move.from)?.df === dir(c, ksq)?.df
+          && dir(c, ctx.move.from)?.dr === dir(c, ksq)?.dr) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+function skewer(ctx: Ctx): boolean {
+  const m = ctx.move
+  if (!(m.piece === 'r' || m.piece === 'b' || m.piece === 'q')) return false
+  const after = new Chess(ctx.fens[ctx.index + 1])
+  const victim = ctx.beneficiary === 'w' ? 'b' : 'w'
+  if (!after.isCheck()) return false
+  const ksq = kingSquare(after, victim)
+  if (!dir(m.to, ksq)) return false
+  return skewerConfirm(ctx, m.to, ksq)
+}
+
+function pin(ctx: Ctx): boolean {
+  const m = ctx.move
+  if (!(m.piece === 'r' || m.piece === 'b' || m.piece === 'q')) return false
+  const after = new Chess(ctx.fens[ctx.index + 1])
+  const mover = ctx.beneficiary
+  const victim = mover === 'w' ? 'b' : 'w'
+  for (const row of after.board()) {
+    for (const sq of row) {
+      if (!sq || sq.color !== victim) continue
+      const atks = after.attackers(sq.square as any, mover) as unknown as string[]
+      if (!atks.includes(m.to)) continue
+      const behind = firstPieceBeyond(after, m.to, sq.square)
+      if (behind && behind.piece.color === victim
+          && (behind.piece.type === 'k' || pieceValue(behind.piece.type) > pieceValue(sq.type))) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+function trappedPiece(ctx: Ctx): boolean {
+  const after = new Chess(ctx.fens[ctx.index + 1]) // victim to move
+  const mover = ctx.beneficiary
+  const victim = mover === 'w' ? 'b' : 'w'
+  for (const row of after.board()) {
+    for (const sq of row) {
+      if (!sq || sq.color !== victim || sq.type === 'k') continue
+      const attacked = (after.attackers(sq.square as any, mover) as unknown as string[]).length > 0
+      if (!attacked) continue
+      const escapes = legalMovesFrom(after, sq.square)
+      const hasSafe = escapes.some((e) => !landingAttacked(after.fen(), e, mover))
+      if (hasSafe) continue
+      // captured at least two plies after this move (owner had a move in between)
+      if (capturedLater(ctx, sq.square)) return true
+    }
+  }
+  return false
+}
+
 export const DETECTORS: Record<Motif, Detector> = {
   back_rank: backRank,
   fork,
-  // discovered_attack, skewer, pin, trapped_piece added in Task 4:
-  discovered_attack: () => false,
-  skewer: () => false,
-  pin: () => false,
-  trapped_piece: () => false,
+  discovered_attack: discoveredAttack,
+  skewer,
+  pin,
+  trapped_piece: trappedPiece,
 }
 
 export function detectMotif(startFen: string, pv: string[]): MotifHit | null {
