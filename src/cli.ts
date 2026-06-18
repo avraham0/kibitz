@@ -1,9 +1,12 @@
 import { parseArgs } from 'node:util'
 import { writeFile } from 'node:fs/promises'
-import { Engine } from './engine/stockfish.js'
 import { run, defaultSince } from './orchestrate.js'
 
 async function main() {
+  // Capture the real fetch BEFORE dynamically loading the engine, which
+  // clobbers globalThis.fetch with a non-function at module-evaluation time.
+  const realFetch = globalThis.fetch.bind(globalThis)
+
   const { values } = parseArgs({
     options: {
       user: { type: 'string' },
@@ -24,11 +27,14 @@ async function main() {
   const depth = Number(values.depth ?? '15')
   const last = values.last ? Number(values.last) : undefined
 
+  // Dynamic import AFTER capturing realFetch — this is where fetch gets clobbered.
+  const { Engine } = await import('./engine/stockfish.js')
   const engine = await Engine.create()
   try {
     const out = await run({
       user: values.user, since, depth, last, nowISO,
       evaluate: (fen, d) => engine.evaluate(fen, d),
+      fetchFn: realFetch,
     })
     console.log(out.terminal)
     if (values.out) {

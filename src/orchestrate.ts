@@ -7,10 +7,6 @@ import { coach } from './report/coach.js'
 import { renderMarkdown, renderTerminal } from './report/render.js'
 import type { GameAnalysis } from './types.js'
 
-// Capture the global fetch reference at module load time, before any WASM
-// modules (e.g. Stockfish) can overwrite globalThis.fetch with a non-function.
-const _fetch: typeof fetch = globalThis.fetch.bind(globalThis)
-
 export function defaultSince(nowISO: string): string {
   const d = new Date(nowISO)
   d.setUTCMonth(d.getUTCMonth() - 12)
@@ -27,7 +23,7 @@ export async function run(opts: {
   evaluate: Evaluator
   fetchFn?: typeof fetch
 }): Promise<{ markdown: string; terminal: string }> {
-  const raw = await fetchGamesSince(opts.user, opts.since, opts.nowISO, opts.fetchFn ?? _fetch)
+  const raw = await fetchGamesSince(opts.user, opts.since, opts.nowISO, opts.fetchFn ?? fetch)
   let parsed = raw.map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
   if (opts.last && opts.last > 0) parsed = parsed.slice(-opts.last)
