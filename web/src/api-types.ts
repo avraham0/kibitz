@@ -22,7 +22,13 @@ export type Stats = {
   accuracy: number
 }
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
-export type AnalyzeResult = { stats: Stats; suggestions: Suggestion[]; meta: { user: string; since: string; depth: number } }
+export type GameMove = { ply: number; san: string; evalCp: number; cpLoss: number; isPlayerMove: boolean; fenBefore: string }
+export type GameSummary = {
+  gameId: string; url: string; playedAt: string; color: 'white' | 'black'
+  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; accuracy: number
+  moves: GameMove[]
+}
+export type AnalyzeResult = { stats: Stats; suggestions: Suggestion[]; meta: { user: string; since: string; depth: number }; games: GameSummary[] }
 
 export const TIME_BUCKETS: TimeBucket[] = ['<10s', '10-30s', '30-60s', '60s+']
 export const COACHABLE_TYPES: CoachableType[] = [

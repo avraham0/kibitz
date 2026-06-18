@@ -5,6 +5,7 @@ import type { AnalyzeResult } from './api-types.js'
 
 const sample: AnalyzeResult = {
   meta: { user: 'bob', since: '2025-06', depth: 15 },
+  games: [],
   suggestions: [{ title: 'Forks are your most common mistake', why: 'w', drill: 'd', impact: 100, examples: [] }],
   stats: {
     gamesAnalyzed: 10, record: { wins: 3, losses: 7, draws: 0 }, mistakeCount: 40,

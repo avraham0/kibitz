@@ -6,9 +6,10 @@ import { CoachingCards } from './panels/CoachingCards.js'
 import { MistakeTypesChart } from './panels/MistakeTypesChart.js'
 import { PhaseChart } from './panels/PhaseChart.js'
 import { TimePressureChart } from './panels/TimePressureChart.js'
+import { GameReview } from './panels/GameReview.js'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
-  const { stats, suggestions } = result
+  const { stats, suggestions, games } = result
   return (
     <div>
       <SummaryCard stats={stats} />
@@ -17,6 +18,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       <TimePressureChart stats={stats} />
       <OpeningsTable openings={stats.openings} />
       <BlunderList blunders={stats.topBlunders} />
+      <GameReview games={games} />
       <CoachingCards suggestions={suggestions} />
     </div>
   )
