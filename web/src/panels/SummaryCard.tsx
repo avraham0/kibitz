@@ -6,7 +6,7 @@ export function SummaryCard({ stats }: { stats: Stats }) {
     <section>
       <h2>Summary</h2>
       <p>
-        Record: {r.wins}W-{r.losses}L-{r.draws}D · Games: {stats.gamesAnalyzed} · Mistakes: {stats.mistakeCount}
+        Record: {r.wins}W-{r.losses}L-{r.draws}D · Accuracy: {stats.accuracy}% · Games: {stats.gamesAnalyzed} · Mistakes: {stats.mistakeCount}
         {' '}· In already-lost positions (excluded): {stats.lostPositionMoves}
       </p>
     </section>

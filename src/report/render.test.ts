@@ -29,6 +29,7 @@ const stats: Stats = {
     '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
   },
   gamesWithClock: 0,
+  accuracy: 90,
 }
 const sugg: Suggestion[] = [{ title: 'Hung pieces', why: 'w', drill: 'd', impact: 900, examples: [] }]
 
