@@ -21,6 +21,7 @@ const base: Stats = {
   topBlunders: [
     { url: 'u1', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: 'f1', cpLoss: 500, type: 'hung_piece' },
   ],
+  lostPositionMoves: 0,
 }
 
 describe('coach', () => {

@@ -13,6 +13,7 @@ const stats: Stats = {
   },
   openings: [{ eco: 'B20', name: 'Sicilian', games: 3, wins: 1, winPct: 33, avgMistakes: 1.3 }],
   topBlunders: [{ url: 'https://chess.com/game/1', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: '8/8/8 w - - 0 1', cpLoss: 400, type: 'hung_piece' }],
+  lostPositionMoves: 7,
 }
 const sugg: Suggestion[] = [{ title: 'Hung pieces', why: 'w', drill: 'd', impact: 900, examples: [] }]
 
@@ -37,6 +38,16 @@ describe('render', () => {
 
   it('analysisLink encodes the FEN', () => {
     expect(analysisLink('x', 'r n/8 w - - 0 1')).toContain('fen=r%20n')
+  })
+
+  it('markdown shows lost position transparency line', () => {
+    const md = renderMarkdown(stats, sugg, { user: 'bob', since: '2025-06', depth: 15 })
+    expect(md).toContain('Moves in already-lost positions (excluded): 7')
+  })
+
+  it('terminal summary shows lost position transparency line', () => {
+    const txt = renderTerminal(stats, sugg, { user: 'bob', since: '2025-06', depth: 15 })
+    expect(txt).toContain('Moves in already-lost positions (excluded): 7')
   })
 
   it('escapes pipe characters in opening names to avoid breaking markdown tables', () => {

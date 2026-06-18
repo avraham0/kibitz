@@ -3,12 +3,13 @@ import type { Suggestion } from './coach.js'
 import type { MistakeType, Phase } from '../types.js'
 
 type Meta = { user: string; since: string; depth: number }
+type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
 
 export function analysisLink(_url: string, fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
 }
 
-const TYPES: MistakeType[] = ['hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional']
+const TYPES: CoachableMistakeType[] = ['hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional']
 const PHASES: Phase[] = ['opening', 'middlegame', 'endgame']
 
 function recordStr(r: Stats['record']): string {
@@ -29,6 +30,7 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push(`- Games analyzed: ${stats.gamesAnalyzed}`)
   lines.push(`- Record: ${recordStr(stats.record)}`)
   lines.push(`- Total mistakes (your moves): ${stats.mistakeCount}`)
+  lines.push(`- Moves in already-lost positions (excluded): ${stats.lostPositionMoves}`)
   lines.push('')
 
   lines.push('## Top blunders')
@@ -80,6 +82,7 @@ export function renderTerminal(stats: Stats, suggestions: Suggestion[], meta: Me
   const lines: string[] = []
   lines.push(`chess-coach — ${meta.user} (since ${meta.since}, depth ${meta.depth})`)
   lines.push(`Games: ${stats.gamesAnalyzed}  Record: ${recordStr(stats.record)}  Mistakes: ${stats.mistakeCount}`)
+  lines.push(`Moves in already-lost positions (excluded): ${stats.lostPositionMoves}`)
   lines.push('')
   lines.push('Mistake types:')
   for (const t of TYPES) {

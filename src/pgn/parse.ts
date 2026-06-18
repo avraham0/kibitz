@@ -104,7 +104,10 @@ export function parseGame(raw: any, user: string): RawGame | null {
       if (header.Opening && header.Opening.trim()) return header.Opening.trim()
       if (header.ECOUrl) {
         const m = header.ECOUrl.match(/\/openings\/([^/?#]+)/)
-        if (m) return m[1].replace(/-/g, ' ')
+        if (m) {
+          const derived = m[1].replace(/-/g, ' ')
+          return derived.split(/\s*(?:\.{3}|\d+\.)/)[0].trim()
+        }
       }
       return 'Unknown'
     })(),

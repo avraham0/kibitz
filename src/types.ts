@@ -5,7 +5,7 @@ export type Eval = { cp: number | null; mate: number | null }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
 
 export type MistakeType =
-  | 'hung_piece' | 'missed_tactic' | 'bad_trade' | 'king_safety' | 'positional'
+  | 'hung_piece' | 'missed_tactic' | 'bad_trade' | 'king_safety' | 'positional' | 'lost_position'
 
 export type Phase = 'opening' | 'middlegame' | 'endgame'
 

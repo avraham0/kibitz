@@ -9,7 +9,9 @@ export type Suggestion = {
   examples: { url: string; fenBefore: string; san: string; bestSan: string }[]
 }
 
-const TYPE_LABEL: Record<MistakeType, string> = {
+type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
+
+const TYPE_LABEL: Record<CoachableMistakeType, string> = {
   hung_piece: 'Hung pieces',
   missed_tactic: 'Missed tactics',
   bad_trade: 'Bad trades',
@@ -17,7 +19,7 @@ const TYPE_LABEL: Record<MistakeType, string> = {
   positional: 'Positional errors',
 }
 
-const TYPE_DRILL: Record<MistakeType, string> = {
+const TYPE_DRILL: Record<CoachableMistakeType, string> = {
   hung_piece: 'Before every move, do a blunder-check: is the piece I am moving — or one I leave behind — left en prise?',
   missed_tactic: 'Do 10–15 tactics puzzles a day; on each move scan for checks, captures, and threats first.',
   bad_trade: 'Before capturing, count attackers vs defenders on the target square and compare piece values.',
@@ -42,7 +44,7 @@ export function coach(stats: Stats): Suggestion[] {
   if (stats.mistakeCount === 0) return out
 
   // Rule 1: dominant mistake type.
-  for (const t of Object.keys(stats.byType) as MistakeType[]) {
+  for (const t of Object.keys(stats.byType) as CoachableMistakeType[]) {
     const { count, avgCpLoss } = stats.byType[t]
     if (count === 0) continue
     const share = count / stats.mistakeCount

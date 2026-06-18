@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { analyzeGame, cpFromMoverPov, MAX_CPLOSS } from './game.js'
+import { analyzeGame, cpFromMoverPov, MAX_CPLOSS, LOST_POSITION_CP } from './game.js'
 import type { RawGame } from '../types.js'
 
 describe('cpFromMoverPov', () => {
@@ -33,6 +33,27 @@ describe('analyzeGame', () => {
     expect(g.moves[0].isPlayerMove).toBe(true)  // white move, player is white
     expect(g.moves[1].isPlayerMove).toBe(false) // black move
     expect(g.depth).toBe(12)
+  })
+
+  it('marks moves as lost_position when best eval at fenBefore is <= LOST_POSITION_CP', async () => {
+    const raw: RawGame = {
+      gameId: 'g3', url: 'g3', playedAt: '2026-01-01T00:00:00.000Z',
+      color: 'white', result: 'loss', eco: 'C20', openingName: 'KP',
+      moves: [
+        { san: 'e4', fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', clockSeconds: null },
+      ],
+    }
+    // Evaluator returns a clearly losing best eval (-800 cp) for fenBefore
+    const evaluate = async (fen: string) => {
+      if (fen.includes(' w ')) return { eval: { cp: -800, mate: null }, bestUci: 'e2e4' }
+      return { eval: { cp: 20, mate: null }, bestUci: 'e7e5' }
+    }
+    const g = await analyzeGame(raw, 12, evaluate as any)
+    expect(g.moves[0].type).toBe('lost_position')
+  })
+
+  it('exports LOST_POSITION_CP constant', () => {
+    expect(LOST_POSITION_CP).toBe(-500)
   })
 
   it('caps cpLoss at MAX_CPLOSS on a mate swing and still classifies as blunder', async () => {

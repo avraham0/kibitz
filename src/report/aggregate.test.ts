@@ -39,4 +39,24 @@ describe('aggregate', () => {
     expect(s.topBlunders[0].cpLoss).toBe(400) // only player blunders
     expect(s.topBlunders.every((b) => b.cpLoss >= 300)).toBe(true)
   })
+
+  it('excludes lost_position moves from mistakeCount/byType and counts them in lostPositionMoves', () => {
+    const g = game({
+      result: 'loss',
+      moves: [
+        mv({ severity: 'blunder', cpLoss: 400, type: 'hung_piece', phase: 'middlegame', isPlayerMove: true }),
+        mv({ severity: 'blunder', cpLoss: 800, type: 'lost_position', phase: 'endgame', isPlayerMove: true }),
+        mv({ severity: 'ok', cpLoss: 10, type: 'lost_position', phase: 'endgame', isPlayerMove: true }),
+      ],
+    })
+    const s = aggregate([g])
+    expect(s.mistakeCount).toBe(1) // only the hung_piece blunder
+    expect(s.byPhase.middlegame).toBe(1)
+    expect(s.byPhase.endgame).toBe(0) // lost_position not counted
+    expect(s.byType.hung_piece.count).toBe(1)
+    // byType should NOT have a lost_position key
+    expect(Object.keys(s.byType)).not.toContain('lost_position')
+    expect(s.lostPositionMoves).toBe(2) // both lost_position isPlayerMove moves
+    expect(s.topBlunders.every((b) => b.type !== 'lost_position')).toBe(true)
+  })
 })

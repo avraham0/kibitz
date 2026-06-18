@@ -74,6 +74,35 @@ describe('parseGame', () => {
     expect(g.openingName).toBe('Italian Game')
   })
 
+  it('trims move-notation tails from ECOUrl-derived opening names', () => {
+    const cases: Array<[string, string]> = [
+      ['https://www.chess.com/openings/Italian-Game-Giuoco-Piano', 'Italian Game Giuoco Piano'],
+      ['https://www.chess.com/openings/Philidor-Defense-3.Bc4', 'Philidor Defense'],
+      ['https://www.chess.com/openings/Colle-System-3...e6-4.Bd3-b6', 'Colle System'],
+      ['https://www.chess.com/openings/Kings-Fianchetto-Opening...2.Bg2-Nf6', 'Kings Fianchetto Opening'],
+      ['https://www.chess.com/openings/Four-Knights-Game-Italian-Variation', 'Four Knights Game Italian Variation'],
+    ]
+    for (const [ecoUrl, expected] of cases) {
+      const pgnEco = `[Event "Live Chess"]
+[White "alice"]
+[Black "bob"]
+[Result "0-1"]
+[ECO "C50"]
+[ECOUrl "${ecoUrl}"]
+
+1. e4 e5 2. Nf3 Nc6 0-1`
+      const rawEco = {
+        url: 'https://www.chess.com/game/live/trim-test',
+        end_time: 1_700_000_000,
+        white: { username: 'alice' },
+        black: { username: 'bob' },
+        pgn: pgnEco,
+      }
+      const g = parseGame(rawEco, 'bob')!
+      expect(g.openingName, `ECOUrl: ${ecoUrl}`).toBe(expected)
+    }
+  })
+
   it('returns null on malformed pgn', () => {
     expect(parseGame({ ...raw, pgn: 'not a real pgn @@@' }, 'bob')).toBeNull()
   })

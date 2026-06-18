@@ -7,26 +7,31 @@ export type BlunderRef = {
 export type OpeningStat = {
   eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number
 }
+
+type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
+
 export type Stats = {
   gamesAnalyzed: number
   record: { wins: number; losses: number; draws: number }
   mistakeCount: number
   byPhase: Record<Phase, number>
-  byType: Record<MistakeType, { count: number; avgCpLoss: number }>
+  byType: Record<CoachableMistakeType, { count: number; avgCpLoss: number }>
   openings: OpeningStat[]
   topBlunders: BlunderRef[]
+  lostPositionMoves: number
 }
 
-const TYPES: MistakeType[] = ['hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional']
+const TYPES: CoachableMistakeType[] = ['hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional']
 
 export function aggregate(games: GameAnalysis[]): Stats {
   const record = { wins: 0, losses: 0, draws: 0 }
   const byPhase: Record<Phase, number> = { opening: 0, middlegame: 0, endgame: 0 }
-  const typeAcc: Record<MistakeType, { count: number; sum: number }> =
+  const typeAcc: Record<CoachableMistakeType, { count: number; sum: number }> =
     Object.fromEntries(TYPES.map((t) => [t, { count: 0, sum: 0 }])) as any
   const openingMap = new Map<string, { eco: string; name: string; games: number; wins: number; mistakes: number }>()
   const blunders: BlunderRef[] = []
   let mistakeCount = 0
+  let lostPositionMoves = 0
 
   for (const g of games) {
     if (g.result === 'win') record.wins++
@@ -39,12 +44,17 @@ export function aggregate(games: GameAnalysis[]): Stats {
     if (g.result === 'win') o.wins++
 
     for (const m of g.moves) {
-      if (!m.isPlayerMove || m.severity === 'ok') continue
+      if (!m.isPlayerMove) continue
+      if (m.type === 'lost_position') {
+        lostPositionMoves++
+        continue
+      }
+      if (m.severity === 'ok') continue
       mistakeCount++
       o.mistakes++
       byPhase[m.phase]++
-      typeAcc[m.type].count++
-      typeAcc[m.type].sum += m.cpLoss
+      typeAcc[m.type as CoachableMistakeType].count++
+      typeAcc[m.type as CoachableMistakeType].sum += m.cpLoss
       if (m.severity === 'blunder') {
         blunders.push({
           url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan,
@@ -60,7 +70,7 @@ export function aggregate(games: GameAnalysis[]): Stats {
       count: typeAcc[t].count,
       avgCpLoss: typeAcc[t].count ? Math.round(typeAcc[t].sum / typeAcc[t].count) : 0,
     }]),
-  ) as Record<MistakeType, { count: number; avgCpLoss: number }>
+  ) as Record<CoachableMistakeType, { count: number; avgCpLoss: number }>
 
   const openings: OpeningStat[] = [...openingMap.values()]
     .map((o) => ({
@@ -74,6 +84,6 @@ export function aggregate(games: GameAnalysis[]): Stats {
 
   return {
     gamesAnalyzed: games.length,
-    record, mistakeCount, byPhase, byType, openings, topBlunders,
+    record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
   }
 }
