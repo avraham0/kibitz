@@ -15,10 +15,9 @@ describe('maxHangingGain', () => {
 
 describe('classifyMistake', () => {
   it('flags hung_piece when the move leaves a piece free to take', () => {
-    // White to move plays Bg2-b7?? hanging nothing here; construct a real hang:
-    // White queen on d1 moves to d5 where black pawn c6 can capture for free.
-    const fenBefore = 'rnbqkbnr/pp1ppppp/2p5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-    const t = classifyMistake({ fenBefore, san: 'Qd5', bestUci: 'g1f3' })
+    // White plays Qg4, legal, but the queen is then taken for free by the h5 pawn.
+    const fenBefore = 'rnbqkbnr/pppp1pp1/8/4p2p/4P3/8/PPPP1PPP/RNBQKBNR w KQkq h6 0 3'
+    const t = classifyMistake({ fenBefore, san: 'Qg4', bestUci: 'g1f3' })
     expect(t).toBe('hung_piece')
   })
 

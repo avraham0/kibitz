@@ -35,65 +35,6 @@ function castlingRights(fen: string): string {
   return fen.split(' ')[2] ?? '-'
 }
 
-/**
- * Heuristically construct the FEN after a SAN move, even if the move is not
- * strictly legal (e.g. the path is blocked). Used as a fallback for hung_piece
- * detection when chess.js rejects the move.
- *
- * Parses the destination square and piece type from SAN, finds the first
- * matching piece of the mover's color, removes it from its source, removes any
- * enemy piece on the destination, and places the mover's piece there. Returns
- * the resulting FEN with the opponent to move, or null if parsing fails.
- */
-function buildHeuristicFenAfter(fenBefore: string, san: string): string | null {
-  const chess = new Chess(fenBefore)
-  const mover = chess.turn() as 'w' | 'b'
-
-  // Strip check/mate/annotation markers
-  const clean = san.replace(/[+#!?]/g, '')
-
-  // Ignore castling – chess.js handles it correctly when the path is clear;
-  // if castling itself is illegal we simply skip the heuristic.
-  if (/^[O0]/.test(clean)) return null
-
-  // Extract destination square (last a-h followed by 1-8, before optional =X)
-  const destMatch = clean.match(/([a-h][1-8])(?:=[QRBN])?$/)
-  if (!destMatch) return null
-  const to = destMatch[1]
-
-  // Determine piece type
-  let pieceType: PieceSymbol = 'p'
-  if (/^[A-Z]/.test(clean)) {
-    const map: Record<string, PieceSymbol> = { K: 'k', Q: 'q', R: 'r', B: 'b', N: 'n' }
-    pieceType = map[clean[0]] ?? 'p'
-  }
-
-  // Find the first piece of this type/color on the board
-  const board = chess.board() as Array<Array<{ type: string; color: string } | null>>
-  let fromSquare: string | null = null
-  outer: for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const p = board[r][c]
-      if (p && p.type === pieceType && p.color === mover) {
-        fromSquare = String.fromCharCode(97 + c) + (8 - r)
-        break outer
-      }
-    }
-  }
-  if (!fromSquare) return null
-
-  // Manually move the piece (ignoring legality)
-  chess.remove(fromSquare as any)
-  if (chess.get(to as any)) chess.remove(to as any)
-  chess.put({ type: pieceType, color: mover }, to as any)
-
-  // Flip turn to opponent; clear en passant
-  const parts = chess.fen().split(' ')
-  parts[1] = mover === 'w' ? 'b' : 'w'
-  parts[3] = '-'
-  return parts.join(' ')
-}
-
 export function classifyMistake(input: {
   fenBefore: string
   san: string
@@ -111,15 +52,14 @@ export function classifyMistake(input: {
   if (playerGain >= 200 && playedUci !== bestUci) return 'missed_tactic'
 
   // Apply the played move to inspect the resulting position.
-  // Fall back to a heuristic position when chess.js rejects the move (e.g. SAN
-  // from an annotated game that requires a path the engine doesn't see).
+  // If chess.js throws (illegal SAN — should never happen on real game data), fall back to positional.
   const after = new Chess(fenBefore)
   let fenAfter: string | null = null
   try {
     after.move(san)
     fenAfter = after.fen()
   } catch {
-    fenAfter = buildHeuristicFenAfter(fenBefore, san)
+    return 'positional'
   }
 
   // hung_piece: opponent (now to move) can win >= 200cp.
