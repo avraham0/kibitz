@@ -2,8 +2,8 @@ import { fetchGamesSince } from './api/chesscom.js'
 import { parseGame } from './pgn/parse.js'
 import { analyzeGame, type Evaluator } from './analyze/game.js'
 import { readCached, writeCached } from './cache/store.js'
-import { aggregate } from './report/aggregate.js'
-import { coach } from './report/coach.js'
+import { aggregate, type Stats } from './report/aggregate.js'
+import { coach, type Suggestion } from './report/coach.js'
 import { renderMarkdown, renderTerminal } from './report/render.js'
 import type { GameAnalysis } from './types.js'
 
@@ -13,16 +13,21 @@ export function defaultSince(nowISO: string): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
-export async function run(opts: {
-  user: string
-  since: string
-  depth: number
-  last?: number
-  root?: string
-  nowISO: string
-  evaluate: Evaluator
-  fetchFn?: typeof fetch
-}): Promise<{ markdown: string; terminal: string }> {
+type AnalyzeOpts = {
+  user: string; since: string; depth: number; last?: number
+  root?: string; nowISO: string; evaluate: Evaluator; fetchFn?: typeof fetch
+}
+
+export type AnalyzeResult = {
+  stats: Stats
+  suggestions: Suggestion[]
+  meta: { user: string; since: string; depth: number }
+}
+
+export async function analyze(
+  opts: AnalyzeOpts,
+  onProgress?: (done: number, total: number) => void,
+): Promise<AnalyzeResult> {
   const raw = await fetchGamesSince(opts.user, opts.since, opts.nowISO, opts.fetchFn ?? fetch)
   let parsed = raw.map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
@@ -37,15 +42,19 @@ export async function run(opts: {
       await writeCached(analysis, opts.user, opts.root)
     }
     analyses.push(analysis)
-    if (process.stderr.isTTY) {
-      process.stderr.write(`\ranalyzed ${i + 1}/${parsed.length} games`)
-    }
+    onProgress?.(i + 1, parsed.length)
   }
-  if (process.stderr.isTTY) process.stderr.write('\n')
 
   const stats = aggregate(analyses)
   const suggestions = coach(stats)
-  const meta = { user: opts.user, since: opts.since, depth: opts.depth }
+  return { stats, suggestions, meta: { user: opts.user, since: opts.since, depth: opts.depth } }
+}
+
+export async function run(opts: AnalyzeOpts): Promise<{ markdown: string; terminal: string }> {
+  const { stats, suggestions, meta } = await analyze(opts, (done, total) => {
+    if (process.stderr.isTTY) process.stderr.write(`\ranalyzed ${done}/${total} games`)
+  })
+  if (process.stderr.isTTY) process.stderr.write('\n')
   return {
     markdown: renderMarkdown(stats, suggestions, meta),
     terminal: renderTerminal(stats, suggestions, meta),
