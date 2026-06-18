@@ -57,13 +57,16 @@ export function coach(stats: Stats): Suggestion[] {
 
   // Rule 1: dominant mistake type.
   for (const t of Object.keys(stats.byType) as CoachableMistakeType[]) {
-    const { count, avgCpLoss } = stats.byType[t]
+    const { count, avgCpLoss, missed, allowed } = stats.byType[t]
     if (count === 0) continue
     const share = count / stats.mistakeCount
     if (share >= 0.3) {
+      const split = (missed > 0 || allowed > 0)
+        ? ` (${missed} you missed, ${allowed} you allowed)`
+        : ''
       out.push({
         title: `${TYPE_LABEL[t]} are your most common mistake (${Math.round(share * 100)}%)`,
-        why: `They account for ${count} of ${stats.mistakeCount} mistakes, averaging ${avgCpLoss} centipawns lost each.`,
+        why: `They account for ${count} of ${stats.mistakeCount} mistakes${split}, averaging ${avgCpLoss} centipawns lost each.`,
         drill: TYPE_DRILL[t],
         impact: count * avgCpLoss,
         examples: examplesFor(stats.topBlunders, t),

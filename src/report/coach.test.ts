@@ -8,11 +8,17 @@ const base: Stats = {
   mistakeCount: 10,
   byPhase: { opening: 1, middlegame: 3, endgame: 6 },
   byType: {
-    hung_piece: { count: 6, avgCpLoss: 350 },
-    missed_tactic: { count: 2, avgCpLoss: 200 },
-    bad_trade: { count: 1, avgCpLoss: 150 },
-    king_safety: { count: 1, avgCpLoss: 120 },
-    positional: { count: 0, avgCpLoss: 0 },
+    hung_piece: { count: 6, avgCpLoss: 350, missed: 4, allowed: 2 },
+    missed_tactic: { count: 2, avgCpLoss: 200, missed: 1, allowed: 1 },
+    bad_trade: { count: 1, avgCpLoss: 150, missed: 0, allowed: 1 },
+    king_safety: { count: 1, avgCpLoss: 120, missed: 1, allowed: 0 },
+    positional: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    fork: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    pin: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    skewer: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    discovered_attack: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    trapped_piece: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+    back_rank: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
   },
   openings: [
     { eco: 'B20', name: 'Sicilian', games: 4, wins: 1, winPct: 25, avgMistakes: 2.5 },
@@ -53,10 +59,32 @@ describe('coach', () => {
   it('returns nothing actionable when there are no mistakes', () => {
     const empty: Stats = { ...base, mistakeCount: 0,
       byPhase: { opening: 0, middlegame: 0, endgame: 0 },
-      byType: { hung_piece: { count: 0, avgCpLoss: 0 }, missed_tactic: { count: 0, avgCpLoss: 0 },
-        bad_trade: { count: 0, avgCpLoss: 0 }, king_safety: { count: 0, avgCpLoss: 0 },
-        positional: { count: 0, avgCpLoss: 0 } },
+      byType: { hung_piece: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 }, missed_tactic: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        bad_trade: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 }, king_safety: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        positional: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        fork: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        pin: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        skewer: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        discovered_attack: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        trapped_piece: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 },
+        back_rank: { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 } },
       openings: [] }
     expect(coach(empty)).toEqual([])
+  })
+
+  it('coaches on a dominant motif with the missed/allowed split', () => {
+    const s: Stats = {
+      ...base,
+      mistakeCount: 10,
+      byType: {
+        ...base.byType,
+        fork: { count: 6, avgCpLoss: 320, missed: 4, allowed: 2 },
+      },
+    }
+    const out = coach(s)
+    const fork = out.find((x) => x.title.toLowerCase().includes('fork'))
+    expect(fork).toBeTruthy()
+    expect(fork!.why).toMatch(/4 .*missed/i)
+    expect(fork!.why).toMatch(/2 .*allowed/i)
   })
 })
