@@ -33,6 +33,7 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push('## Summary')
   lines.push(`- Games analyzed: ${stats.gamesAnalyzed}`)
   lines.push(`- Record: ${recordStr(stats.record)}`)
+  lines.push(`- Accuracy: ${stats.accuracy}%`)
   lines.push(`- Total mistakes (your moves): ${stats.mistakeCount}`)
   lines.push(`- Moves in already-lost positions (excluded): ${stats.lostPositionMoves}`)
   lines.push('')
@@ -107,7 +108,7 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
 export function renderTerminal(stats: Stats, suggestions: Suggestion[], meta: Meta): string {
   const lines: string[] = []
   lines.push(`chess-coach — ${meta.user} (since ${meta.since}, depth ${meta.depth})`)
-  lines.push(`Games: ${stats.gamesAnalyzed}  Record: ${recordStr(stats.record)}  Mistakes: ${stats.mistakeCount}`)
+  lines.push(`Games: ${stats.gamesAnalyzed}  Record: ${recordStr(stats.record)}  Accuracy: ${stats.accuracy}%  Mistakes: ${stats.mistakeCount}`)
   lines.push(`Moves in already-lost positions (excluded): ${stats.lostPositionMoves}`)
   lines.push('')
   lines.push('Mistake types:')

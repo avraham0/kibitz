@@ -24,7 +24,7 @@ const sample: AnalyzeResult = {
     topBlunders: [],
     lostPositionMoves: 12,
     byTimeBucket: { '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 } },
-    gamesWithClock: 0,
+    gamesWithClock: 0, accuracy: 88,
   },
 }
 
@@ -32,6 +32,7 @@ describe('Dashboard', () => {
   it('renders summary, openings, and coaching', () => {
     render(<Dashboard result={sample} />)
     expect(screen.getByText(/3W-7L-0D|3 – 7 – 0|3-7-0/)).toBeTruthy()
+    expect(screen.getByText(/Accuracy: 88%/)).toBeTruthy()
     expect(screen.getByText('Italian Game')).toBeTruthy()
     expect(screen.getByText(/Forks are your most common mistake/)).toBeTruthy()
   })

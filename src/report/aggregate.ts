@@ -1,4 +1,15 @@
 import type { GameAnalysis, MistakeType, Phase } from '../types.js'
+import { cpFromMoverPov } from '../analyze/game.js'
+
+// Win-% for the side to move from a centipawn eval (lichess model).
+function winPct(cp: number): number {
+  return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1)
+}
+// Per-move accuracy from the win-% the move gave up (lichess accuracy curve).
+function moveAccuracy(winBefore: number, winAfter: number): number {
+  const drop = Math.max(0, winBefore - winAfter)
+  return Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * drop) - 3.1669))
+}
 
 export type BlunderRef = {
   url: string; ply: number; san: string; bestSan: string
@@ -46,6 +57,8 @@ export type Stats = {
   lostPositionMoves: number
   byTimeBucket: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; avgCpLoss: number }>
   gamesWithClock: number
+  // Overall accuracy (0–100) over the player's real decisions (excludes lost-position moves).
+  accuracy: number
 }
 
 const TYPES: CoachableMistakeType[] = [
@@ -68,6 +81,8 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   const timeAcc: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; sum: number }> =
     Object.fromEntries(TIME_BUCKETS.map((b) => [b, { moves: 0, mistakes: 0, blunders: 0, sum: 0 }])) as Record<TimeBucket, { moves: number; mistakes: number; blunders: number; sum: number }>
   let gamesWithClock = 0
+  let accuracySum = 0
+  let accuracyMoves = 0
 
   for (const g of games) {
     if (g.result === 'win') record.wins++
@@ -98,6 +113,11 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
         lostPositionMoves++
         continue
       }
+      // Accuracy over every real decision (including good moves), not just mistakes.
+      const winBefore = winPct(cpFromMoverPov(m.evalBefore))
+      const winAfter = winPct(-cpFromMoverPov(m.evalAfterPlayed))
+      accuracySum += moveAccuracy(winBefore, winAfter)
+      accuracyMoves++
       if (m.severity === 'ok') continue
       mistakeCount++
       o.mistakes++
@@ -145,9 +165,11 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
 
   const topBlunders = blunders.sort((a, b) => b.cpLoss - a.cpLoss).slice(0, 10)
 
+  const accuracy = accuracyMoves ? Math.round(accuracySum / accuracyMoves) : 100
+
   return {
     gamesAnalyzed: games.length,
     record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
-    byTimeBucket, gamesWithClock,
+    byTimeBucket, gamesWithClock, accuracy,
   }
 }

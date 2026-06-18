@@ -19,6 +19,7 @@ export type Stats = {
   lostPositionMoves: number
   byTimeBucket: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; avgCpLoss: number }>
   gamesWithClock: number
+  accuracy: number
 }
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
 export type AnalyzeResult = { stats: Stats; suggestions: Suggestion[]; meta: { user: string; since: string; depth: number } }

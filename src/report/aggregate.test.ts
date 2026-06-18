@@ -15,6 +15,19 @@ describe('familyOf', () => {
   })
 })
 
+describe('aggregate — accuracy', () => {
+  it('is 100 when moves match the eval (no win% drop)', () => {
+    const g = game({ moves: [mv({}), mv({})] })
+    expect(aggregate([g]).accuracy).toBe(100)
+  })
+  it('drops sharply on a move that loses a lot of win%', () => {
+    const g = game({
+      moves: [mv({ severity: 'blunder', cpLoss: 800, evalBefore: { cp: 200, mate: null }, evalAfterPlayed: { cp: 600, mate: null } })],
+    })
+    expect(aggregate([g]).accuracy).toBeLessThan(80)
+  })
+})
+
 describe('aggregate — opening grouping', () => {
   const sicilian = (name: string, eco: string): GameAnalysis => ({
     gameId: name, url: name, playedAt: '2026-01-01T00:00:00.000Z',
