@@ -19,6 +19,8 @@ type AnalyzeOpts = {
   // Optional pool of evaluators (one per engine) for parallel game analysis.
   // Defaults to [evaluate] → concurrency 1, preserving single-engine behavior.
   evaluators?: Evaluator[]
+  // Group openings by specific variation instead of by family (default: family).
+  variations?: boolean
 }
 
 export type AnalyzeResult = {
@@ -63,7 +65,7 @@ export async function analyze(
 
   await Promise.all(evaluators.slice(0, Math.max(1, total)).map((e) => worker(e)))
 
-  const stats = aggregate(analyses)
+  const stats = aggregate(analyses, { variations: opts.variations })
   const suggestions = coach(stats)
   return { stats, suggestions, meta: { user: opts.user, since: opts.since, depth: opts.depth } }
 }

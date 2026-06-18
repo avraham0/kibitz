@@ -1,17 +1,18 @@
 import { useState, type FormEvent } from 'react'
 
-export type FormParams = { user: string; last?: string; depth?: string; since?: string }
+export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean }
 
 export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) => void; disabled: boolean }) {
   const [user, setUser] = useState('')
   const [last, setLast] = useState('10')
   const [depth, setDepth] = useState('15')
   const [since, setSince] = useState('')
+  const [variations, setVariations] = useState(false)
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: since || undefined })
+    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: since || undefined, variations })
   }
 
   return (
@@ -20,6 +21,9 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
       <label>last N<br /><input value={last} onChange={(e) => setLast(e.target.value)} style={{ width: 60 }} /></label>
       <label>depth<br /><input value={depth} onChange={(e) => setDepth(e.target.value)} style={{ width: 60 }} /></label>
       <label>since (YYYY-MM)<br /><input value={since} onChange={(e) => setSince(e.target.value)} style={{ width: 100 }} /></label>
+      <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        <input type="checkbox" checked={variations} onChange={(e) => setVariations(e.target.checked)} /> split variations
+      </label>
       <button type="submit" disabled={disabled || !user.trim()}>Analyze</button>
     </form>
   )

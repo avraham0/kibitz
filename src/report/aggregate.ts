@@ -20,6 +20,21 @@ function clockBucket(sec: number): TimeBucket {
 
 type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
 
+// Words that end an opening "family" name. "Sicilian Defense Najdorf Variation"
+// → family "Sicilian Defense"; "Queens Gambit Declined ..." → "Queens Gambit".
+const FAMILY_HEADS = ['Defense', 'Defence', 'Game', 'Opening', 'Gambit', 'System', 'Attack']
+
+export function familyOf(name: string): string {
+  if (!name || name === 'Unknown') return name || 'Unknown'
+  const words = name.split(/\s+/)
+  for (let i = 0; i < words.length; i++) {
+    const bare = words[i].replace(/[^A-Za-z-]/g, '')
+    if (FAMILY_HEADS.includes(bare)) return words.slice(0, i + 1).join(' ')
+  }
+  // No family-head keyword (e.g. "Ruy Lopez") → first two words.
+  return words.slice(0, 2).join(' ')
+}
+
 export type Stats = {
   gamesAnalyzed: number
   record: { wins: number; losses: number; draws: number }
@@ -38,7 +53,10 @@ const TYPES: CoachableMistakeType[] = [
   'fork', 'pin', 'skewer', 'discovered_attack', 'trapped_piece', 'back_rank',
 ]
 
-export function aggregate(games: GameAnalysis[]): Stats {
+export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }): Stats {
+  // By default, group openings by family (all Sicilian lines together). With
+  // `variations: true`, keep each specific line separate (and show its ECO).
+  const byVariation = opts?.variations === true
   const record = { wins: 0, losses: 0, draws: 0 }
   const byPhase: Record<Phase, number> = { opening: 0, middlegame: 0, endgame: 0 }
   const typeAcc: Record<string, { count: number; sum: number; missed: number; allowed: number }> =
@@ -56,8 +74,9 @@ export function aggregate(games: GameAnalysis[]): Stats {
     else if (g.result === 'loss') record.losses++
     else record.draws++
 
-    const key = g.eco + '|' + g.openingName
-    const o = openingMap.get(key) ?? { eco: g.eco, name: g.openingName, games: 0, wins: 0, mistakes: 0 }
+    const groupName = byVariation ? g.openingName : familyOf(g.openingName)
+    const key = byVariation ? g.eco + '|' + g.openingName : groupName
+    const o = openingMap.get(key) ?? { eco: byVariation ? g.eco : '', name: groupName, games: 0, wins: 0, mistakes: 0 }
     o.games++
     if (g.result === 'win') o.wins++
 

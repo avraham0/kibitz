@@ -1,6 +1,40 @@
 import { describe, it, expect } from 'vitest'
-import { aggregate } from './aggregate.js'
+import { aggregate, familyOf } from './aggregate.js'
 import type { GameAnalysis, MoveAnalysis } from '../types.js'
+
+describe('familyOf', () => {
+  it('cuts a variation down to its family head', () => {
+    expect(familyOf('Sicilian Defense Najdorf Variation')).toBe('Sicilian Defense')
+    expect(familyOf('Queens Gambit Declined Exchange')).toBe('Queens Gambit')
+    expect(familyOf('Four Knights Game Italian Variation')).toBe('Four Knights Game')
+  })
+  it('keeps whole-name families and falls back for keyword-less names', () => {
+    expect(familyOf('Italian Game')).toBe('Italian Game')
+    expect(familyOf('Ruy Lopez')).toBe('Ruy Lopez')
+    expect(familyOf('Unknown')).toBe('Unknown')
+  })
+})
+
+describe('aggregate — opening grouping', () => {
+  const sicilian = (name: string, eco: string): GameAnalysis => ({
+    gameId: name, url: name, playedAt: '2026-01-01T00:00:00.000Z',
+    color: 'white', result: 'loss', eco, openingName: name, depth: 15, moves: [],
+  })
+  const games = [
+    sicilian('Sicilian Defense Najdorf Variation', 'B90'),
+    sicilian('Sicilian Defense Dragon Variation', 'B70'),
+  ]
+  it('groups variations into one family row by default', () => {
+    const s = aggregate(games)
+    expect(s.openings).toHaveLength(1)
+    expect(s.openings[0]).toMatchObject({ name: 'Sicilian Defense', games: 2, eco: '' })
+  })
+  it('keeps lines separate with { variations: true }', () => {
+    const s = aggregate(games, { variations: true })
+    expect(s.openings).toHaveLength(2)
+    expect(s.openings.map((o) => o.eco).sort()).toEqual(['B70', 'B90'])
+  })
+})
 
 function mv(p: Partial<MoveAnalysis>): MoveAnalysis {
   return {
@@ -35,7 +69,7 @@ describe('aggregate', () => {
     expect(s.byPhase.endgame).toBe(1)
     expect(s.byType.hung_piece.count).toBe(2)
     expect(s.byType.hung_piece.avgCpLoss).toBe(275)
-    expect(s.openings[0]).toMatchObject({ eco: 'C50', games: 1, wins: 0 })
+    expect(s.openings[0]).toMatchObject({ name: 'Italian', games: 1, wins: 0 })
     expect(s.topBlunders[0].cpLoss).toBe(400) // only player blunders
     expect(s.topBlunders.every((b) => b.cpLoss >= 300)).toBe(true)
   })

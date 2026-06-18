@@ -15,11 +15,12 @@ async function main() {
       depth: { type: 'string', default: '15' },
       out: { type: 'string' },
       concurrency: { type: 'string' },
+      variations: { type: 'boolean' },
     },
   })
 
   if (!values.user) {
-    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--out report.md]')
+    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--out report.md]')
     process.exit(2)
   }
 
@@ -37,6 +38,7 @@ async function main() {
       user: values.user, since, depth, last, nowISO,
       evaluate: pool.evaluators[0],
       evaluators: pool.evaluators,
+      variations: values.variations === true,
       fetchFn: realFetch,
     })
     console.log(out.terminal)
