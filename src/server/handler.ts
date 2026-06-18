@@ -5,7 +5,7 @@ import { writeSse } from './sse.js'
 import { defaultSince, type AnalyzeResult } from '../orchestrate.js'
 
 type AnalyzeFn = (
-  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean },
+  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean; timeControl?: string },
   onProgress: (done: number, total: number) => void,
 ) => Promise<AnalyzeResult>
 
@@ -57,8 +57,9 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
     const lastParam = url.searchParams.get('last')
     const last = lastParam ? Number(lastParam) : undefined
     const variations = url.searchParams.get('variations') === '1'
+    const timeControl = url.searchParams.get('timeControl') ?? undefined
     const result = await deps.analyze(
-      { user, since, depth, last, nowISO, variations },
+      { user, since, depth, last, nowISO, variations, timeControl },
       (done, total) => writeSse(write, 'progress', { done, total }),
     )
     writeSse(write, 'result', result)

@@ -16,11 +16,12 @@ async function main() {
       out: { type: 'string' },
       concurrency: { type: 'string' },
       variations: { type: 'boolean' },
+      'time-control': { type: 'string' },
     },
   })
 
   if (!values.user) {
-    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--out report.md]')
+    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--time-control blitz] [--out report.md]')
     process.exit(2)
   }
 
@@ -39,6 +40,7 @@ async function main() {
       evaluate: pool.evaluators[0],
       evaluators: pool.evaluators,
       variations: values.variations === true,
+      timeControl: values['time-control'],
       fetchFn: realFetch,
     })
     console.log(out.terminal)

@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
-import type { BlunderRef } from '../api-types.js'
+import type { BlunderRef, MistakeType } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 
@@ -9,11 +10,22 @@ function analysisLink(fen: string): string {
 }
 
 export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
+  const [filter, setFilter] = useState<'all' | MistakeType>('all')
+  const types = Array.from(new Set(blunders.map((b) => b.type)))
+  const shown = filter === 'all' ? blunders : blunders.filter((b) => b.type === filter)
   return (
     <section>
       <h2>Top blunders</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        {blunders.map((b, i) => {
+      <label>filter by type:{' '}
+        <select value={filter} onChange={(e) => setFilter(e.target.value as 'all' | MistakeType)}>
+          <option value="all">all ({blunders.length})</option>
+          {types.map((t) => (
+            <option key={t} value={t}>{t} ({blunders.filter((b) => b.type === t).length})</option>
+          ))}
+        </select>
+      </label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
+        {shown.map((b, i) => {
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)
           const arrows: Arrow[] = []
