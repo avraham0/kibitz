@@ -3,7 +3,7 @@ import type { OpeningStat, GameSummary } from '../api-types.js'
 import { accuracyColor } from '../accuracyColor.js'
 
 // Recurring mistakes + game list for the games in one opening (grouped by ECO).
-function OpeningDetail({ games }: { games: GameSummary[] }) {
+function OpeningDetail({ games, onOpenGame }: { games: GameSummary[]; onOpenGame?: (id: string) => void }) {
   const tally: Record<string, number> = {}
   for (const g of games) {
     for (const m of g.moves) {
@@ -19,7 +19,7 @@ function OpeningDetail({ games }: { games: GameSummary[] }) {
           : <span style={{ color: 'var(--muted)' }}>No mistakes recorded in this opening.</span>}
       </div>
       <table>
-        <thead><tr><th>date</th><th>color</th><th>result</th><th>accuracy</th></tr></thead>
+        <thead><tr><th>date</th><th>color</th><th>result</th><th>accuracy</th><th></th></tr></thead>
         <tbody>
           {games.map((g, i) => (
             <tr key={i}>
@@ -27,6 +27,7 @@ function OpeningDetail({ games }: { games: GameSummary[] }) {
               <td>{g.color}</td>
               <td>{g.result}</td>
               <td style={{ color: accuracyColor(g.accuracy), fontWeight: 600 }}>{g.accuracy}%</td>
+              <td>{onOpenGame && <button type="button" onClick={() => onOpenGame(g.gameId)}>review ›</button>}</td>
             </tr>
           ))}
         </tbody>
@@ -35,7 +36,7 @@ function OpeningDetail({ games }: { games: GameSummary[] }) {
   )
 }
 
-export function OpeningsTable({ openings, games = [] }: { openings: OpeningStat[]; games?: GameSummary[] }) {
+export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: OpeningStat[]; games?: GameSummary[]; onOpenGame?: (id: string) => void }) {
   const [open, setOpen] = useState<number | null>(null)
   return (
     <section>
@@ -54,7 +55,7 @@ export function OpeningsTable({ openings, games = [] }: { openings: OpeningStat[
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={6}><OpeningDetail games={games.filter((g) => g.eco === o.eco)} /></td>
+                    <td colSpan={6}><OpeningDetail games={games.filter((g) => g.eco === o.eco)} onOpenGame={onOpenGame} /></td>
                   </tr>
                 )}
               </Fragment>

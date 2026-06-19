@@ -17,6 +17,13 @@ type Tab = 'overview' | 'blunders' | 'review'
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
   const [tab, setTab] = useState<Tab>('overview')
+  // Which game to focus in Game Review; `seq` bumps each request so re-clicking the
+  // same game still triggers the jump.
+  const [focus, setFocus] = useState<{ id: string; seq: number } | null>(null)
+  function openGame(id: string) {
+    setFocus((f) => ({ id, seq: (f?.seq ?? 0) + 1 }))
+    setTab('review')
+  }
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'blunders', label: 'Blunders & puzzles' },
@@ -41,12 +48,12 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           <PhaseChart stats={stats} />
           <TimePressureChart stats={stats} />
           <Splits stats={stats} />
-          <OpeningsTable openings={stats.openings} games={games} />
+          <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
           <CoachingCards suggestions={suggestions} />
         </>
       )}
       {tab === 'blunders' && <BlunderList blunders={stats.topBlunders} />}
-      {tab === 'review' && <GameReview games={games} />}
+      {tab === 'review' && <GameReview games={games} focus={focus} />}
     </div>
   )
 }
