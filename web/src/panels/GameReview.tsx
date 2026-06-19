@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
@@ -10,14 +10,35 @@ import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 export function GameReview({ games }: { games: GameSummary[] }) {
   const [gi, setGi] = useState(0)
   const [ply, setPly] = useState(0)
-  if (games.length === 0) return null
+  const g = games.length ? games[Math.min(gi, games.length - 1)] : null
+  const moves = g?.moves ?? []
+  const maxPly = Math.max(0, moves.length - 1)
 
-  const g = games[Math.min(gi, games.length - 1)]
-  const moves = g.moves
-  const idx = Math.min(ply, Math.max(0, moves.length - 1))
+  const prev = useCallback(() => setPly((p) => Math.max(0, p - 1)), [])
+  const next = useCallback(() => setPly((p) => Math.min(maxPly, p + 1)), [maxPly])
+
+  // ← / → step through the game (ignored while a form control is focused).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null
+      if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prev() }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); next() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [prev, next])
+
+  if (!g) return null
+
+  const idx = Math.min(ply, maxPly)
   const cur = moves[idx]
-  const mv = cur ? sanToSquares(cur.fenBefore, cur.san) : null
-  const arrows: Arrow[] = mv ? [[mv.from as Arrow[0], mv.to as Arrow[1], 'rgb(90,140,220)']] : []
+  const isMistake = !!cur && cur.isPlayerMove && cur.severity !== 'ok'
+  const playedMv = cur ? sanToSquares(cur.fenBefore, cur.san) : null
+  const bestMv = isMistake && cur ? sanToSquares(cur.fenBefore, cur.bestSan) : null
+  const arrows: Arrow[] = []
+  if (playedMv) arrows.push([playedMv.from as Arrow[0], playedMv.to as Arrow[1], isMistake ? 'rgb(200,80,80)' : 'rgb(90,140,220)'])
+  if (bestMv) arrows.push([bestMv.from as Arrow[0], bestMv.to as Arrow[1], 'rgb(80,160,80)'])
   const data = moves.map((m) => ({ ply: m.ply, eval: m.evalCp }))
 
   function pick(i: number) { setGi(i); setPly(0) }
@@ -49,11 +70,17 @@ export function GameReview({ games }: { games: GameSummary[] }) {
               />
             )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
-              <button type="button" onClick={() => setPly((p) => Math.max(0, p - 1))} disabled={idx === 0}>‹ prev</button>
+              <button type="button" onClick={prev} disabled={idx === 0}>‹ prev</button>
               <span style={{ fontSize: 13 }}>
-                move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san}{cur && cur.cpLoss >= 50 ? ` · −${cur.cpLoss}cp` : ''}
+                move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san}
+                {isMistake && cur && (
+                  <span style={{ color: 'rgb(224,121,107)' }}>
+                    {' '}· {cur.severity} −{cur.cpLoss}cp · {cur.type} · best {cur.bestSan}
+                  </span>
+                )}
               </span>
-              <button type="button" onClick={() => setPly((p) => Math.min(moves.length - 1, p + 1))} disabled={idx >= moves.length - 1}>next ›</button>
+              <button type="button" onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step</span>
             </div>
           </div>
           <LineChart width={420} height={240} data={data}>

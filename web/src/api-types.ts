@@ -22,7 +22,11 @@ export type Stats = {
   accuracy: number
 }
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
-export type GameMove = { ply: number; san: string; evalCp: number; cpLoss: number; isPlayerMove: boolean; fenBefore: string }
+export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
+export type GameMove = {
+  ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
+  isPlayerMove: boolean; severity: Severity; type: MistakeType; fenBefore: string
+}
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
   result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; accuracy: number

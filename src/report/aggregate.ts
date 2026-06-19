@@ -61,7 +61,8 @@ const TYPES: CoachableMistakeType[] = [
 ]
 
 export type GameMove = {
-  ply: number; san: string; evalCp: number; cpLoss: number; isPlayerMove: boolean; fenBefore: string
+  ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
+  isPlayerMove: boolean; severity: MoveAnalysis['severity']; type: MistakeType; fenBefore: string
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
@@ -83,7 +84,8 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
         accN++
       }
       return {
-        ply: m.ply, san: m.san, cpLoss: m.cpLoss, isPlayerMove: m.isPlayerMove, fenBefore: m.fenBefore,
+        ply: m.ply, san: m.san, bestSan: m.bestSan, cpLoss: m.cpLoss, isPlayerMove: m.isPlayerMove,
+        severity: m.severity, type: m.type, fenBefore: m.fenBefore,
         evalCp: Math.max(-1500, Math.min(1500, whitePov)),
       }
     })
