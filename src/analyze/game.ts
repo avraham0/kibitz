@@ -66,7 +66,10 @@ export async function analyzeGame(
     let afterPv: string[] | null = null
     if (playedIsBest) {
       cpLoss = 0
-      evalAfterPlayed = before.eval
+      // After the (best) move it's the opponent to move, so evalAfterPlayed is stored
+      // from the opponent's POV — the negation of the player-POV eval before. (Report
+      // code also tolerates the legacy `=== before.eval` form from older caches.)
+      evalAfterPlayed = { cp: before.eval.cp === null ? null : -before.eval.cp, mate: before.eval.mate === null ? null : -before.eval.mate }
     } else {
       const chess = new Chess(rm.fenBefore)
       chess.move(rm.san)
