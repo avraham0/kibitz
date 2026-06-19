@@ -154,7 +154,6 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
         </select>
       </label>
       <span style={{ marginLeft: 10, fontWeight: 600, color: accuracyColor(g.accuracy) }}>Accuracy {g.accuracy}%</span>
-      <span style={{ marginLeft: 6, fontSize: 12, color: 'var(--muted)' }}>(≈ {g.accuracyStrict}% chess.com-est)</span>
       {g.url && <a style={{ marginLeft: 10 }} href={g.url} target="_blank" rel="noreferrer">open on chess.com ↗</a>}
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>

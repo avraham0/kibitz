@@ -29,11 +29,11 @@ function stdev(xs: number[]): number {
   return Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length)
 }
 
-// Blend a volatility-weighted mean with a harmonic mean of per-move accuracies
-// (lichess method). The harmonic term makes a single blunder weigh heavily, so a
-// lost game scores well below its average move quality — closer to how chess.com /
-// lichess report accuracy. `wins` are the player-POV win% before each move, used to
-// weight by local volatility (mistakes in sharp positions count more).
+// Volatility-weighted mean of per-move accuracies: moves in sharp positions (where the
+// win% swings) count more, so mistakes in critical moments matter without one blunder
+// collapsing the whole game (which a harmonic mean does — far below chess.com). `wins`
+// are the player-POV win% before each move. The weight cap is deliberately modest so
+// the number tracks chess.com rather than over-punishing.
 export function blendAccuracy(accs: number[], wins: number[]): number {
   const n = accs.length
   if (n === 0) return 100
@@ -42,13 +42,11 @@ export function blendAccuracy(accs: number[], wins: number[]): number {
   let wTot = 0
   for (let i = 0; i < n; i++) {
     const window = wins.slice(Math.max(0, i - windowSize + 1), i + 1)
-    const weight = Math.min(12, Math.max(0.5, stdev(window)))
+    const weight = Math.min(6, Math.max(0.5, stdev(window)))
     wSum += accs[i] * weight
     wTot += weight
   }
-  const weighted = wSum / wTot
-  const harmonic = n / accs.reduce((a, b) => a + 1 / Math.max(b, 1), 0)
-  return Math.max(0, Math.min(100, Math.round((weighted + harmonic) / 2)))
+  return Math.max(0, Math.min(100, Math.round(wSum / wTot)))
 }
 
 // Accuracy (0–100) over a list of the player's moves. Includes moves made in losing
