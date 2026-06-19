@@ -7,21 +7,25 @@ type Explainable = Pick<BlunderRef, 'san' | 'bestSan' | 'cpLoss' | 'type' | 'mis
 const PIECE_NAME: Record<string, string> = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
 const PIECE_VAL: Record<string, number> = { q: 9, r: 5, b: 3, n: 3, p: 1 }
 
-// Name the most valuable piece the opponent can capture right after the move. The
-// engine already verified (type === 'hung_piece') that it's genuinely hanging, so
-// the most-valuable capturable piece is the one that was dropped.
-function hungPieceName(fenBefore: string, san: string): string | null {
+// Did the move directly hang material? Largest favourable capture the opponent has
+// right after it (victim value minus the recapturing piece if the square is defended)
+// — the same simplified-SEE check the engine uses. Returns the dropped piece, if any.
+// This is the truth of "you hung your queen", independent of any motif the engine
+// happened to see in the best line.
+function hangingAfter(fenBefore: string, san: string): { piece: string } | null {
   try {
     const c = new Chess(fenBefore)
     c.move(san)
-    let best: string | null = null
-    let bestVal = 0
-    for (const m of c.moves({ verbose: true }) as Array<{ captured?: string }>) {
+    const recapturer = c.turn() === 'w' ? 'b' : 'w' // we recapture; opponent is to move
+    let best: { piece: string; value: number } | null = null
+    for (const m of c.moves({ verbose: true }) as Array<{ captured?: string; to: string; piece: string }>) {
       if (!m.captured) continue
-      const v = PIECE_VAL[m.captured] ?? 0
-      if (v > bestVal) { bestVal = v; best = m.captured }
+      const victim = PIECE_VAL[m.captured] ?? 0
+      const defenders = (c as unknown as { attackers?: (sq: string, color: string) => string[] }).attackers?.(m.to, recapturer)
+      const gain = defenders && defenders.length ? victim - (PIECE_VAL[m.piece] ?? 0) : victim
+      if (gain >= 2 && (!best || victim > best.value)) best = { piece: m.captured, value: victim }
     }
-    return best && bestVal >= 3 ? PIECE_NAME[best] : null
+    return best ? { piece: best.piece } : null
   } catch {
     return null
   }
@@ -33,18 +37,18 @@ function hungPieceName(fenBefore: string, san: string): string | null {
 export function explainBlunder(b: Explainable): string {
   const best = b.bestSan
   const pawns = (b.cpLoss / 100).toFixed(1)
+
+  // A direct material hang is the headline, whatever the engine's best line contained.
+  const hung = hangingAfter(b.fenBefore, b.san)
+  if (hung) return `${b.san} left your ${PIECE_NAME[hung.piece] ?? 'piece'} hanging — about ${pawns} pawns. ${best} kept it safe.`
   const tactic = (name: string) =>
     b.missed
       ? `Missed a ${name} — ${best} won material.`
       : `Allowed a ${name}: after ${b.san} the opponent gets it. ${best} prevented it.`
 
   switch (b.type) {
-    case 'hung_piece': {
-      const piece = hungPieceName(b.fenBefore, b.san)
-      return piece
-        ? `${b.san} left your ${piece} hanging (~${pawns} pawns). ${best} kept it safe.`
-        : `${b.san} left a piece undefended (hung ~${pawns} pawns). ${best} kept it safe.`
-    }
+    case 'hung_piece':
+      return `${b.san} left a piece undefended (hung ~${pawns} pawns). ${best} kept it safe.`
     case 'fork': return tactic('fork')
     case 'pin': return tactic('pin')
     case 'skewer': return tactic('skewer')

@@ -135,12 +135,14 @@ export async function analyzeGame(
       const allowedHit = afterPv ? detectMotif(fenAfter, afterPv) : null
       const hungAfter = fenAfter ? maxHangingGain(fenAfter) : 0 // material the opponent can now grab
       const missedHit = playedDiffersFromBest ? detectMotif(rm.fenBefore, before.pv) : null
-      if (allowedHit) {
-        missed = false
-        type = allowedHit.motif
-      } else if (hungAfter >= 200) {
+      if (hungAfter >= 200) {
+        // Directly droppable material is a hang — not whatever motif the refutation
+        // line happens to contain (a queen capture isn't a "pin").
         missed = false
         type = 'hung_piece'
+      } else if (allowedHit) {
+        missed = false
+        type = allowedHit.motif
       } else if (missedHit) {
         missed = true
         type = missedHit.motif
