@@ -5,14 +5,23 @@ type Status = 'idle' | 'running' | 'done' | 'error'
 type StartParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string }
 
 // Persist the last result so a browser refresh doesn't lose the analysis.
+// The payload is versioned so a result saved by an older build (different shape) is
+// discarded instead of rendered with missing fields. Bump on AnalyzeResult changes.
 const STORAGE_KEY = 'chess-coach:lastResult'
+const STORAGE_VERSION = 2
 function loadStored(): AnalyzeResult | null {
   try {
-    const s = localStorage.getItem(STORAGE_KEY)
-    return s ? (JSON.parse(s) as AnalyzeResult) : null
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { v?: number; result?: AnalyzeResult }
+    if (parsed?.v !== STORAGE_VERSION || !parsed.result) return null
+    return parsed.result
   } catch {
     return null
   }
+}
+function saveStored(result: AnalyzeResult): void {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: STORAGE_VERSION, result })) } catch { /* quota / unavailable */ }
 }
 
 export function useAnalyzeStream() {
@@ -37,10 +46,11 @@ export function useAnalyzeStream() {
     esRef.current = es
     es.addEventListener('progress', (e: MessageEvent) => setProgress(JSON.parse(e.data)))
     es.addEventListener('result', (e: MessageEvent) => {
-      setResult(JSON.parse(e.data))
+      const r = JSON.parse(e.data) as AnalyzeResult
+      setResult(r)
       setStatus('done')
       es.close()
-      try { localStorage.setItem(STORAGE_KEY, e.data) } catch { /* quota / unavailable — skip */ }
+      saveStored(r)
     })
     es.addEventListener('error', (e: MessageEvent) => {
       // SSE 'error' with data = our app error; without data = transport error
