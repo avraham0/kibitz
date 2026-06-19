@@ -1,6 +1,19 @@
 import type { GameAnalysis, MistakeType, Phase, Color } from '../types.js'
 import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
-import type { MoveAnalysis } from '../types.js'
+import type { MoveAnalysis, Eval } from '../types.js'
+
+function sameEval(a: Eval, b: Eval): boolean {
+  return a.cp === b.cp && a.mate === b.mate
+}
+
+// Player win% AFTER their move. Best-move plies skip the after-search and store
+// evalAfterPlayed === evalBefore (player POV) — those have no win% change. For all
+// other moves evalAfterPlayed is from the opponent's POV, so negate to the player's.
+function playerWinAfter(m: MoveAnalysis): number {
+  return sameEval(m.evalAfterPlayed, m.evalBefore)
+    ? winPct(cpFromMoverPov(m.evalBefore))
+    : winPct(-cpFromMoverPov(m.evalAfterPlayed))
+}
 
 // A player move counts as "already losing" (excluded from mistakes) when the best
 // available eval before it was already worse than the threshold. Computed from the
@@ -91,7 +104,7 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
       const moverPov = cpFromMoverPov(m.evalBefore)
       const whitePov = m.fenBefore.split(' ')[1] === 'w' ? moverPov : -moverPov
       if (m.isPlayerMove && !isLostPosition(m)) {
-        accSum += moveAccuracy(winPct(moverPov), winPct(-cpFromMoverPov(m.evalAfterPlayed)))
+        accSum += moveAccuracy(winPct(moverPov), playerWinAfter(m))
         accN++
       }
       return {
@@ -173,7 +186,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       }
       // Accuracy over every real decision (including good moves), not just mistakes.
       const winBefore = winPct(cpFromMoverPov(m.evalBefore))
-      const winAfter = winPct(-cpFromMoverPov(m.evalAfterPlayed))
+      const winAfter = playerWinAfter(m)
       const acc = moveAccuracy(winBefore, winAfter)
       accuracySum += acc
       accuracyMoves++

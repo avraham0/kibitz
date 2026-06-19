@@ -33,6 +33,19 @@ describe('aggregate — accuracy', () => {
     })
     expect(aggregate([g]).accuracy).toBeLessThan(80)
   })
+  it('scores a best move ~100% even in a non-equal position (no after-search)', () => {
+    // Best-move plies store evalAfterPlayed === evalBefore; this must read as no
+    // win% drop, not a collapse. A +250 position with a best move ⇒ ~100% accuracy.
+    const winning = { cp: 250, mate: null }
+    const g = game({ moves: [mv({ isPlayerMove: true, evalBefore: winning, evalAfterPlayed: winning, cpLoss: 0, severity: 'ok' })] })
+    expect(aggregate([g]).accuracy).toBeGreaterThanOrEqual(99)
+  })
+
+  it('handles the corrected (negated) evalAfterPlayed form too', () => {
+    const g = game({ moves: [mv({ isPlayerMove: true, evalBefore: { cp: 250, mate: null }, evalAfterPlayed: { cp: -250, mate: null }, cpLoss: 0, severity: 'ok' })] })
+    expect(aggregate([g]).accuracy).toBeGreaterThanOrEqual(99)
+  })
+
   it('reports accuracy per phase, defaulting to 100 for phases with no decisions', () => {
     const g = game({
       moves: [
