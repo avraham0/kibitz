@@ -191,9 +191,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                 </div>
               )}
               {g.turningPointIdx != null && (
-                <div style={{ fontSize: 13 }}>
+                <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                   <button type="button" onClick={() => setPly(g.turningPointIdx!)}>⚠ jump to turning point</button>
-                  <span style={{ color: 'var(--muted)' }}> — where the game slipped away</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>where the game slipped away</span>
                 </div>
               )}
               {/* Always reserve this line so the column height (and the move-list
