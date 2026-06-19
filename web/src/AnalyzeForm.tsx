@@ -21,7 +21,11 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
 
   return (
     <form onSubmit={submit} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'end' }}>
-      <label>chess.com username<br /><input value={user} onChange={(e) => setUser(e.target.value)} placeholder="username" required /></label>
+      <label>chess.com username<br /><input
+        value={user} onChange={(e) => setUser(e.target.value)} placeholder="username" required
+        name="chesscomHandle" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+        data-1p-ignore="true" data-lpignore="true" data-form-type="other"
+      /></label>
       <label>last N<br /><input value={last} onChange={(e) => setLast(e.target.value)} style={{ width: 60 }} /></label>
       <label>depth<br /><input value={depth} onChange={(e) => setDepth(e.target.value)} style={{ width: 60 }} /></label>
       <label>range<br />
