@@ -43,7 +43,7 @@ export function KibitzLogo() {
         <span style={{ fontSize: 30, fontWeight: 750, letterSpacing: '-0.02em' }}>
           kib<span style={{ color: '#7bc47f' }}>i</span>tz
         </span>
-        <span style={{ fontSize: 12, color: 'var(--muted)' }}>see your game like a master would</span>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>Always watching. Always reviewing.</span>
       </div>
     </div>
   )
