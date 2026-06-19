@@ -13,6 +13,7 @@ function analysisLink(fen: string): string {
 export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
   const [filter, setFilter] = useState<'all' | MistakeType>('all')
   const [mode, setMode] = useState<'review' | 'solve'>('review')
+  const [solved, setSolved] = useState(0)
   const types = Array.from(new Set(blunders.map((b) => b.type)))
   const shown = filter === 'all' ? blunders : blunders.filter((b) => b.type === filter)
   return (
@@ -20,7 +21,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
       <h2>Top blunders</h2>
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <label>filter by type:{' '}
-          <select value={filter} onChange={(e) => setFilter(e.target.value as 'all' | MistakeType)}>
+          <select value={filter} onChange={(e) => { setFilter(e.target.value as 'all' | MistakeType); setSolved(0) }}>
             <option value="all">all ({blunders.length})</option>
             {types.map((t) => (
               <option key={t} value={t}>{t} ({blunders.filter((b) => b.type === t).length})</option>
@@ -28,15 +29,16 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           </select>
         </label>
         <label>mode:{' '}
-          <select value={mode} onChange={(e) => setMode(e.target.value as 'review' | 'solve')}>
+          <select value={mode} onChange={(e) => { setMode(e.target.value as 'review' | 'solve'); setSolved(0) }}>
             <option value="review">review (show answer)</option>
             <option value="solve">solve (puzzle)</option>
           </select>
         </label>
+        {mode === 'solve' && <span style={{ color: 'var(--muted)' }}>Solved {solved} / {shown.length}</span>}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
         {shown.map((b, i) => {
-          if (mode === 'solve') return <PuzzleBoard key={i} blunder={b} />
+          if (mode === 'solve') return <PuzzleBoard key={i} blunder={b} onSolve={() => setSolved((c) => c + 1)} />
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)
           const arrows: Arrow[] = []
