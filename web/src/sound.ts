@@ -27,32 +27,53 @@ export function soundForSan(san: string): MoveSound {
   return 'move'
 }
 
-const PARAMS: Record<MoveSound, { freq: number; vol: number }> = {
-  move: { freq: 900, vol: 0.45 },
-  capture: { freq: 480, vol: 0.7 },
-  check: { freq: 1500, vol: 0.6 },
-  castle: { freq: 700, vol: 0.5 },
+// A piece placement is a low "thunk" (a quickly-damped pitch that glides down)
+// with a soft, brief noise click for the attack. Low body frequencies and a
+// gentle low-pass on the click keep it wooden rather than tinny/metallic.
+const PARAMS: Record<MoveSound, { body: number; decay: number; click: number; vol: number }> = {
+  move: { body: 210, decay: 0.13, click: 0.08, vol: 0.5 },
+  capture: { body: 150, decay: 0.16, click: 0.16, vol: 0.7 },
+  check: { body: 300, decay: 0.12, click: 0.10, vol: 0.6 },
+  castle: { body: 190, decay: 0.14, click: 0.08, vol: 0.5 },
 }
 
 export function playMoveSound(kind: MoveSound): void {
   const ac = audio()
   if (!ac) return
   if (ac.state === 'suspended') void ac.resume() // unlock after the user's first gesture
-  const now = ac.currentTime
-  const dur = 0.09
+  const t = ac.currentTime
+  const p = PARAMS[kind]
+
+  const master = ac.createGain()
+  master.gain.value = p.vol
+  master.connect(ac.destination)
+
+  // Body: a triangle "thunk" that glides down in pitch and decays fast.
+  const osc = ac.createOscillator()
+  osc.type = 'triangle'
+  osc.frequency.setValueAtTime(p.body * 1.6, t)
+  osc.frequency.exponentialRampToValueAtTime(p.body, t + 0.03)
+  const bodyGain = ac.createGain()
+  bodyGain.gain.setValueAtTime(0.0001, t)
+  bodyGain.gain.exponentialRampToValueAtTime(1, t + 0.004) // fast attack, no click discontinuity
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + p.decay)
+  osc.connect(bodyGain); bodyGain.connect(master)
+  osc.start(t); osc.stop(t + p.decay + 0.02)
+
+  // Click transient: a very short, low-passed noise burst for the attack snap.
+  const dur = 0.018
   const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate)
   const data = buf.getChannelData(0)
   for (let i = 0; i < data.length; i++) {
-    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2) // decaying noise
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2)
   }
-  const src = ac.createBufferSource()
-  src.buffer = buf
+  const noise = ac.createBufferSource()
+  noise.buffer = buf
   const lp = ac.createBiquadFilter()
   lp.type = 'lowpass'
-  lp.frequency.value = PARAMS[kind].freq
-  const gain = ac.createGain()
-  gain.gain.setValueAtTime(PARAMS[kind].vol, now)
-  gain.gain.exponentialRampToValueAtTime(0.001, now + dur)
-  src.connect(lp); lp.connect(gain); gain.connect(ac.destination)
-  src.start(now); src.stop(now + dur)
+  lp.frequency.value = 2600
+  const clickGain = ac.createGain()
+  clickGain.gain.value = p.click
+  noise.connect(lp); lp.connect(clickGain); clickGain.connect(master)
+  noise.start(t); noise.stop(t + dur)
 }
