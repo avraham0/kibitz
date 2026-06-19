@@ -23,6 +23,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
   const [mode, setMode] = useState<'review' | 'solve'>('review')
   const [solved, setSolved] = useState(0)
   const [cur, setCur] = useState(0)
+  const [visible, setVisible] = useState(10) // review grid shows 10 at a time
   const [srs, setSrs] = useState<SrsStore>(() => loadSrs())
   // Used to order the solve queue without re-sorting it every time a result lands.
   const srsRef = useRef(srs)
@@ -46,7 +47,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
   }
 
   // Reset solve progress whenever the puzzle set changes.
-  function reset() { setSolved(0); setCur(0) }
+  function reset() { setSolved(0); setCur(0); setVisible(10) }
 
   return (
     <section>
@@ -91,7 +92,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
         })()
       ) : (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
-        {shown.map((b, i) => {
+        {shown.slice(0, visible).map((b, i) => {
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)
           const arrows: Arrow[] = []
@@ -109,6 +110,11 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           )
         })}
       </div>
+      )}
+      {mode === 'review' && shown.length > visible && (
+        <button type="button" style={{ marginTop: 12 }} onClick={() => setVisible((v) => v + 10)}>
+          Load more ({shown.length - visible} more)
+        </button>
       )}
     </section>
   )

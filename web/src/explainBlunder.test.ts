@@ -11,10 +11,10 @@ describe('explainBlunder', () => {
     expect(explainBlunder(b({ type: 'fork', missed: true }))).toMatch(/Missed a fork/)
     expect(explainBlunder(b({ type: 'fork', missed: false }))).toMatch(/Allowed a fork/)
   })
-  it('explains a hung piece with the best move and cost', () => {
-    const s = explainBlunder(b({ type: 'hung_piece', cpLoss: 400, bestSan: 'Nf3' }))
+  it('explains a hung piece with the best move (no pawn count)', () => {
+    const s = explainBlunder(b({ type: 'hung_piece', bestSan: 'Nf3' }))
     expect(s).toMatch(/undefended/)
     expect(s).toMatch(/Nf3/)
-    expect(s).toMatch(/4\.0 pawns/)
+    expect(s).not.toMatch(/pawns/)
   })
 })

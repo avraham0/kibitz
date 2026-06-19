@@ -253,7 +253,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
     }))
     .sort((a, b) => b.games - a.games)
 
-  const topBlunders = blunders.sort((a, b) => b.cpLoss - a.cpLoss).slice(0, 10)
+  const topBlunders = blunders.sort((a, b) => b.cpLoss - a.cpLoss).slice(0, 50)
 
   const accuracy = accWeightTotal ? Math.round(accWeightedSum / accWeightTotal) : 100
   const accuracyStrict = accWeightTotal ? Math.round(accStrictWeightedSum / accWeightTotal) : 100
