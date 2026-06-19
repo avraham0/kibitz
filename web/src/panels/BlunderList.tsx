@@ -6,6 +6,7 @@ import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 import { PuzzleBoard } from './PuzzleBoard.js'
 import { loadSrs, saveSrs, recordResult, orderByDue, dueCount, isDue, puzzleKey, type SrsStore } from '../puzzleSrs.js'
+import { explainBlunder } from '../explainBlunder.js'
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
@@ -100,8 +101,9 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
             <div key={i} style={{ width: 260 }}>
               <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={260} />
               <div style={{ fontSize: 13 }}>
-                Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp · {b.type}{' '}
+                Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp{' '}
                 <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
+                <div style={{ color: 'var(--muted)', marginTop: 2 }}>{explainBlunder(b)}</div>
               </div>
             </div>
           )
