@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="14" fill="#11151c"/>
-  <text x="32" y="46" text-anchor="middle" font-size="44" fill="#7bc47f"
-    font-family="'Segoe UI Symbol','Apple Symbols','Noto Sans Symbols2','DejaVu Sans',serif">&#9822;</text>
-  <g fill="none" stroke="#e0b15a" stroke-width="2.6" stroke-linecap="round">
-    <circle cx="25" cy="27" r="5.6"/>
-    <circle cx="38" cy="27" r="5.6"/>
-    <path d="M30.6 27 h1.8"/>
-    <path d="M43.6 26 q3.6 -1 4.8 2.3"/>
+  <g transform="translate(6 2) scale(0.82)">
+    <path d="M14 58 L52 58 L52 54 C50 52 47 51 46 49 C55 45 56 33 51 23 C50 19 50 17 47 14 L45 7 L40 13 L35 7 C32 11 29 13 27 17 C22 19 17 24 13 30 L8 37 C7 39 8 41 11 41 L18 41 C22 42 23 46 21 50 C20 53 17 55 16 58 Z" fill="#7bc47f"/>
+    <circle cx="25" cy="25.5" r="1.9" fill="#11151c"/>
+    <g fill="none" stroke="#e0b15a" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="24.5" cy="25.5" r="5.6"/>
+      <circle cx="13.5" cy="30" r="4.8"/>
+      <path d="M18.7 26.6 L18.1 29.2"/>
+      <path d="M30 24.6 Q34.5 21.8 36.5 23.4"/>
+    </g>
   </g>
 </svg>
