@@ -9,8 +9,12 @@ function sanitize(id: string): string {
   return id.replace(/[^a-zA-Z0-9]/g, '_')
 }
 
+// Bump when the per-game analysis output shape or logic changes (so stale caches are
+// re-analyzed instead of served). v2: two-pass depth + reordered mistake classification.
+const ANALYSIS_VERSION = 2
+
 export function cachePath(user: string, gameId: string, depth: number, root = DEFAULT_ROOT): string {
-  return join(root, sanitize(user), `${sanitize(gameId)}-d${depth}.json`)
+  return join(root, sanitize(user), `${sanitize(gameId)}-d${depth}-v${ANALYSIS_VERSION}.json`)
 }
 
 export async function readCached(

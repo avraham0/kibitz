@@ -17,7 +17,7 @@ const sample: GameAnalysis = {
 describe('cache store', () => {
   it('builds a depth-keyed sanitized path', () => {
     const p = cachePath('bob', 'https://chess.com/game/live/42', 15, root)
-    expect(p).toBe(join(root, 'bob', 'https___chess_com_game_live_42-d15.json'))
+    expect(p).toBe(join(root, 'bob', 'https___chess_com_game_live_42-d15-v2.json'))
   })
 
   it('sanitizes path-traversal characters in user', () => {
