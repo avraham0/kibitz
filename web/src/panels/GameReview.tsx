@@ -87,13 +87,13 @@ export function GameReview({ games }: { games: GameSummary[] }) {
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button type="button" onClick={prev} disabled={idx === 0}>‹ prev</button>
-                <button type="button" onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
-                <span style={{ fontSize: 13 }}>
-                  move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san} · {cur?.phase}
-                  {clock && <> · ⏱ {clock}</>}
-                  {timeTrouble && <span style={{ color: 'rgb(224,121,107)' }}> · time trouble</span>}
-                </span>
+                <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={prev} disabled={idx === 0}>‹ prev</button>
+                <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
+              </div>
+              <div style={{ fontSize: 13 }}>
+                move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san} · {cur?.phase}
+                {clock && <> · ⏱ {clock}</>}
+                {timeTrouble && <span style={{ color: 'rgb(224,121,107)' }}> · time trouble</span>}
               </div>
               {mistakeIdxs.length > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
