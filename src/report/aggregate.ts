@@ -18,6 +18,7 @@ function isLostPosition(m: MoveAnalysis): boolean {
 export type BlunderRef = {
   url: string; ply: number; san: string; bestSan: string
   fenBefore: string; cpLoss: number; type: MistakeType; missed: boolean
+  openingName: string; movesAfter: string[]
 }
 export type OpeningStat = {
   eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number
@@ -181,7 +182,8 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
     let gamePeak = -Infinity
     const gamePlayerMoves: MoveAnalysis[] = []
 
-    for (const m of g.moves) {
+    for (let mi = 0; mi < g.moves.length; mi++) {
+      const m = g.moves[mi]
       // Peak position quality from the player's POV across the whole game.
       const pov = m.isPlayerMove ? cpFromMoverPov(m.evalBefore) : -cpFromMoverPov(m.evalBefore)
       if (pov > gamePeak) gamePeak = pov
@@ -219,6 +221,8 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
         blunders.push({
           url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan,
           fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed,
+          openingName: g.openingName,
+          movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san),
         })
       }
     }

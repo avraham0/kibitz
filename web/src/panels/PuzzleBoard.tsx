@@ -22,11 +22,21 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
         <>
           <div style={{ color: '#6c6', fontWeight: 600 }}>✓ Solved — {blunder.bestSan}</div>
           <div style={{ color: 'var(--muted)', marginTop: 3 }}>{explainBlunder(blunder)}</div>
+          {blunder.movesAfter?.length > 0 && (
+            <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 12 }}>
+              Game continued: {blunder.movesAfter.join(' ')}
+            </div>
+          )}
         </>
       ) : revealed ? (
         <>
           <div>Best was <strong>{blunder.bestSan}</strong></div>
           <div style={{ color: 'var(--muted)', marginTop: 3 }}>{explainBlunder(blunder)}</div>
+          {blunder.movesAfter?.length > 0 && (
+            <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 12 }}>
+              Game continued: {blunder.movesAfter.join(' ')}
+            </div>
+          )}
         </>
       ) : (
         <>

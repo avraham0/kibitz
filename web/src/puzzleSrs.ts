@@ -3,7 +3,7 @@ import type { BlunderRef } from './api-types.js'
 // Spaced-repetition for puzzles. A Leitner-style box per puzzle: a correct solve
 // promotes it to a longer interval; a reveal/fail resets it to "due now". Persisted
 // to localStorage so failed puzzles resurface in later sessions.
-export type SrsRecord = { box: number; due: number } // due = epoch ms
+export type SrsRecord = { box: number; due: number; wrongCount: number } // due = epoch ms
 export type SrsStore = Record<string, SrsRecord>
 
 const DAY = 86_400_000
@@ -22,15 +22,21 @@ export function isDue(store: SrsStore, key: string, now: number): boolean {
 
 // Return a NEW store with the puzzle's box/schedule updated.
 export function recordResult(store: SrsStore, key: string, correct: boolean, now: number): SrsStore {
-  const prevBox = store[key]?.box ?? 0
+  const prev = store[key]
+  const prevBox = prev?.box ?? 0
   const box = correct ? Math.min(MAX_BOX, prevBox + 1) : 0
-  return { ...store, [key]: { box, due: now + INTERVALS[box] } }
+  const wrongCount = correct ? (prev?.wrongCount ?? 0) : (prev?.wrongCount ?? 0) + 1
+  return { ...store, [key]: { box, due: now + INTERVALS[box], wrongCount } }
 }
 
-// Most-overdue (and never-seen) puzzles first; stable for equal due times.
+// Most-overdue first; ties broken by most wrong (hardest) first.
 export function orderByDue(blunders: BlunderRef[], store: SrsStore, now: number): BlunderRef[] {
   void now
-  return [...blunders].sort((a, b) => (store[puzzleKey(a)]?.due ?? 0) - (store[puzzleKey(b)]?.due ?? 0))
+  return [...blunders].sort((a, b) => {
+    const dueDiff = (store[puzzleKey(a)]?.due ?? 0) - (store[puzzleKey(b)]?.due ?? 0)
+    if (dueDiff !== 0) return dueDiff
+    return (store[puzzleKey(b)]?.wrongCount ?? 0) - (store[puzzleKey(a)]?.wrongCount ?? 0)
+  })
 }
 
 export function dueCount(blunders: BlunderRef[], store: SrsStore, now: number): number {

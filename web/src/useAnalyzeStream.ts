@@ -8,7 +8,7 @@ type StartParams = { user: string; last?: string; depth?: string; since?: string
 // The payload is versioned so a result saved by an older build (different shape) is
 // discarded instead of rendered with missing fields. Bump on AnalyzeResult changes.
 const STORAGE_KEY = 'kibitz:lastResult'
-const STORAGE_VERSION = 17
+const STORAGE_VERSION = 18
 function loadStored(): AnalyzeResult | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)

@@ -3,7 +3,7 @@ import { explainBlunder } from './explainBlunder.js'
 import type { BlunderRef } from './api-types.js'
 
 const b = (over: Partial<BlunderRef>): BlunderRef => ({
-  url: 'u', ply: 10, san: 'Qd5', bestSan: 'Nf3', fenBefore: 'f', cpLoss: 400, type: 'hung_piece', missed: false, ...over,
+  url: 'u', ply: 10, san: 'Qd5', bestSan: 'Nf3', fenBefore: 'f', cpLoss: 400, type: 'hung_piece', missed: false, openingName: '', movesAfter: [], ...over,
 })
 
 describe('explainBlunder', () => {
