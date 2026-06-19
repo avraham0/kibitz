@@ -25,7 +25,7 @@ const sample: AnalyzeResult = {
     topBlunders: [],
     lostPositionMoves: 12,
     byTimeBucket: { '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 } },
-    gamesWithClock: 0, accuracy: 88,
+    gamesWithClock: 0, accuracy: 88, accuracyByPhase: { opening: 95, middlegame: 85, endgame: 80 },
   },
 }
 

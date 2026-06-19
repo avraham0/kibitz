@@ -13,7 +13,9 @@ function analysisLink(fen: string): string {
 // One blunder turned into a solvable puzzle: the board sits at the position before
 // the mistake (from the player's perspective); the player tries to find the engine's
 // best move. A correct drop solves it; wrong drops snap back and are counted.
-export function PuzzleBoard({ blunder, onSolve }: { blunder: BlunderRef; onSolve?: () => void }) {
+// onResult fires once per puzzle: true when solved, false when the answer is revealed
+// (i.e. given up). Used to drive the solved counter and spaced-repetition scheduling.
+export function PuzzleBoard({ blunder, onResult }: { blunder: BlunderRef; onResult?: (correct: boolean) => void }) {
   const best = sanToSquares(blunder.fenBefore, blunder.bestSan)
   const [position, setPosition] = useState(blunder.fenBefore)
   const [solved, setSolved] = useState(false)
@@ -25,7 +27,7 @@ export function PuzzleBoard({ blunder, onSolve }: { blunder: BlunderRef; onSolve
       const c = new Chess(blunder.fenBefore)
       try { c.move(blunder.bestSan) } catch { /* keep fenBefore */ }
       setPosition(c.fen())
-      if (!solved) onSolve?.()
+      if (!solved && !revealed) onResult?.(true)
       setSolved(true)
       return true
     }
@@ -34,6 +36,7 @@ export function PuzzleBoard({ blunder, onSolve }: { blunder: BlunderRef; onSolve
   }
 
   function reveal() {
+    if (!solved && !revealed) onResult?.(false)
     setRevealed(true)
   }
 

@@ -33,6 +33,18 @@ describe('aggregate — accuracy', () => {
     })
     expect(aggregate([g]).accuracy).toBeLessThan(80)
   })
+  it('reports accuracy per phase, defaulting to 100 for phases with no decisions', () => {
+    const g = game({
+      moves: [
+        mv({ phase: 'opening' }), // clean → 100
+        mv({ phase: 'endgame', severity: 'blunder', cpLoss: 800, evalBefore: { cp: 200, mate: null }, evalAfterPlayed: { cp: 600, mate: null } }),
+      ],
+    })
+    const s = aggregate([g])
+    expect(s.accuracyByPhase.opening).toBe(100)
+    expect(s.accuracyByPhase.endgame).toBeLessThan(80)
+    expect(s.accuracyByPhase.middlegame).toBe(100) // no decisions → default
+  })
 })
 
 describe('aggregate — opening grouping (by ECO)', () => {

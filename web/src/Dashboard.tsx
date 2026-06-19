@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AnalyzeResult } from './api-types.js'
 import { SummaryCard } from './panels/SummaryCard.js'
+import { TopLeaks } from './panels/TopLeaks.js'
 import { OpeningsTable } from './panels/OpeningsTable.js'
 import { BlunderList } from './panels/BlunderList.js'
 import { CoachingCards } from './panels/CoachingCards.js'
@@ -33,6 +34,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       {tab === 'overview' && (
         <>
           <SummaryCard stats={stats} />
+          <TopLeaks stats={stats} />
           <ProgressChart games={games} />
           <MistakeTypesChart stats={stats} />
           <PhaseChart stats={stats} />

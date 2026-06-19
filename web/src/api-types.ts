@@ -20,12 +20,14 @@ export type Stats = {
   byTimeBucket: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; avgCpLoss: number }>
   gamesWithClock: number
   accuracy: number
+  accuracyByPhase: Record<Phase, number>
 }
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
 export type GameMove = {
   ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
   isPlayerMove: boolean; severity: Severity; type: MistakeType; fenBefore: string
+  phase: Phase; clockSeconds: number | null
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'

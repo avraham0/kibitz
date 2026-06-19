@@ -53,6 +53,8 @@ export type Stats = {
   gamesWithClock: number
   // Overall accuracy (0–100) over the player's real decisions (excludes lost-position moves).
   accuracy: number
+  // Accuracy (0–100) restricted to the player's real decisions in each game phase.
+  accuracyByPhase: Record<Phase, number>
 }
 
 const TYPES: CoachableMistakeType[] = [
@@ -63,6 +65,7 @@ const TYPES: CoachableMistakeType[] = [
 export type GameMove = {
   ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
   isPlayerMove: boolean; severity: MoveAnalysis['severity']; type: MistakeType; fenBefore: string
+  phase: Phase; clockSeconds: number | null
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
@@ -86,6 +89,7 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
       return {
         ply: m.ply, san: m.san, bestSan: m.bestSan, cpLoss: m.cpLoss, isPlayerMove: m.isPlayerMove,
         severity: m.severity, type: m.type, fenBefore: m.fenBefore,
+        phase: m.phase, clockSeconds: m.clockSeconds,
         evalCp: Math.max(-1500, Math.min(1500, whitePov)),
       }
     })
@@ -114,6 +118,9 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   let gamesWithClock = 0
   let accuracySum = 0
   let accuracyMoves = 0
+  const phaseAcc: Record<Phase, { sum: number; n: number }> = {
+    opening: { sum: 0, n: 0 }, middlegame: { sum: 0, n: 0 }, endgame: { sum: 0, n: 0 },
+  }
 
   for (const g of games) {
     if (g.result === 'win') record.wins++
@@ -148,8 +155,11 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       // Accuracy over every real decision (including good moves), not just mistakes.
       const winBefore = winPct(cpFromMoverPov(m.evalBefore))
       const winAfter = winPct(-cpFromMoverPov(m.evalAfterPlayed))
-      accuracySum += moveAccuracy(winBefore, winAfter)
+      const acc = moveAccuracy(winBefore, winAfter)
+      accuracySum += acc
       accuracyMoves++
+      phaseAcc[m.phase].sum += acc
+      phaseAcc[m.phase].n++
       if (m.severity === 'ok') continue
       mistakeCount++
       o.mistakes++
@@ -198,10 +208,13 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   const topBlunders = blunders.sort((a, b) => b.cpLoss - a.cpLoss).slice(0, 10)
 
   const accuracy = accuracyMoves ? Math.round(accuracySum / accuracyMoves) : 100
+  const accuracyByPhase = Object.fromEntries(
+    (['opening', 'middlegame', 'endgame'] as Phase[]).map((p) => [p, phaseAcc[p].n ? Math.round(phaseAcc[p].sum / phaseAcc[p].n) : 100]),
+  ) as Record<Phase, number>
 
   return {
     gamesAnalyzed: games.length,
     record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
-    byTimeBucket, gamesWithClock, accuracy,
+    byTimeBucket, gamesWithClock, accuracy, accuracyByPhase,
   }
 }
