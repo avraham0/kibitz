@@ -2,6 +2,26 @@ import { describe, it, expect } from 'vitest'
 import { aggregate } from './aggregate.js'
 import type { GameAnalysis, MoveAnalysis } from '../types.js'
 
+describe('aggregate — already-losing exclusion (by eval, report-time)', () => {
+  it('excludes real mistakes made in already-losing positions and counts them separately', () => {
+    const g = game({
+      moves: [
+        // already losing (best eval -400 ≤ -300) → excluded even though typed a real mistake
+        mv({ severity: 'blunder', cpLoss: 500, type: 'hung_piece', isPlayerMove: true, evalBefore: { cp: -400, mate: null } }),
+        // competitive position → counted
+        mv({ severity: 'blunder', cpLoss: 300, type: 'fork', isPlayerMove: true, evalBefore: { cp: 50, mate: null } }),
+      ],
+    })
+    const s = aggregate([g])
+    expect(s.mistakeCount).toBe(1)
+    expect(s.byType.fork.count).toBe(1)
+    expect(s.byType.hung_piece.count).toBe(0)
+    expect(s.lostPositionMoves).toBe(1)
+    expect(s.topBlunders).toHaveLength(1) // the already-losing blunder is not shown
+    expect(s.topBlunders[0].type).toBe('fork')
+  })
+})
+
 describe('aggregate — accuracy', () => {
   it('is 100 when moves match the eval (no win% drop)', () => {
     const g = game({ moves: [mv({}), mv({})] })

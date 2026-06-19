@@ -1,5 +1,14 @@
 import type { GameAnalysis, MistakeType, Phase } from '../types.js'
-import { cpFromMoverPov } from '../analyze/game.js'
+import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
+import type { MoveAnalysis } from '../types.js'
+
+// A player move counts as "already losing" (excluded from mistakes) when the best
+// available eval before it was already worse than the threshold. Computed from the
+// stored eval at report time, so the cutoff can change without re-analysis. The
+// legacy `type === 'lost_position'` check covers caches written before this change.
+function isLostPosition(m: MoveAnalysis): boolean {
+  return m.type === 'lost_position' || cpFromMoverPov(m.evalBefore) <= LOST_POSITION_CP
+}
 
 // Win-% for the side to move from a centipawn eval (lichess model).
 function winPct(cp: number): number {
@@ -69,7 +78,7 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
     const moves: GameMove[] = g.moves.map((m) => {
       const moverPov = cpFromMoverPov(m.evalBefore)
       const whitePov = m.fenBefore.split(' ')[1] === 'w' ? moverPov : -moverPov
-      if (m.isPlayerMove && m.type !== 'lost_position') {
+      if (m.isPlayerMove && !isLostPosition(m)) {
         accSum += moveAccuracy(winPct(moverPov), winPct(-cpFromMoverPov(m.evalAfterPlayed)))
         accN++
       }
@@ -130,7 +139,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
           if (m.severity === 'blunder') timeAcc[tb].blunders++
         }
       }
-      if (m.type === 'lost_position') {
+      if (isLostPosition(m)) {
         lostPositionMoves++
         continue
       }

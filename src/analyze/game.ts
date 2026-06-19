@@ -9,7 +9,9 @@ export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; be
 
 export const MAX_CPLOSS = 2000
 // If the best move before a move still leaves the player worse than this (≈ already
-// down a piece), treat the move as a lost-position move — not a coachable mistake.
+// down a piece), it is treated as a lost-position move — not a coachable mistake.
+// Applied at REPORT time in aggregate (from the stored eval), so changing it does
+// not require re-analysis.
 export const LOST_POSITION_CP = -300
 
 export function cpFromMoverPov(ev: Eval): number {
@@ -77,11 +79,12 @@ export async function analyzeGame(
     }
     const severity = cpLossToSeverity(cpLoss)
 
+    // Note: lost-position exclusion is applied at report time (aggregate) from
+    // evalBefore — not encoded into `type` here — so the threshold can change
+    // without re-analysis. Here we just classify the move on its own merits.
     let type: import('../types.js').MistakeType
     let missed = false
-    if (bestCp <= LOST_POSITION_CP) {
-      type = 'lost_position'
-    } else if (severity === 'ok') {
+    if (severity === 'ok') {
       type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
     } else {
       const playedDiffersFromBest = playedUci !== before.bestUci
