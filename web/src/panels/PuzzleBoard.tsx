@@ -56,7 +56,7 @@ export function PuzzleBoard({ blunder, onResult, boardWidth = 260 }: { blunder: 
         customArrows={arrows}
         boardWidth={boardWidth}
       />
-      <div style={{ fontSize: 13 }}>
+      <div style={{ fontSize: 13, marginTop: 8 }}>
         {solved ? (
           <span style={{ color: '#6c6' }}>✓ Solved — {blunder.bestSan}</span>
         ) : revealed ? (
