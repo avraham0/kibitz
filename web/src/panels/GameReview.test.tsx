@@ -9,7 +9,7 @@ const afterE4E5 = 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2'
 const games: GameSummary[] = [
   {
     gameId: 'g', url: 'u', playedAt: '2026-01-02T00:00:00.000Z', color: 'white',
-    result: 'win', eco: 'C50', openingName: 'Italian Game', accuracy: 88,
+    result: 'win', eco: 'C50', openingName: 'Italian Game', accuracy: 88, accuracyStrict: 75,
     moves: [
       { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', fenBefore: start, phase: 'opening', clockSeconds: 180 },
       { ply: 2, san: 'e5', bestSan: 'e5', evalCp: 20, cpLoss: 0, isPlayerMove: false, severity: 'ok', type: 'positional', fenBefore: afterE4, phase: 'opening', clockSeconds: 178 },
