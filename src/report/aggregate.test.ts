@@ -6,7 +6,7 @@ describe('aggregate — already-losing exclusion (by eval, report-time)', () => 
   it('excludes real mistakes made in already-losing positions and counts them separately', () => {
     const g = game({
       moves: [
-        // already losing (best eval -400 ≤ -300) → excluded even though typed a real mistake
+        // already losing (best eval -400 ≤ -200) → excluded even though typed a real mistake
         mv({ severity: 'blunder', cpLoss: 500, type: 'hung_piece', isPlayerMove: true, evalBefore: { cp: -400, mate: null } }),
         // competitive position → counted
         mv({ severity: 'blunder', cpLoss: 300, type: 'fork', isPlayerMove: true, evalBefore: { cp: 50, mate: null } }),
@@ -19,6 +19,18 @@ describe('aggregate — already-losing exclusion (by eval, report-time)', () => 
     expect(s.lostPositionMoves).toBe(1)
     expect(s.topBlunders).toHaveLength(1) // the already-losing blunder is not shown
     expect(s.topBlunders[0].type).toBe('fork')
+  })
+
+  it('excludes a move made when already ~2 pawns down (−270cp)', () => {
+    const g = game({
+      moves: [
+        mv({ severity: 'blunder', cpLoss: 400, type: 'hung_piece', isPlayerMove: true, evalBefore: { cp: -270, mate: null } }),
+      ],
+    })
+    const s = aggregate([g])
+    expect(s.mistakeCount).toBe(0)
+    expect(s.lostPositionMoves).toBe(1)
+    expect(s.topBlunders).toHaveLength(0)
   })
 })
 

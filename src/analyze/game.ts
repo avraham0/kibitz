@@ -9,10 +9,11 @@ export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; be
 
 export const MAX_CPLOSS = 2000
 // If the best move before a move still leaves the player worse than this (≈ already
-// down a piece), it is treated as a lost-position move — not a coachable mistake.
+// down two pawns), it is treated as a lost-position move — not a coachable mistake.
+// Mistakes made when you're already clearly losing aren't the ones worth studying.
 // Applied at REPORT time in aggregate (from the stored eval), so changing it does
 // not require re-analysis.
-export const LOST_POSITION_CP = -300
+export const LOST_POSITION_CP = -200
 
 export function cpFromMoverPov(ev: Eval): number {
   if (ev.mate !== null) {
