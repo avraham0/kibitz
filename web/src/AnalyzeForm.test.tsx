@@ -16,7 +16,7 @@ describe('AnalyzeForm', () => {
     expect(onSubmit).not.toHaveBeenCalled() // empty username
     fireEvent.change(screen.getByPlaceholderText('username'), { target: { value: ' bob ' } })
     fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ user: 'bob', since: expect.stringMatching(/^\d{4}-\d{2}$/) }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ user: 'bob', since: expect.stringMatching(/^\d{4}-\d{2}$/), result: 'loss' }))
   })
 
   it('Quick scan submits depth 8 and last 50', () => {

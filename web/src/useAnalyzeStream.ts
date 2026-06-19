@@ -2,7 +2,7 @@ import { useRef, useState, useCallback } from 'react'
 import type { AnalyzeResult } from './api-types.js'
 
 type Status = 'idle' | 'running' | 'done' | 'error'
-type StartParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string }
+type StartParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string }
 
 // Persist the last result so a browser refresh doesn't lose the analysis.
 // The payload is versioned so a result saved by an older build (different shape) is
@@ -42,6 +42,7 @@ export function useAnalyzeStream() {
     if (params.since) q.set('since', params.since)
     if (params.variations) q.set('variations', '1')
     if (params.timeControl) q.set('timeControl', params.timeControl)
+    if (params.result) q.set('result', params.result)
     const es = new EventSource(`/api/analyze?${q.toString()}`)
     esRef.current = es
     es.addEventListener('progress', (e: MessageEvent) => setProgress(JSON.parse(e.data)))
