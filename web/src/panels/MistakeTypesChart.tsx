@@ -1,6 +1,7 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
 import type { Stats } from '../api-types.js'
 import { COACHABLE_TYPES } from '../api-types.js'
+import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 
 export function MistakeTypesChart({ stats }: { stats: Stats }) {
   const data = COACHABLE_TYPES
@@ -9,12 +10,14 @@ export function MistakeTypesChart({ stats }: { stats: Stats }) {
   return (
     <section>
       <h2>Mistake types</h2>
-      <BarChart width={480} height={240} data={data}>
-        <XAxis dataKey="type" angle={-30} textAnchor="end" height={70} interval={0} fontSize={10} tick={{ fill: '#bbb' }} stroke="#555" />
-        <YAxis allowDecimals={false} tick={{ fill: '#bbb' }} stroke="#555" />
-        <Tooltip /><Legend wrapperStyle={{ color: '#bbb' }} />
-        <Bar dataKey="allowed" stackId="a" fill="#c66" />
-        <Bar dataKey="missed" stackId="a" fill="#69c" />
+      <BarChart layout="vertical" width={520} height={Math.max(160, 44 + data.length * 32)} data={data} margin={{ left: 30, right: 12 }}>
+        <CartesianGrid stroke={GRID} horizontal={false} />
+        <XAxis type="number" allowDecimals={false} tick={AXIS.tick} stroke={AXIS.stroke} />
+        <YAxis type="category" dataKey="type" width={130} tick={AXIS.tick} stroke={AXIS.stroke} />
+        <Tooltip {...TOOLTIP} />
+        <Legend wrapperStyle={{ color: '#9aa3b2' }} />
+        <Bar dataKey="allowed" name="allowed" stackId="a" fill={COLORS.allowed} />
+        <Bar dataKey="missed" name="missed" stackId="a" fill={COLORS.missed} radius={[0, 4, 4, 0]} />
       </BarChart>
     </section>
   )
