@@ -13,6 +13,8 @@ import { GameReview } from './panels/GameReview.js'
 import { ProgressChart } from './panels/ProgressChart.js'
 import { HangFrequency } from './panels/HangFrequency.js'
 import { CriticalPositions } from './panels/CriticalPositions.js'
+import { MoveQualityChart } from './panels/MoveQualityChart.js'
+import { EndgameStats } from './panels/EndgameStats.js'
 
 type Tab = 'overview' | 'blunders' | 'review'
 
@@ -43,15 +45,17 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
 
       {tab === 'overview' && (
         <>
-          <SummaryCard stats={stats} />
+          <SummaryCard stats={stats} games={games} />
           <TopLeaks stats={stats} />
           <HangFrequency blunders={stats.topBlunders} />
           <CriticalPositions games={games} />
           <ProgressChart games={games} />
           <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
           <PhaseChart stats={stats} />
+          <MoveQualityChart games={games} />
           <TimePressureChart stats={stats} />
           <Splits stats={stats} games={games} onOpenGame={openGame} />
+          <EndgameStats games={games} />
           <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
           <CoachingCards suggestions={suggestions} />
         </>
