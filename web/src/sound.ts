@@ -1,8 +1,8 @@
 // Synthesized move sounds — no audio assets, no licensing, works offline.
-// A short noise burst through a low-pass filter approximates a wooden "knock";
-// pitch/volume vary by move kind so captures and checks read differently.
+// A short, fixed-pitch noise knock with a little low body = a wooden "clunk".
+// Every normal move sounds the same; captures are lower and heavier.
 
-export type MoveSound = 'move' | 'capture' | 'check' | 'castle'
+export type MoveSound = 'move' | 'capture'
 
 export const SOUND_KEY = 'chess-coach:sound'
 export function soundEnabled(): boolean {
@@ -21,20 +21,14 @@ function audio(): AudioContext | null {
 }
 
 export function soundForSan(san: string): MoveSound {
-  if (/[+#]/.test(san)) return 'check'
-  if (san.startsWith('O-O')) return 'castle'
-  if (san.includes('x')) return 'capture'
-  return 'move'
+  return san.includes('x') ? 'capture' : 'move'
 }
 
-// A piece placement is a low "thunk" (a quickly-damped pitch that glides down)
-// with a soft, brief noise click for the attack. Low body frequencies and a
-// gentle low-pass on the click keep it wooden rather than tinny/metallic.
-const PARAMS: Record<MoveSound, { body: number; decay: number; click: number; vol: number }> = {
-  move: { body: 210, decay: 0.13, click: 0.08, vol: 0.5 },
-  capture: { body: 150, decay: 0.16, click: 0.16, vol: 0.7 },
-  check: { body: 300, decay: 0.12, click: 0.10, vol: 0.6 },
-  castle: { body: 190, decay: 0.14, click: 0.08, vol: 0.5 },
+// band/body are FIXED frequencies (no pitch glide — that sounded like a laser).
+// The knock is mostly band-passed noise; a brief low sine adds wooden weight.
+const PARAMS: Record<MoveSound, { band: number; body: number; vol: number }> = {
+  move: { band: 850, body: 160, vol: 0.5 },
+  capture: { band: 600, body: 110, vol: 0.66 },
 }
 
 export function playMoveSound(kind: MoveSound): void {
@@ -46,44 +40,33 @@ export function playMoveSound(kind: MoveSound): void {
 
   const master = ac.createGain()
   master.gain.value = p.vol
-  // Master low-pass smooths off harsh highs / aliasing so it doesn't sound crunchy.
-  const tone = ac.createBiquadFilter()
-  tone.type = 'lowpass'
-  tone.frequency.value = 2400
-  tone.Q.value = 0.7
-  tone.connect(master)
   master.connect(ac.destination)
 
-  // Body: a sine "thunk" that glides down in pitch and decays fast. Sine (not
-  // triangle) keeps it clean — no high harmonics to alias.
-  const osc = ac.createOscillator()
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(p.body * 1.6, t)
-  osc.frequency.exponentialRampToValueAtTime(p.body, t + 0.03)
-  const bodyGain = ac.createGain()
-  bodyGain.gain.setValueAtTime(0.0001, t)
-  bodyGain.gain.exponentialRampToValueAtTime(1, t + 0.004) // fast attack, no click discontinuity
-  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + p.decay)
-  osc.connect(bodyGain); bodyGain.connect(tone)
-  osc.start(t); osc.stop(t + p.decay + 0.02)
-
-  // Click transient: a soft, heavily low-passed noise blip with a smooth fade
-  // (windowed both ends) for the attack — gives the "knock" without the grit.
-  const dur = 0.014
+  // Knock: a short noise burst with a fast percussive decay, band-passed (low Q,
+  // so it's broad/woody rather than a ringing tin tone) and low-passed for warmth.
+  const dur = 0.05
   const n = Math.floor(ac.sampleRate * dur)
   const buf = ac.createBuffer(1, n, ac.sampleRate)
   const data = buf.getChannelData(0)
   for (let i = 0; i < n; i++) {
-    const w = Math.sin((Math.PI * i) / n) // Hann-ish window: no abrupt start/stop
-    data[i] = (Math.random() * 2 - 1) * w * w
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.5)
   }
   const noise = ac.createBufferSource()
   noise.buffer = buf
+  const bp = ac.createBiquadFilter()
+  bp.type = 'bandpass'; bp.frequency.value = p.band; bp.Q.value = 1
   const lp = ac.createBiquadFilter()
-  lp.type = 'lowpass'
-  lp.frequency.value = 1400
-  const clickGain = ac.createGain()
-  clickGain.gain.value = p.click
-  noise.connect(lp); lp.connect(clickGain); clickGain.connect(tone)
+  lp.type = 'lowpass'; lp.frequency.value = 2000
+  noise.connect(bp); bp.connect(lp); lp.connect(master)
   noise.start(t); noise.stop(t + dur)
+
+  // Body: a brief, constant-pitch low sine for weight under the knock.
+  const osc = ac.createOscillator()
+  osc.type = 'sine'; osc.frequency.value = p.body
+  const bodyGain = ac.createGain()
+  bodyGain.gain.setValueAtTime(0.0001, t)
+  bodyGain.gain.exponentialRampToValueAtTime(0.4, t + 0.004)
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.055)
+  osc.connect(bodyGain); bodyGain.connect(master)
+  osc.start(t); osc.stop(t + 0.07)
 }
