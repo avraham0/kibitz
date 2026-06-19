@@ -54,18 +54,26 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       {tab === 'overview' && (
         <>
           <SummaryCard stats={stats} games={games} />
-          <TopLeaks stats={stats} />
-          <HangFrequency blunders={stats.topBlunders} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start' }}>
+            <TopLeaks stats={stats} />
+            <HangFrequency blunders={stats.topBlunders} />
+          </div>
           <CriticalPositions games={games} />
           <ProgressChart games={games} />
-          <RatingChart games={games} />
           <BestGames games={games} onOpenGame={openGame} />
           <OpeningRecommendations stats={stats} />
-          <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
-          <PhaseChart stats={stats} />
-          <MoveQualityChart games={games} />
-          <TimePressureChart stats={stats} />
-          {stats.gamesWithClock > 0 && <ClockAccuracyChart games={games} />}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+            <RatingChart games={games} />
+            <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+            <PhaseChart stats={stats} />
+            <MoveQualityChart games={games} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+            <TimePressureChart stats={stats} />
+            {stats.gamesWithClock > 0 && <ClockAccuracyChart games={games} />}
+          </div>
           <Splits stats={stats} games={games} onOpenGame={openGame} />
           <EndgameStats games={games} />
           <CoachingCards suggestions={suggestions} />

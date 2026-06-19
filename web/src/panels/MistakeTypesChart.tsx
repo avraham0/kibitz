@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts'
 import type { Stats, GameSummary, CoachableType } from '../api-types.js'
 import { COACHABLE_TYPES } from '../api-types.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
@@ -20,19 +20,21 @@ export function MistakeTypesChart({ stats, games = [], onOpenGame }: { stats: St
     <section>
       <h2>Mistake types</h2>
       <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Click a type to see the games where it happened.</p>
-      <BarChart
-        layout="vertical" width={520} height={Math.max(160, 44 + data.length * 32)} data={data} margin={{ left: 30, right: 12 }}
-        style={{ cursor: 'pointer' }}
-        onClick={(s: { activeLabel?: string }) => { if (s?.activeLabel) setSel(s.activeLabel as CoachableType) }}
-      >
-        <CartesianGrid stroke={GRID} horizontal={false} />
-        <XAxis type="number" allowDecimals={false} tick={AXIS.tick} stroke={AXIS.stroke} />
-        <YAxis type="category" dataKey="type" width={130} tick={AXIS.tick} stroke={AXIS.stroke} />
-        <Tooltip {...TOOLTIP} />
-        <Legend wrapperStyle={{ color: '#9aa3b2' }} />
-        <Bar dataKey="allowed" name="allowed" stackId="a" fill={COLORS.allowed} />
-        <Bar dataKey="missed" name="missed" stackId="a" fill={COLORS.missed} radius={[0, 4, 4, 0]} />
-      </BarChart>
+      <ResponsiveContainer width="100%" height={Math.max(160, 44 + data.length * 32)}>
+        <BarChart
+          layout="vertical" data={data} margin={{ left: 30, right: 12 }}
+          style={{ cursor: 'pointer' }}
+          onClick={(s: { activeLabel?: string }) => { if (s?.activeLabel) setSel(s.activeLabel as CoachableType) }}
+        >
+          <CartesianGrid stroke={GRID} horizontal={false} />
+          <XAxis type="number" allowDecimals={false} tick={AXIS.tick} stroke={AXIS.stroke} />
+          <YAxis type="category" dataKey="type" width={130} tick={AXIS.tick} stroke={AXIS.stroke} />
+          <Tooltip {...TOOLTIP} />
+          <Legend wrapperStyle={{ color: '#9aa3b2' }} />
+          <Bar dataKey="allowed" name="allowed" stackId="a" fill={COLORS.allowed} />
+          <Bar dataKey="missed" name="missed" stackId="a" fill={COLORS.missed} radius={[0, 4, 4, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
 
       {sel && (
         <div style={{ marginTop: 8 }}>
