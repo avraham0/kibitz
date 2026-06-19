@@ -1,37 +1,35 @@
-// Custom-drawn chess knight (facing left) so the glasses lock to the eye and it
-// stays crisp at any size — no font/glyph dependency.
-const KNIGHT_PATH =
-  'M14 58 L52 58 L52 54 C50 52 47 51 46 49 C55 45 56 33 51 23 C50 19 50 17 47 14 ' +
-  'L45 7 L40 13 L35 7 C32 11 29 13 27 17 C22 19 17 24 13 30 L8 37 C7 39 8 41 11 41 ' +
-  'L18 41 C22 42 23 46 21 50 C20 53 17 55 16 58 Z'
-
-// The knight, its eye, and round spectacles, all in one coordinate system (0–64)
-// so the glasses sit exactly on the eye. `ink` = knight fill, `eye` = bubble/tile
-// colour showing through the carved eye.
-function Knight({ ink, eye }: { ink: string; eye: string }) {
+// A friendly pawn mascot: green pawn with a bespectacled smiley face. Face features
+// use the tile colour so they read as clean cutouts on the green. All in one 0–64
+// coordinate system so the glasses sit exactly on the eyes.
+function Pawn({ fill, face }: { fill: string; face: string }) {
   return (
     <g>
-      <path d={KNIGHT_PATH} fill={ink} />
-      <circle cx="25" cy="25.5" r="1.9" fill={eye} />
-      <g fill="none" stroke="#e0b15a" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="24.5" cy="25.5" r="5.6" />
-        <circle cx="13.5" cy="30" r="4.8" />
-        <path d="M18.7 26.6 L18.1 29.2" />
-        <path d="M30 24.6 Q34.5 21.8 36.5 23.4" />
+      <circle cx="32" cy="18" r="12" fill={fill} />
+      <ellipse cx="32" cy="31" rx="10" ry="2.6" fill={fill} />
+      <path d="M25 32 C21 39 19 46 17 51 L47 51 C45 46 43 39 39 32 Z" fill={fill} />
+      <rect x="12" y="51" width="40" height="8" rx="3.5" fill={fill} />
+      <g fill={face}>
+        <circle cx="27.5" cy="17.5" r="1.5" />
+        <circle cx="36.5" cy="17.5" r="1.5" />
+      </g>
+      <g fill="none" stroke={face} strokeWidth="1.5" strokeLinecap="round">
+        <circle cx="27.5" cy="17.5" r="4.1" />
+        <circle cx="36.5" cy="17.5" r="4.1" />
+        <path d="M31.6 16.9 L32.4 16.9" />
+        <path d="M23.4 16.9 L21.2 16.4" />
+        <path d="M40.6 16.9 L42.8 16.4" />
+        <path d="M27.2 23 Q32 26.6 36.8 23" />
       </g>
     </g>
   )
 }
 
-// Concept A: the knight inside a speech bubble — the kibitzer commenting on your game.
-export function KibitzMark({ size = 44 }: { size?: number }) {
+// Mark: green pawn on a dark rounded tile.
+export function KibitzMark({ size = 48 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Kibitz logo">
-      <rect x="2" y="2" width="60" height="50" rx="13" fill="#7bc47f" />
-      <path d="M14 52 l-7 9 v-9 z" fill="#7bc47f" />
-      <g transform="translate(6 1) scale(0.82)">
-        <Knight ink="#0b0e13" eye="#7bc47f" />
-      </g>
+      <rect x="1" y="1" width="62" height="62" rx="15" fill="#141a23" stroke="#2a313d" />
+      <g transform="translate(6 2.5) scale(0.83)"><Pawn fill="#7bc47f" face="#141a23" /></g>
     </svg>
   )
 }
