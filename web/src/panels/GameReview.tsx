@@ -45,10 +45,13 @@ export function GameReview({ games }: { games: GameSummary[] }) {
   }
 
   // Play a move sound whenever the position changes (step, jump, or game switch).
+  // The board at index i shows the position BEFORE move i, so the move that just
+  // landed on the board is move i-1 — sound that one, not the (arrowed) next move.
   useEffect(() => {
     if (firstRef.current) { firstRef.current = false; return }
     if (!soundOnRef.current) return
-    const m = moves[Math.min(ply, maxPly)]
+    const i = Math.min(ply, maxPly)
+    const m = i > 0 ? moves[i - 1] : null
     if (m) playMoveSound(soundForSan(m.san))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ply, gi])
