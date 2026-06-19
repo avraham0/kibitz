@@ -37,7 +37,6 @@ describe('Dashboard', () => {
     render(<Dashboard result={sample} />)
     expect(screen.getByText('3W-7L-0D')).toBeTruthy()
     expect(screen.getByText('88%')).toBeTruthy() // accuracy tile value
-    expect(screen.getByText('Italian Game')).toBeTruthy()
     expect(screen.getByText(/Forks are your most common mistake/)).toBeTruthy()
   })
 

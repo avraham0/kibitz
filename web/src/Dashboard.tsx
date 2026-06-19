@@ -20,8 +20,9 @@ import { BestGames } from './panels/BestGames.js'
 import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
 import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
 import { TrainingTab } from './panels/TrainingTab.js'
+import { OpeningDrill } from './panels/OpeningDrill.js'
 
-type Tab = 'overview' | 'blunders' | 'train' | 'review'
+type Tab = 'overview' | 'blunders' | 'train' | 'openings' | 'review'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
@@ -37,6 +38,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
     { id: 'overview', label: 'Overview' },
     { id: 'blunders', label: 'Blunders' },
     { id: 'train', label: 'Train' },
+    { id: 'openings', label: 'Openings' },
     { id: 'review', label: 'Game review' },
   ]
   return (
@@ -66,12 +68,17 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           {stats.gamesWithClock > 0 && <ClockAccuracyChart games={games} />}
           <Splits stats={stats} games={games} onOpenGame={openGame} />
           <EndgameStats games={games} />
-          <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
           <CoachingCards suggestions={suggestions} />
         </>
       )}
       {tab === 'blunders' && <BlunderList blunders={stats.topBlunders} />}
       {tab === 'train' && <TrainingTab blunders={stats.topBlunders} />}
+      {tab === 'openings' && (
+        <>
+          <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
+          <OpeningDrill openings={stats.openings} games={games} />
+        </>
+      )}
       {tab === 'review' && <GameReview games={games} focus={focus} />}
     </div>
   )
