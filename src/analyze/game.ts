@@ -8,6 +8,17 @@ import { detectMotif } from './motifs.js'
 export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string; pv: string[] }>
 
 export const MAX_CPLOSS = 2000
+
+// Two-pass analysis: scan every move at SCAN_DEPTH, then re-search only the suspect
+// player moves (shallow loss ≥ CANDIDATE_CP) at the full requested depth. Most of the
+// speed of the shallow pass, with full-depth accuracy where it actually matters
+// (your blunders + turning points). Opponent moves get only the shallow scan.
+const SCAN_DEPTH = 8
+const CANDIDATE_CP = 60
+
+function negateEval(e: Eval): Eval {
+  return { cp: e.cp === null ? null : -e.cp, mate: e.mate === null ? null : -e.mate }
+}
 // If the best move before a move still leaves the player worse than this (≈ already
 // down two pawns), it is treated as a lost-position move — not a coachable mistake.
 // Mistakes made when you're already clearly losing aren't the ones worth studying.
@@ -50,36 +61,61 @@ export async function analyzeGame(
       (sideToMove === 'w' && raw.color === 'white') ||
       (sideToMove === 'b' && raw.color === 'black')
 
-    const before = await evaluate(rm.fenBefore, depth)
-    const bestCp = cpFromMoverPov(before.eval)
+    const scanDepth = Math.min(SCAN_DEPTH, depth)
 
+    // Opponent moves never count as the player's mistakes — a single shallow eval is
+    // enough to feed the eval graph. Skip the after-search and classification.
+    if (!isPlayerMove) {
+      const ev = await evaluate(rm.fenBefore, scanDepth)
+      moves.push({
+        ply, fenBefore: rm.fenBefore, san: rm.san, bestSan: uciToSan(rm.fenBefore, ev.bestUci),
+        evalBefore: ev.eval, evalAfterPlayed: negateEval(ev.eval), cpLoss: 0, severity: 'ok',
+        type: 'positional', missed: false, phase: detectPhase(rm.fenBefore, ply),
+        clockSeconds: rm.clockSeconds, isPlayerMove: false,
+      })
+      continue
+    }
+
+    // Player move — shallow scan first.
+    let before = await evaluate(rm.fenBefore, scanDepth)
     const playedV = (new Chess(rm.fenBefore).moves({ verbose: true }) as any[]).find((m) => m.san === rm.san)
     const playedUci = playedV ? `${playedV.from}${playedV.to}${playedV.promotion ?? ''}` : ''
-    const playedIsBest = playedUci !== '' && playedUci === before.bestUci
+    let playedIsBest = playedUci !== '' && playedUci === before.bestUci
 
-    // The after-position search is only needed when the played move is NOT the engine's
-    // best move. Playing the best move means zero centipawn loss by definition — so we
-    // skip the second (expensive) engine search entirely. This also removes the small
-    // two-search horizon noise that otherwise showed up on best-move plies.
     let cpLoss: number
     let evalAfterPlayed: Eval
     let fenAfter = ''
     let afterPv: string[] | null = null
+
     if (playedIsBest) {
+      // Played the best move → no loss; skip the after-search entirely.
       cpLoss = 0
-      // After the (best) move it's the opponent to move, so evalAfterPlayed is stored
-      // from the opponent's POV — the negation of the player-POV eval before. (Report
-      // code also tolerates the legacy `=== before.eval` form from older caches.)
-      evalAfterPlayed = { cp: before.eval.cp === null ? null : -before.eval.cp, mate: before.eval.mate === null ? null : -before.eval.mate }
+      evalAfterPlayed = negateEval(before.eval)
     } else {
       const chess = new Chess(rm.fenBefore)
       chess.move(rm.san)
       fenAfter = chess.fen()
-      const after = await evaluate(fenAfter, depth)
-      afterPv = after.pv
-      evalAfterPlayed = after.eval
-      const playedCpMoverPov = -cpFromMoverPov(after.eval)
-      cpLoss = Math.min(MAX_CPLOSS, Math.max(0, bestCp - playedCpMoverPov))
+      let after = await evaluate(fenAfter, scanDepth)
+      const shallowLoss = cpFromMoverPov(before.eval) - (-cpFromMoverPov(after.eval))
+
+      if (depth > scanDepth && shallowLoss >= CANDIDATE_CP) {
+        // Suspect move — confirm at full depth (both sides of the move).
+        before = await evaluate(rm.fenBefore, depth)
+        playedIsBest = playedUci === before.bestUci
+        if (playedIsBest) {
+          cpLoss = 0
+          evalAfterPlayed = negateEval(before.eval)
+        } else {
+          after = await evaluate(fenAfter, depth)
+          afterPv = after.pv
+          evalAfterPlayed = after.eval
+          cpLoss = Math.min(MAX_CPLOSS, Math.max(0, cpFromMoverPov(before.eval) - (-cpFromMoverPov(after.eval))))
+        }
+      } else {
+        afterPv = after.pv
+        evalAfterPlayed = after.eval
+        cpLoss = Math.min(MAX_CPLOSS, Math.max(0, shallowLoss))
+      }
     }
     const severity = cpLossToSeverity(cpLoss)
 

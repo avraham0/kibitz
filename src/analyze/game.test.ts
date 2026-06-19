@@ -73,6 +73,49 @@ describe('analyzeGame', () => {
   })
 })
 
+describe('analyzeGame — two-pass depth', () => {
+  const fenW = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+  it('keeps a minor non-best move shallow (no full-depth search)', async () => {
+    const raw = oneMoveGame('a3', fenW, 'white') // a3 != best e2e4
+    const depths: number[] = []
+    const evaluate = async (fen: string, d: number) => {
+      depths.push(d)
+      // before +30 (white); after black +10 → shallow loss 40 (< candidate 60)
+      return fen.includes(' w ')
+        ? { eval: { cp: 30, mate: null }, bestUci: 'e2e4', pv: ['e2e4'] }
+        : { eval: { cp: 10, mate: null }, bestUci: 'x', pv: [] }
+    }
+    await analyzeGame(raw, 16, evaluate as any)
+    expect(depths).toEqual([8, 8]) // shallow before + shallow after, never depth 16
+  })
+
+  it('re-searches a suspect non-best move at full depth', async () => {
+    const raw = oneMoveGame('a3', fenW, 'white')
+    const depths: number[] = []
+    const evaluate = async (fen: string, d: number) => {
+      depths.push(d)
+      // before +30; after black +40 → shallow loss 70 (≥ candidate 60) → deepen
+      return fen.includes(' w ')
+        ? { eval: { cp: 30, mate: null }, bestUci: 'e2e4', pv: ['e2e4'] }
+        : { eval: { cp: 40, mate: null }, bestUci: 'x', pv: [] }
+    }
+    await analyzeGame(raw, 16, evaluate as any)
+    expect(depths.filter((d) => d === 16).length).toBe(2) // deep before + deep after
+  })
+
+  it('evaluates opponent moves only once, shallow', async () => {
+    // Black to move but the analyzed player is white → opponent move.
+    const fenB = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1'
+    const raw = oneMoveGame('e5', fenB, 'white')
+    const depths: number[] = []
+    const evaluate = async (_fen: string, d: number) => { depths.push(d); return { eval: { cp: 0, mate: null }, bestUci: 'e7e5', pv: [] } }
+    const g = await analyzeGame(raw, 16, evaluate as any)
+    expect(depths).toEqual([8]) // one shallow eval, no after-search
+    expect(g.moves[0].isPlayerMove).toBe(false)
+  })
+})
+
 describe('analyzeGame — motif tagging', () => {
   it('tags an allowed fork as type fork, missed=false', async () => {
     // White (player) plays Kf2 (quiet) and is even; after it, Black's PV forks.
