@@ -97,12 +97,18 @@ export function parseGame(raw: any, user: string): RawGame | null {
     clockSeconds: clockToSeconds(clocks[i] ?? undefined),
   }))
 
+  // chess.com returns CAPS2 accuracy as game.accuracies.white / game.accuracies.black
+  const chesscomAccuracy = color === 'white'
+    ? (typeof raw.accuracies?.white === 'number' ? raw.accuracies.white : undefined)
+    : (typeof raw.accuracies?.black === 'number' ? raw.accuracies.black : undefined)
+
   return {
     gameId: raw.url,
     url: raw.url,
     playedAt: new Date((raw.end_time ?? 0) * 1000).toISOString(),
     color,
     result,
+    chesscomAccuracy,
     eco: header.ECO ?? 'Unknown',
     openingName: (() => {
       if (header.Opening && header.Opening.trim()) return header.Opening.trim()

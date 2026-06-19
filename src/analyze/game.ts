@@ -182,6 +182,7 @@ export async function analyzeGame(
     openingName: raw.openingName,
     playerRating: raw.playerRating,
     opponentRating: raw.opponentRating,
+    chesscomAccuracy: raw.chesscomAccuracy,
     depth,
     moves,
   }

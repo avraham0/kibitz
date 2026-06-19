@@ -77,6 +77,8 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
 
   const [flipped, setFlipped] = useState(false)
   const [playing, setPlaying] = useState(false)
+  const [pgnCopied, setPgnCopied] = useState(false)
+  const [tpHover, setTpHover] = useState(false)
 
   // Autoplay: advance one ply on a timer while playing; stop at the last move.
   useEffect(() => {
@@ -87,6 +89,39 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   useEffect(() => {
     if (playing && Math.min(ply, maxPly) >= maxPly) setPlaying(false)
   }, [ply, maxPly, playing])
+
+  function buildPgn(game: typeof g): string {
+    if (!game) return ''
+    const date = game.playedAt.slice(0, 10).replace(/-/g, '.')
+    const result = game.color === 'white'
+      ? (game.result === 'win' ? '1-0' : game.result === 'loss' ? '0-1' : '1/2-1/2')
+      : (game.result === 'win' ? '0-1' : game.result === 'loss' ? '1-0' : '1/2-1/2')
+    const headers = [
+      `[Event "Chess.com Live Game"]`,
+      `[Site "${game.url}"]`,
+      `[Date "${date}"]`,
+      `[White "?"]`,
+      `[Black "?"]`,
+      `[Result "${result}"]`,
+      `[Opening "${game.openingName}"]`,
+    ].join('\n')
+    let movetext = ''
+    for (const m of game.moves) {
+      const num = Math.ceil(m.ply / 2)
+      if (m.ply % 2 === 1) movetext += `${num}. ${m.san} `
+      else movetext += `${m.san} `
+    }
+    return `${headers}\n\n${movetext.trim()} ${result}`
+  }
+
+  function exportToLichess() {
+    if (!g) return
+    const pgn = buildPgn(g)
+    navigator.clipboard.writeText(pgn).catch(() => {})
+    window.open('https://lichess.org/paste', '_blank', 'noreferrer')
+    setPgnCopied(true)
+    setTimeout(() => setPgnCopied(false), 3000)
+  }
 
   function togglePlay() {
     setPly((p) => (p >= maxPly ? 0 : p)) // restart if parked at the end
@@ -168,16 +203,40 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
         <select value={gi} onChange={(e) => pick(Number(e.target.value))}>
           {games.map((gg, i) => (
             <option key={i} value={i}>
-              {gg.wasWinning && gg.result !== 'win' ? '⚑ ' : ''}{gg.playedAt.slice(0, 10)} · {gg.color} · {gg.result} · {gg.accuracy}% · {gg.openingName}
+              {gg.wasWinning && gg.result !== 'win' ? '⚑ ' : ''}{gg.playedAt.slice(0, 10)} · {gg.color} · {gg.result} · {gg.chesscomAccuracy != null ? `${Math.round(gg.chesscomAccuracy)}%` : `${gg.accuracy}%`} · {gg.openingName}
             </option>
           ))}
         </select>
       </label>
-      <span style={{ marginLeft: 10, fontWeight: 600, color: accuracyColor(g.accuracy) }}>Accuracy {g.accuracy}%</span>
-      {g.wasWinning && g.result !== 'win' && (
-        <span style={{ marginLeft: 10, color: 'rgb(224,121,107)', fontWeight: 600 }}>⚑ missed win</span>
-      )}
-      {g.url && <a style={{ marginLeft: 10 }} href={g.url} target="_blank" rel="noreferrer">chess.com ↗</a>}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center', marginTop: 6 }}>
+        <span style={{ fontWeight: 600, color: accuracyColor(g.accuracy) }}>Kibitz {g.accuracy}%</span>
+        {g.chesscomAccuracy != null && (
+          <span style={{ fontWeight: 600, color: accuracyColor(g.chesscomAccuracy) }}>chess.com {Math.round(g.chesscomAccuracy)}%</span>
+        )}
+        {g.wasWinning && g.result !== 'win' && (
+          <span style={{ color: 'rgb(224,121,107)', fontWeight: 600 }}>⚑ missed win</span>
+        )}
+        {g.turningPointIdx != null && (
+          <button
+            type="button"
+            onClick={() => setPly(g.turningPointIdx!)}
+            onMouseEnter={() => setTpHover(true)}
+            onMouseLeave={() => setTpHover(false)}
+            style={{ fontWeight: 700, color: tpHover ? '#0b0e13' : 'rgb(224,121,107)', border: '1px solid rgb(224,121,107)', background: tpHover ? 'rgb(224,121,107)' : 'transparent', borderRadius: 4, padding: '1px 8px', cursor: 'pointer', fontSize: 13, transition: 'background 0.15s, color 0.15s' }}
+          >
+            ⚠ turning point
+          </button>
+        )}
+        {g.url && <a href={g.url} target="_blank" rel="noreferrer">chess.com ↗</a>}
+        <button
+          type="button"
+          onClick={exportToLichess}
+          title="Copy PGN and open Lichess import"
+          style={{ fontSize: 13, padding: '1px 7px' }}
+        >
+          {pgnCopied ? '✓ PGN copied' : '⬇ Lichess'}
+        </button>
+      </div>
       <div style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)', display: 'flex', gap: 12 }}>
         {(['opening', 'middlegame', 'endgame'] as const).map((p) => (
           <span key={p}>
@@ -226,12 +285,6 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   <button type="button" onClick={jumpPrevMistake} disabled={!mistakeIdxs.some((i) => i < idx)}>‹ mistake</button>
                   <button type="button" onClick={jumpNextMistake} disabled={!mistakeIdxs.some((i) => i > idx)}>mistake ›</button>
                   <span style={{ color: 'var(--muted)' }}>{mistakeIdxs.length} mistakes</span>
-                </div>
-              )}
-              {g.turningPointIdx != null && (
-                <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                  <button type="button" onClick={() => setPly(g.turningPointIdx!)}>⚠ jump to turning point</button>
-                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>where the game slipped away</span>
                 </div>
               )}
               {/* Always reserve this block so the column height (and the move-list

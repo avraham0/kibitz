@@ -63,7 +63,7 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
   try {
     const nowISO = deps.nowISO()
     const since = url.searchParams.get('since') ?? defaultSince(nowISO)
-    const depth = Number(url.searchParams.get('depth') ?? '15')
+    const depth = Number(url.searchParams.get('depth') ?? '18')
     const lastParam = url.searchParams.get('last')
     const last = lastParam ? Number(lastParam) : undefined
     const variations = url.searchParams.get('variations') === '1'

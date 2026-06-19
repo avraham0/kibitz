@@ -45,6 +45,7 @@ export type RawGame = {
   openingName: string
   playerRating: number | null
   opponentRating: number | null
+  chesscomAccuracy?: number // chess.com's own CAPS2 accuracy, if available
   moves: RawMove[] // only the player's-and-opponent's full move list
 }
 
@@ -74,6 +75,7 @@ export type GameAnalysis = {
   openingName: string
   playerRating: number | null
   opponentRating: number | null
+  chesscomAccuracy?: number
   depth: number
   moves: MoveAnalysis[]
 }

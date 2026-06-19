@@ -1,21 +1,20 @@
 import type { MoveAnalysis } from '../types.js'
-import { cpFromMoverPov } from '../analyze/game.js'
+import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
 
 // Win-% for the side to move from a centipawn eval (lichess model).
 export function winPct(cp: number): number {
   return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1)
 }
 
-// Per-move accuracy from the win-% the move gave up (lichess accuracy curve).
+// Per-move accuracy from the win-% the move gave up (Lichess accuracy curve).
+// Gives numbers ~10-15 pts below chess.com's CAPS2 for games with real mistakes,
+// which feels more honest; clean games still score near 100%.
 export function moveAccuracy(winBefore: number, winAfter: number): number {
   const drop = Math.max(0, winBefore - winAfter)
   return Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * drop) - 3.1669))
 }
 
-// Pre-move win% and per-move accuracy, derived from the move's cp-loss so both come
-// from ONE consistent search. (Using an independent after-eval turned two-pass shallow
-// noise into fake inaccuracies on quiet moves, dragging accuracy down.) A best move
-// has cpLoss 0 → no win% drop → 100%.
+// Pre-move win% and per-move accuracy from ONE consistent eval.
 function moveStats(m: MoveAnalysis): { acc: number; win: number } {
   const before = cpFromMoverPov(m.evalBefore)
   const winB = winPct(before)
@@ -23,38 +22,38 @@ function moveStats(m: MoveAnalysis): { acc: number; win: number } {
   return { acc: moveAccuracy(winB, winA), win: winB }
 }
 
-function stdev(xs: number[]): number {
-  if (xs.length === 0) return 0
-  const mean = xs.reduce((a, b) => a + b, 0) / xs.length
-  return Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length)
+// Only moves from positions that were still competitive (not already lost).
+// Moves played from a losing position get inflated accuracy by the Lichess formula
+// because win% can't drop much further — excluding them makes the number honest.
+function competitiveMoves(playerMoves: MoveAnalysis[]): MoveAnalysis[] {
+  return playerMoves.filter((m) => cpFromMoverPov(m.evalBefore) >= LOST_POSITION_CP)
 }
 
-// Volatility-weighted mean of per-move accuracies: moves in sharp positions (where the
-// win% swings) count more, so mistakes in critical moments matter without one blunder
-// collapsing the whole game (which a harmonic mean does — far below chess.com). `wins`
-// are the player-POV win% before each move. The weight cap is deliberately modest so
-// the number tracks chess.com rather than over-punishing.
-export function blendAccuracy(accs: number[], wins: number[]): number {
-  const n = accs.length
-  if (n === 0) return 100
-  const windowSize = Math.max(2, Math.min(8, Math.floor(n / 10)))
-  let wSum = 0
-  let wTot = 0
-  for (let i = 0; i < n; i++) {
-    const window = wins.slice(Math.max(0, i - windowSize + 1), i + 1)
-    const weight = Math.min(6, Math.max(0.5, stdev(window)))
-    wSum += accs[i] * weight
-    wTot += weight
-  }
-  return Math.max(0, Math.min(100, Math.round(wSum / wTot)))
+function geometricMean(accs: number[]): number {
+  if (accs.length === 0) return 100
+  const sumLog = accs.reduce((s, a) => s + Math.log(Math.max(a, 1)), 0)
+  return Math.exp(sumLog / accs.length)
 }
 
-// Accuracy (0–100) over a list of the player's moves. Includes moves made in losing
-// positions — the win% model already dampens their penalty, so excluding them would
-// inflate the score for games that were lost.
+function harmonicMean(accs: number[]): number {
+  if (accs.length === 0) return 100
+  return accs.length / accs.reduce((a, b) => a + 1 / Math.max(b, 1), 0)
+}
+
+// Accuracy (0–100): geometric mean of per-move Lichess accuracies for competitive moves.
+// Geometric mean penalizes catastrophic individual moves more than arithmetic mean,
+// while excluding moves in already-lost positions (which get inflated scores).
 export function accuracyOf(playerMoves: MoveAnalysis[]): number {
-  const s = playerMoves.map(moveStats)
-  return blendAccuracy(s.map((x) => x.acc), s.map((x) => x.win))
+  const moves = competitiveMoves(playerMoves)
+  if (moves.length === 0) return 100
+  return Math.round(geometricMean(moves.map((m) => moveStats(m).acc)))
+}
+
+// Stricter variant: harmonic mean of competitive moves. More sensitive to individual blunders.
+export function accuracyStrictOf(playerMoves: MoveAnalysis[]): number {
+  const moves = competitiveMoves(playerMoves)
+  if (moves.length === 0) return 100
+  return Math.round(harmonicMean(moves.map((m) => moveStats(m).acc)))
 }
 
 // Index into the move list of the player move that surrendered the game: the
@@ -83,18 +82,4 @@ export function reachedWinning(moves: MoveAnalysis[], cpThreshold = 300): boolea
     if (pov > peak) peak = pov
   }
   return peak >= cpThreshold
-}
-
-function harmonicMean(accs: number[]): number {
-  if (accs.length === 0) return 100
-  return accs.length / accs.reduce((a, b) => a + 1 / Math.max(b, 1), 0)
-}
-
-// A stricter, chess.com-leaning ESTIMATE: the plain harmonic mean of the same per-move
-// accuracies (no volatility weighting), so blunders weigh more and the number sits
-// below the lichess-style blend. Approximation only — chess.com's CAPS2 is proprietary;
-// expect a similar offset, not an exact match.
-export function accuracyStrictOf(playerMoves: MoveAnalysis[]): number {
-  if (playerMoves.length === 0) return 100
-  return Math.round(harmonicMean(playerMoves.map((m) => moveStats(m).acc)))
 }

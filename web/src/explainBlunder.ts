@@ -31,6 +31,13 @@ export function hangingAfter(fenBefore: string, san: string): { piece: string } 
   }
 }
 
+export function explainWrongMove(fenBefore: string, wrongSan: string, blunder: Explainable): string {
+  const hung = hangingAfter(fenBefore, wrongSan)
+  if (hung) return `${wrongSan} hangs your ${PIECE_NAME[hung.piece] ?? 'piece'}.`
+  if (blunder.missed) return `${wrongSan} doesn't win material — there's a stronger shot.`
+  return `${wrongSan} doesn't stop the threat.`
+}
+
 // Plain-language reason a move was a mistake, from the classified type + whether the
 // tactic was missed (you had it) or allowed (you let the opponent have it) + cost.
 // Pure and model-free — just turns the analysis into a sentence.

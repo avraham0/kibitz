@@ -78,6 +78,7 @@ export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
   result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
   accuracy: number; accuracyStrict: number
+  chesscomAccuracy?: number
   accuracyByPhase: Record<Phase, number>
   playerRating: number | null; opponentRating: number | null
   wasWinning: boolean; turningPointIdx: number | null
@@ -109,6 +110,7 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
       eco: g.eco, openingName: g.openingName,
       accuracy: accuracyOf(playerMoves),
       accuracyStrict: accuracyStrictOf(playerMoves),
+      chesscomAccuracy: g.chesscomAccuracy,
       accuracyByPhase,
       playerRating: g.playerRating, opponentRating: g.opponentRating,
       wasWinning: reachedWinning(g.moves), turningPointIdx: turningPointIdx(g.moves),

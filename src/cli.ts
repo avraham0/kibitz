@@ -12,7 +12,7 @@ async function main() {
       user: { type: 'string' },
       since: { type: 'string' },
       last: { type: 'string' },
-      depth: { type: 'string', default: '15' },
+      depth: { type: 'string', default: '18' },
       out: { type: 'string' },
       concurrency: { type: 'string' },
       variations: { type: 'boolean' },

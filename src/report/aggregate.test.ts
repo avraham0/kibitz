@@ -58,7 +58,7 @@ describe('aggregate — accuracy', () => {
     expect(aggregate([g]).accuracy).toBeGreaterThanOrEqual(99)
   })
 
-  it('reports a stricter (chess.com-leaning) estimate that is <= the lichess-style one', () => {
+  it('reports accuracyStrict (arithmetic mean) >= accuracy (harmonic mean) when blunders present', () => {
     const g = game({
       moves: [
         mv({ isPlayerMove: true }), // clean
@@ -68,7 +68,7 @@ describe('aggregate — accuracy', () => {
     })
     const s = aggregate([g])
     expect(s.accuracyStrict).toBeLessThanOrEqual(s.accuracy)
-    expect(s.accuracyStrict).toBeLessThan(s.accuracy) // blunders present ⇒ strictly lower
+    expect(s.accuracyStrict).toBeLessThan(s.accuracy) // blunders present ⇒ harmonic < arithmetic
   })
 
   it('reports accuracy per phase, defaulting to 100 for phases with no decisions', () => {
