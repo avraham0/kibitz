@@ -47,6 +47,9 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
         <input type="checkbox" checked={variations} onChange={(e) => setVariations(e.target.checked)} /> split variations
       </label>
       <button type="submit" disabled={disabled || !user.trim()}>Analyze</button>
+      <div style={{ flexBasis: '100%', fontSize: 12, color: 'var(--muted)' }}>
+        Both apply: range sets the window, then <em>last N</em> keeps the most recent N within it. Clear <em>last N</em> to use date only.
+      </div>
     </form>
   )
 }
