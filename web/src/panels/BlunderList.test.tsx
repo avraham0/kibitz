@@ -30,4 +30,15 @@ describe('BlunderList', () => {
     expect(screen.getAllByText(/Your move/).length).toBeGreaterThan(0)
     expect(screen.queryByText(/Played Qd5/)).toBeNull() // review captions gone
   })
+
+  it('shows one puzzle at a time with next/prev nav', () => {
+    render(<BlunderList blunders={blunders} />)
+    fireEvent.change(screen.getByLabelText(/mode/), { target: { value: 'solve' } })
+    expect(screen.getAllByText(/Your move/).length).toBe(1) // single board
+    expect(screen.getByText('Puzzle 1 / 2')).toBeTruthy()
+    expect((screen.getByRole('button', { name: /prev/ }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: /next/ }))
+    expect(screen.getByText('Puzzle 2 / 2')).toBeTruthy()
+    expect((screen.getByRole('button', { name: /next/ }) as HTMLButtonElement).disabled).toBe(true)
+  })
 })
