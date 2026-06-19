@@ -1,6 +1,7 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import type { Stats } from '../api-types.js'
 import { TIME_BUCKETS } from '../api-types.js'
+import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 
 export function TimePressureChart({ stats }: { stats: Stats }) {
   if (stats.gamesWithClock === 0) {
@@ -14,8 +15,11 @@ export function TimePressureChart({ stats }: { stats: Stats }) {
       <h2>Time pressure</h2>
       <p>Clock data: {stats.gamesWithClock} of {stats.gamesAnalyzed} games</p>
       <BarChart width={480} height={240} data={data}>
-        <XAxis dataKey="bucket" tick={{ fill: '#bbb' }} stroke="#555" /><YAxis allowDecimals={false} unit="%" tick={{ fill: '#bbb' }} stroke="#555" /><Tooltip />
-        <Bar dataKey="rate" name="blunder rate %" fill="#c66" />
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="bucket" tick={AXIS.tick} stroke={AXIS.stroke} />
+        <YAxis allowDecimals={false} unit="%" tick={AXIS.tick} stroke={AXIS.stroke} />
+        <Tooltip {...TOOLTIP} />
+        <Bar dataKey="rate" name="blunder rate %" fill={COLORS.allowed} radius={[4, 4, 0, 0]} />
       </BarChart>
     </section>
   )

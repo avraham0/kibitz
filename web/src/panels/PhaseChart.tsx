@@ -1,5 +1,6 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import type { Stats } from '../api-types.js'
+import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 
 export function PhaseChart({ stats }: { stats: Stats }) {
   const data = (['opening', 'middlegame', 'endgame'] as const).map((p) => ({ phase: p, mistakes: stats.byPhase[p] }))
@@ -7,8 +8,11 @@ export function PhaseChart({ stats }: { stats: Stats }) {
     <section>
       <h2>Mistakes by phase</h2>
       <BarChart width={480} height={240} data={data}>
-        <XAxis dataKey="phase" tick={{ fill: '#bbb' }} stroke="#555" /><YAxis allowDecimals={false} tick={{ fill: '#bbb' }} stroke="#555" /><Tooltip />
-        <Bar dataKey="mistakes" fill="#69c" />
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="phase" tick={AXIS.tick} stroke={AXIS.stroke} />
+        <YAxis allowDecimals={false} tick={AXIS.tick} stroke={AXIS.stroke} />
+        <Tooltip {...TOOLTIP} />
+        <Bar dataKey="mistakes" fill={COLORS.bar} radius={[4, 4, 0, 0]} />
       </BarChart>
     </section>
   )

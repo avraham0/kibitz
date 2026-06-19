@@ -1,5 +1,6 @@
-import { LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import type { GameSummary } from '../api-types.js'
+import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 
 // Average accuracy per calendar month across the analyzed games — a "are you
 // improving?" trend. Needs ≥2 months of data to be meaningful, else it's hidden.
@@ -22,10 +23,11 @@ export function ProgressChart({ games }: { games: GameSummary[] }) {
     <section>
       <h2>Progress over time</h2>
       <LineChart width={480} height={240} data={data}>
-        <XAxis dataKey="month" tick={{ fill: '#bbb' }} stroke="#555" />
-        <YAxis domain={[0, 100]} tick={{ fill: '#bbb' }} stroke="#555" unit="%" />
-        <Tooltip />
-        <Line type="monotone" dataKey="accuracy" name="accuracy %" stroke="#9c6" isAnimationActive={false} />
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="month" tick={AXIS.tick} stroke={AXIS.stroke} />
+        <YAxis domain={[0, 100]} tick={AXIS.tick} stroke={AXIS.stroke} unit="%" />
+        <Tooltip {...TOOLTIP} />
+        <Line type="monotone" dataKey="accuracy" name="accuracy %" stroke={COLORS.line} strokeWidth={2} dot isAnimationActive={false} />
       </LineChart>
     </section>
   )

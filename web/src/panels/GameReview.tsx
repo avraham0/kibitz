@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Chessboard } from 'react-chessboard'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { GameSummary } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
+import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 
 // Pick a game, see its eval graph, and step through it move by move.
 export function GameReview({ games }: { games: GameSummary[] }) {
@@ -56,12 +57,13 @@ export function GameReview({ games }: { games: GameSummary[] }) {
             </div>
           </div>
           <LineChart width={420} height={240} data={data}>
-            <XAxis dataKey="ply" tick={{ fill: '#bbb' }} stroke="#555" />
-            <YAxis domain={[-1500, 1500]} tick={{ fill: '#bbb' }} stroke="#555" />
-            <Tooltip />
-            <ReferenceLine y={0} stroke="#777" />
-            {cur && <ReferenceLine x={cur.ply} stroke="#5a8cdc" />}
-            <Line type="monotone" dataKey="eval" stroke="#9c6" dot={false} isAnimationActive={false} />
+            <CartesianGrid stroke={GRID} vertical={false} />
+            <XAxis dataKey="ply" tick={AXIS.tick} stroke={AXIS.stroke} />
+            <YAxis domain={[-1500, 1500]} tick={AXIS.tick} stroke={AXIS.stroke} />
+            <Tooltip {...TOOLTIP} />
+            <ReferenceLine y={0} stroke="#4a525e" />
+            {cur && <ReferenceLine x={cur.ply} stroke={COLORS.accent} />}
+            <Line type="monotone" dataKey="eval" stroke={COLORS.line} strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
         </div>
       )}
