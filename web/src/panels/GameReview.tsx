@@ -49,6 +49,10 @@ function fenAfter(fen: string, san: string): string {
 export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { id: string; seq: number; ply?: number } | null }) {
   const [gi, setGi] = useState(0)
   const [ply, setPly] = useState(0)
+  // Free-play exploration forked from the current position; null = following the game.
+  const [explore, setExplore] = useState<{ fen: string; n: number } | null>(null)
+  // Any navigation returns to the game line.
+  useEffect(() => { setExplore(null) }, [ply, gi])
 
   // Jump to a game (and optionally a specific move) requested from elsewhere.
   useEffect(() => {
@@ -141,6 +145,22 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
 
   function pick(i: number) { setGi(i); setPly(0) }
 
+  // Drag a piece to explore a line from the shown position. Returns false (snap back)
+  // for illegal moves. Navigation clears the exploration (see the [ply, gi] effect).
+  const gamePos = cur ? fenAfter(cur.fenBefore, cur.san) : ''
+  function onDrop(from: string, to: string): boolean {
+    try {
+      const c = new Chess(explore?.fen ?? gamePos)
+      const mv = c.move({ from, to, promotion: 'q' })
+      if (!mv) return false
+      setExplore((e) => ({ fen: c.fen(), n: (e?.n ?? 0) + 1 }))
+      if (soundOnRef.current) playMoveSound(soundForSan(mv.san))
+      return true
+    } catch {
+      return false
+    }
+  }
+
   return (
     <section>
       <h2>Game review</h2>
@@ -162,12 +182,19 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
           <div style={{ width: 320 }}>
             {cur && (
               <Chessboard
-                position={fenAfter(cur.fenBefore, cur.san)}
+                position={explore?.fen ?? gamePos}
                 boardOrientation={flipped ? (g.color === 'white' ? 'black' : 'white') : g.color}
-                customArrows={arrows}
-                arePiecesDraggable={false}
+                customArrows={explore ? [] : arrows}
+                arePiecesDraggable
+                onPieceDrop={(s, t) => onDrop(s, t)}
                 boardWidth={320}
               />
+            )}
+            {explore && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6, fontSize: 13 }}>
+                <span style={{ color: 'var(--amber, #e0b15a)' }}>Exploring — {explore.n} move{explore.n === 1 ? '' : 's'} in</span>
+                <button type="button" onClick={() => setExplore(null)}>back to game</button>
+              </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -206,7 +233,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   </>
                 )}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump · drag a piece to explore</div>
             </div>
           </div>
           <LineChart
