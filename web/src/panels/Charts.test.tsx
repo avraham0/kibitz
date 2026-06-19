@@ -17,7 +17,10 @@ const base = (over: Partial<Stats>): Stats => ({
   },
   openings: [], topBlunders: [], lostPositionMoves: 0,
   byTimeBucket: { '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 } },
-  gamesWithClock: 0, accuracy: 90, accuracyByPhase: { opening: 95, middlegame: 85, endgame: 80 }, ...over,
+  gamesWithClock: 0, accuracy: 90, accuracyByPhase: { opening: 95, middlegame: 85, endgame: 80 },
+  conversion: { winningGames: 0, converted: 0 },
+  byColor: { white: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 }, black: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 } },
+  ...over,
 })
 
 describe('charts', () => {

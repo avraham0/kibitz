@@ -47,6 +47,26 @@ describe('aggregate — accuracy', () => {
   })
 })
 
+describe('aggregate — winning-position conversion', () => {
+  it('counts games that reached a winning peak and how many were won', () => {
+    const won = game({ result: 'win', moves: [mv({ isPlayerMove: true, evalBefore: { cp: 450, mate: null } })] })
+    const blown = game({ result: 'loss', moves: [mv({ isPlayerMove: true, evalBefore: { cp: 450, mate: null } })] })
+    const never = game({ result: 'loss', moves: [mv({ isPlayerMove: true, evalBefore: { cp: 50, mate: null } })] })
+    const s = aggregate([won, blown, never])
+    expect(s.conversion).toEqual({ winningGames: 2, converted: 1 })
+  })
+})
+
+describe('aggregate — color split', () => {
+  it('splits games, wins, and mistakes by color', () => {
+    const w = game({ color: 'white', result: 'win', moves: [mv({ isPlayerMove: true, severity: 'blunder', cpLoss: 400, type: 'fork' })] })
+    const b = game({ color: 'black', result: 'loss', moves: [mv({ isPlayerMove: true })] })
+    const s = aggregate([w, b])
+    expect(s.byColor.white).toMatchObject({ games: 1, wins: 1, winPct: 100, mistakes: 1 })
+    expect(s.byColor.black).toMatchObject({ games: 1, wins: 0, winPct: 0, mistakes: 0 })
+  })
+})
+
 describe('aggregate — opening grouping (by ECO)', () => {
   const og = (name: string, eco: string): GameAnalysis => ({
     gameId: name, url: name, playedAt: '2026-01-01T00:00:00.000Z',

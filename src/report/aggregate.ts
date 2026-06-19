@@ -1,4 +1,4 @@
-import type { GameAnalysis, MistakeType, Phase } from '../types.js'
+import type { GameAnalysis, MistakeType, Phase, Color } from '../types.js'
 import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
 import type { MoveAnalysis } from '../types.js'
 
@@ -55,7 +55,15 @@ export type Stats = {
   accuracy: number
   // Accuracy (0–100) restricted to the player's real decisions in each game phase.
   accuracyByPhase: Record<Phase, number>
+  // Games where the player reached a clearly winning position (peak eval ≥ +300
+  // from their POV) and how many of those ended in a win.
+  conversion: { winningGames: number; converted: number }
+  // Per-color split of games, results, accuracy, and mistakes.
+  byColor: Record<Color, { games: number; wins: number; winPct: number; accuracy: number; mistakes: number }>
 }
+
+// Eval (player POV, cp) at/above which a position is considered "clearly winning".
+const WINNING_CP = 300
 
 const TYPES: CoachableMistakeType[] = [
   'hung_piece', 'missed_tactic', 'bad_trade', 'king_safety', 'positional',
@@ -118,6 +126,11 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   let gamesWithClock = 0
   let accuracySum = 0
   let accuracyMoves = 0
+  const conversion = { winningGames: 0, converted: 0 }
+  const colorAgg: Record<Color, { games: number; wins: number; mistakes: number; accSum: number; accN: number }> = {
+    white: { games: 0, wins: 0, mistakes: 0, accSum: 0, accN: 0 },
+    black: { games: 0, wins: 0, mistakes: 0, accSum: 0, accN: 0 },
+  }
   const phaseAcc: Record<Phase, { sum: number; n: number }> = {
     opening: { sum: 0, n: 0 }, middlegame: { sum: 0, n: 0 }, endgame: { sum: 0, n: 0 },
   }
@@ -126,6 +139,8 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
     if (g.result === 'win') record.wins++
     else if (g.result === 'loss') record.losses++
     else record.draws++
+    colorAgg[g.color].games++
+    if (g.result === 'win') colorAgg[g.color].wins++
 
     const key = byVariation ? g.eco + '|' + g.openingName : (g.eco || 'Unknown')
     const o = openingMap.get(key) ?? { eco: g.eco, name: g.openingName, games: 0, wins: 0, mistakes: 0 }
@@ -135,8 +150,12 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
     if (!byVariation && g.openingName.length < o.name.length) o.name = g.openingName
 
     let gameHadClock = false
+    let gamePeak = -Infinity
 
     for (const m of g.moves) {
+      // Peak position quality from the player's POV across the whole game.
+      const pov = m.isPlayerMove ? cpFromMoverPov(m.evalBefore) : -cpFromMoverPov(m.evalBefore)
+      if (pov > gamePeak) gamePeak = pov
       if (!m.isPlayerMove) continue
       if (m.clockSeconds != null) {
         gameHadClock = true
@@ -160,9 +179,12 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       accuracyMoves++
       phaseAcc[m.phase].sum += acc
       phaseAcc[m.phase].n++
+      colorAgg[g.color].accSum += acc
+      colorAgg[g.color].accN++
       if (m.severity === 'ok') continue
       mistakeCount++
       o.mistakes++
+      colorAgg[g.color].mistakes++
       byPhase[m.phase]++
       typeAcc[m.type].count++
       typeAcc[m.type].sum += m.cpLoss
@@ -176,6 +198,10 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       }
     }
     if (gameHadClock) gamesWithClock++
+    if (gamePeak >= WINNING_CP) {
+      conversion.winningGames++
+      if (g.result === 'win') conversion.converted++
+    }
     openingMap.set(key, o)
   }
 
@@ -211,10 +237,21 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   const accuracyByPhase = Object.fromEntries(
     (['opening', 'middlegame', 'endgame'] as Phase[]).map((p) => [p, phaseAcc[p].n ? Math.round(phaseAcc[p].sum / phaseAcc[p].n) : 100]),
   ) as Record<Phase, number>
+  const byColor = Object.fromEntries(
+    (['white', 'black'] as Color[]).map((c) => {
+      const a = colorAgg[c]
+      return [c, {
+        games: a.games, wins: a.wins,
+        winPct: a.games ? Math.round((a.wins / a.games) * 100) : 0,
+        accuracy: a.accN ? Math.round(a.accSum / a.accN) : 100,
+        mistakes: a.mistakes,
+      }]
+    }),
+  ) as Stats['byColor']
 
   return {
     gamesAnalyzed: games.length,
     record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
-    byTimeBucket, gamesWithClock, accuracy, accuracyByPhase,
+    byTimeBucket, gamesWithClock, accuracy, accuracyByPhase, conversion, byColor,
   }
 }

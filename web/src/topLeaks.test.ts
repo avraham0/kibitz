@@ -20,6 +20,8 @@ function stats(over: Partial<Stats>): Stats {
       '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 },
     },
     gamesWithClock: 0, accuracy: 100, accuracyByPhase: { opening: 100, middlegame: 100, endgame: 100 },
+    conversion: { winningGames: 0, converted: 0 },
+    byColor: { white: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 }, black: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 } },
     ...over,
   }
 }
