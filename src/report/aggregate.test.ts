@@ -46,6 +46,19 @@ describe('aggregate — accuracy', () => {
     expect(aggregate([g]).accuracy).toBeGreaterThanOrEqual(99)
   })
 
+  it('reports a stricter (chess.com-leaning) estimate that is <= the lichess-style one', () => {
+    const g = game({
+      moves: [
+        mv({ isPlayerMove: true }), // clean
+        mv({ isPlayerMove: true, severity: 'blunder', cpLoss: 600, evalBefore: { cp: 100, mate: null }, evalAfterPlayed: { cp: 500, mate: null } }),
+        mv({ isPlayerMove: true, severity: 'mistake', cpLoss: 150, evalBefore: { cp: 0, mate: null }, evalAfterPlayed: { cp: 200, mate: null } }),
+      ],
+    })
+    const s = aggregate([g])
+    expect(s.accuracyStrict).toBeLessThanOrEqual(s.accuracy)
+    expect(s.accuracyStrict).toBeLessThan(s.accuracy) // blunders present ⇒ strictly lower
+  })
+
   it('reports accuracy per phase, defaulting to 100 for phases with no decisions', () => {
     const g = game({
       moves: [

@@ -9,7 +9,7 @@ const openings: OpeningStat[] = [
 const games: GameSummary[] = [
   {
     gameId: 'g', url: 'u', playedAt: '2026-02-03T00:00:00.000Z', color: 'white',
-    result: 'loss', eco: 'C50', openingName: 'Italian Game', accuracy: 72,
+    result: 'loss', eco: 'C50', openingName: 'Italian Game', accuracy: 72, accuracyStrict: 58,
     moves: [
       { ply: 5, san: 'Ng5', bestSan: 'O-O', evalCp: -200, cpLoss: 300, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', fenBefore: 'x', phase: 'opening', clockSeconds: 30 },
     ],

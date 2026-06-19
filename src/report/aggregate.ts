@@ -1,7 +1,7 @@
 import type { GameAnalysis, MistakeType, Phase, Color } from '../types.js'
 import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
 import type { MoveAnalysis } from '../types.js'
-import { accuracyOf } from './accuracy.js'
+import { accuracyOf, accuracyStrictOf } from './accuracy.js'
 
 // A player move counts as "already losing" (excluded from mistakes) when the best
 // available eval before it was already worse than the threshold. Computed from the
@@ -46,6 +46,8 @@ export type Stats = {
   gamesWithClock: number
   // Overall accuracy (0–100) over the player's real decisions (excludes lost-position moves).
   accuracy: number
+  // Stricter, chess.com-leaning estimate of overall accuracy (for comparison only).
+  accuracyStrict: number
   // Accuracy (0–100) restricted to the player's real decisions in each game phase.
   accuracyByPhase: Record<Phase, number>
   // Games where the player reached a clearly winning position (peak eval ≥ +300
@@ -70,7 +72,8 @@ export type GameMove = {
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
-  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; accuracy: number
+  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
+  accuracy: number; accuracyStrict: number
   moves: GameMove[]
 }
 
@@ -91,7 +94,9 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
     return {
       gameId: g.gameId, url: g.url, playedAt: g.playedAt, color: g.color, result: g.result,
       eco: g.eco, openingName: g.openingName,
-      accuracy: accuracyOf(g.moves.filter((m) => m.isPlayerMove)), moves,
+      accuracy: accuracyOf(g.moves.filter((m) => m.isPlayerMove)),
+      accuracyStrict: accuracyStrictOf(g.moves.filter((m) => m.isPlayerMove)),
+      moves,
     }
   })
 }
@@ -115,6 +120,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   // Accuracy is blended per-game (lichess weighted+harmonic), so collect the player's
   // moves into segments and run the blend once per segment at the end.
   let accWeightedSum = 0
+  let accStrictWeightedSum = 0
   let accWeightTotal = 0
   const conversion = { winningGames: 0, converted: 0 }
   const colorAgg: Record<Color, { games: number; wins: number; mistakes: number }> = {
@@ -185,6 +191,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
     // Per-game accuracy, weighted by the number of decisions in the game.
     if (gamePlayerMoves.length) {
       accWeightedSum += accuracyOf(gamePlayerMoves) * gamePlayerMoves.length
+      accStrictWeightedSum += accuracyStrictOf(gamePlayerMoves) * gamePlayerMoves.length
       accWeightTotal += gamePlayerMoves.length
     }
     if (gamePeak >= WINNING_CP) {
@@ -223,6 +230,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   const topBlunders = blunders.sort((a, b) => b.cpLoss - a.cpLoss).slice(0, 10)
 
   const accuracy = accWeightTotal ? Math.round(accWeightedSum / accWeightTotal) : 100
+  const accuracyStrict = accWeightTotal ? Math.round(accStrictWeightedSum / accWeightTotal) : 100
   const accuracyByPhase = Object.fromEntries(
     (['opening', 'middlegame', 'endgame'] as Phase[]).map((p) => [p, accuracyOf(phaseMoves[p])]),
   ) as Record<Phase, number>
@@ -241,6 +249,6 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   return {
     gamesAnalyzed: games.length,
     record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
-    byTimeBucket, gamesWithClock, accuracy, accuracyByPhase, conversion, byColor,
+    byTimeBucket, gamesWithClock, accuracy, accuracyStrict, accuracyByPhase, conversion, byColor,
   }
 }

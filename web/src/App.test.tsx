@@ -19,7 +19,7 @@ const result = {
     byType: Object.fromEntries(['hung_piece','missed_tactic','bad_trade','king_safety','positional','fork','pin','skewer','discovered_attack','trapped_piece','back_rank'].map((t) => [t, { count: 0, avgCpLoss: 0, missed: 0, allowed: 0 }])),
     openings: [], topBlunders: [], lostPositionMoves: 0,
     byTimeBucket: { '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 } },
-    gamesWithClock: 0, accuracy: 90, accuracyByPhase: { opening: 100, middlegame: 100, endgame: 100 },
+    gamesWithClock: 0, accuracy: 90, accuracyStrict: 80, accuracyByPhase: { opening: 100, middlegame: 100, endgame: 100 },
     conversion: { winningGames: 0, converted: 0 },
     byColor: { white: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 }, black: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 } } },
 }

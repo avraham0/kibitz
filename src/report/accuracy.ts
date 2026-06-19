@@ -66,3 +66,21 @@ export function accuracyOf(playerMoves: MoveAnalysis[]): number {
   }
   return blendAccuracy(accs, wins)
 }
+
+function harmonicMean(accs: number[]): number {
+  if (accs.length === 0) return 100
+  return accs.length / accs.reduce((a, b) => a + 1 / Math.max(b, 1), 0)
+}
+
+// A stricter, chess.com-leaning ESTIMATE: a steeper per-move penalty combined with a
+// pure harmonic mean (so inaccuracies and blunders weigh more). This is an
+// approximation for comparison only — chess.com's CAPS2 is proprietary and not
+// reproducible; expect the same rough offset, not an exact match.
+export function accuracyStrictOf(playerMoves: MoveAnalysis[]): number {
+  if (playerMoves.length === 0) return 100
+  const accs = playerMoves.map((m) => {
+    const drop = Math.max(0, winPct(cpFromMoverPov(m.evalBefore)) - playerWinAfter(m))
+    return Math.max(0, Math.min(100, 100 * Math.exp(-0.062 * drop)))
+  })
+  return Math.round(harmonicMean(accs))
+}

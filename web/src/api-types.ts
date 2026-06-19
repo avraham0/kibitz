@@ -21,6 +21,7 @@ export type Stats = {
   byTimeBucket: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; avgCpLoss: number }>
   gamesWithClock: number
   accuracy: number
+  accuracyStrict: number
   accuracyByPhase: Record<Phase, number>
   conversion: { winningGames: number; converted: number }
   byColor: Record<Color, { games: number; wins: number; winPct: number; accuracy: number; mistakes: number }>
@@ -34,7 +35,8 @@ export type GameMove = {
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
-  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; accuracy: number
+  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
+  accuracy: number; accuracyStrict: number
   moves: GameMove[]
 }
 export type AnalyzeResult = { stats: Stats; suggestions: Suggestion[]; meta: { user: string; since: string; depth: number }; games: GameSummary[] }
