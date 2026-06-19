@@ -4,7 +4,7 @@ export type MistakeType =
 export type TimeBucket = '<10s' | '10-30s' | '30-60s' | '60s+'
 export type CoachableType = Exclude<MistakeType, 'lost_position'>
 
-export type BlunderRef = { url: string; ply: number; san: string; bestSan: string; fenBefore: string; cpLoss: number; type: MistakeType }
+export type BlunderRef = { url: string; ply: number; san: string; bestSan: string; fenBefore: string; cpLoss: number; type: MistakeType; missed: boolean }
 export type OpeningStat = { eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number }
 export type Phase = 'opening' | 'middlegame' | 'endgame'
 export type Color = 'white' | 'black'

@@ -6,7 +6,7 @@ import type { BlunderRef } from '../api-types.js'
 const blunder: BlunderRef = {
   url: 'u', ply: 20, san: 'a3', bestSan: 'e4',
   fenBefore: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-  cpLoss: 300, type: 'missed_tactic',
+  cpLoss: 300, type: 'missed_tactic', missed: true,
 }
 
 describe('PuzzleBoard', () => {

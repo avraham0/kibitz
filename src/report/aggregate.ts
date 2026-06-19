@@ -17,7 +17,7 @@ function isLostPosition(m: MoveAnalysis): boolean {
 
 export type BlunderRef = {
   url: string; ply: number; san: string; bestSan: string
-  fenBefore: string; cpLoss: number; type: MistakeType
+  fenBefore: string; cpLoss: number; type: MistakeType; missed: boolean
 }
 export type OpeningStat = {
   eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number
@@ -209,7 +209,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       if (m.severity === 'blunder') {
         blunders.push({
           url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan,
-          fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type,
+          fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed,
         })
       }
     }

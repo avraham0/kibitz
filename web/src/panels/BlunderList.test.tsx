@@ -5,8 +5,8 @@ import type { BlunderRef } from '../api-types.js'
 
 const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const blunders: BlunderRef[] = [
-  { url: 'u', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: 'rnbqkbnr/pp1ppppp/2p5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', cpLoss: 400, type: 'hung_piece' },
-  { url: 'u2', ply: 22, san: 'a4', bestSan: 'b4', fenBefore: start, cpLoss: 300, type: 'fork' },
+  { url: 'u', ply: 20, san: 'Qd5', bestSan: 'Nf3', fenBefore: 'rnbqkbnr/pp1ppppp/2p5/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', cpLoss: 400, type: 'hung_piece', missed: false },
+  { url: 'u2', ply: 22, san: 'a4', bestSan: 'b4', fenBefore: start, cpLoss: 300, type: 'fork', missed: true },
 ]
 
 describe('BlunderList', () => {

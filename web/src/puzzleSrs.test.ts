@@ -3,7 +3,7 @@ import { recordResult, isDue, orderByDue, dueCount, puzzleKey, type SrsStore } f
 import type { BlunderRef } from './api-types.js'
 
 const b = (url: string, ply: number): BlunderRef => ({
-  url, ply, san: 'x', bestSan: 'y', fenBefore: 'f', cpLoss: 300, type: 'fork',
+  url, ply, san: 'x', bestSan: 'y', fenBefore: 'f', cpLoss: 300, type: 'fork', missed: false,
 })
 const NOW = 1_000_000_000_000
 
