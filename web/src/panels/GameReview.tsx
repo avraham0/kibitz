@@ -131,7 +131,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   const arrows: Arrow[] = []
   if (playedMv) arrows.push([playedMv.from as Arrow[0], playedMv.to as Arrow[1], isMistake ? 'rgb(200,80,80)' : 'rgb(90,140,220)'])
   if (bestMv) arrows.push([bestMv.from as Arrow[0], bestMv.to as Arrow[1], 'rgb(80,160,80)'])
-  const data = moves.map((m) => ({ ply: m.ply, eval: m.evalCp, mistake: m.isPlayerMove && m.severity !== 'ok' }))
+  // Plot the eval AFTER each move (= the next position's "before" eval) so the
+  // highlighted point lines up with the board, which shows the move as played.
+  const data = moves.map((m, i) => ({ ply: m.ply, eval: moves[i + 1] ? moves[i + 1].evalCp : m.evalCp, mistake: m.isPlayerMove && m.severity !== 'ok' }))
   const mistakeIdxs = moves.map((m, i) => (m.isPlayerMove && m.severity !== 'ok' ? i : -1)).filter((i) => i >= 0)
   const jumpPrevMistake = () => setPly((p) => [...mistakeIdxs].reverse().find((i) => i < p) ?? p)
   const jumpNextMistake = () => setPly((p) => mistakeIdxs.find((i) => i > p) ?? p)
