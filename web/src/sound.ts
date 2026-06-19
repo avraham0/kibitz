@@ -46,34 +46,44 @@ export function playMoveSound(kind: MoveSound): void {
 
   const master = ac.createGain()
   master.gain.value = p.vol
+  // Master low-pass smooths off harsh highs / aliasing so it doesn't sound crunchy.
+  const tone = ac.createBiquadFilter()
+  tone.type = 'lowpass'
+  tone.frequency.value = 2400
+  tone.Q.value = 0.7
+  tone.connect(master)
   master.connect(ac.destination)
 
-  // Body: a triangle "thunk" that glides down in pitch and decays fast.
+  // Body: a sine "thunk" that glides down in pitch and decays fast. Sine (not
+  // triangle) keeps it clean — no high harmonics to alias.
   const osc = ac.createOscillator()
-  osc.type = 'triangle'
+  osc.type = 'sine'
   osc.frequency.setValueAtTime(p.body * 1.6, t)
   osc.frequency.exponentialRampToValueAtTime(p.body, t + 0.03)
   const bodyGain = ac.createGain()
   bodyGain.gain.setValueAtTime(0.0001, t)
   bodyGain.gain.exponentialRampToValueAtTime(1, t + 0.004) // fast attack, no click discontinuity
   bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + p.decay)
-  osc.connect(bodyGain); bodyGain.connect(master)
+  osc.connect(bodyGain); bodyGain.connect(tone)
   osc.start(t); osc.stop(t + p.decay + 0.02)
 
-  // Click transient: a very short, low-passed noise burst for the attack snap.
-  const dur = 0.018
-  const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate)
+  // Click transient: a soft, heavily low-passed noise blip with a smooth fade
+  // (windowed both ends) for the attack — gives the "knock" without the grit.
+  const dur = 0.014
+  const n = Math.floor(ac.sampleRate * dur)
+  const buf = ac.createBuffer(1, n, ac.sampleRate)
   const data = buf.getChannelData(0)
-  for (let i = 0; i < data.length; i++) {
-    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2)
+  for (let i = 0; i < n; i++) {
+    const w = Math.sin((Math.PI * i) / n) // Hann-ish window: no abrupt start/stop
+    data[i] = (Math.random() * 2 - 1) * w * w
   }
   const noise = ac.createBufferSource()
   noise.buffer = buf
   const lp = ac.createBiquadFilter()
   lp.type = 'lowpass'
-  lp.frequency.value = 2600
+  lp.frequency.value = 1400
   const clickGain = ac.createGain()
   clickGain.gain.value = p.click
-  noise.connect(lp); lp.connect(clickGain); clickGain.connect(master)
+  noise.connect(lp); lp.connect(clickGain); clickGain.connect(tone)
   noise.start(t); noise.stop(t + dur)
 }
