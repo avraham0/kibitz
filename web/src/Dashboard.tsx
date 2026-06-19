@@ -19,8 +19,9 @@ import { RatingChart } from './panels/RatingChart.js'
 import { BestGames } from './panels/BestGames.js'
 import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
 import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
+import { TrainingTab } from './panels/TrainingTab.js'
 
-type Tab = 'overview' | 'blunders' | 'review'
+type Tab = 'overview' | 'blunders' | 'train' | 'review'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
@@ -34,7 +35,8 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
   }
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'blunders', label: 'Blunders & puzzles' },
+    { id: 'blunders', label: 'Blunders' },
+    { id: 'train', label: 'Train' },
     { id: 'review', label: 'Game review' },
   ]
   return (
@@ -69,6 +71,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
         </>
       )}
       {tab === 'blunders' && <BlunderList blunders={stats.topBlunders} />}
+      {tab === 'train' && <TrainingTab blunders={stats.topBlunders} />}
       {tab === 'review' && <GameReview games={games} focus={focus} />}
     </div>
   )
