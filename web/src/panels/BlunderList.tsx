@@ -91,7 +91,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           )
         })()
       ) : (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8, justifyContent: 'center' }}>
         {shown.slice(0, visible).map((b, i) => {
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)

@@ -79,7 +79,7 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
     <section>
       <h2>Training</h2>
       <QueueBar total={blunders.length} due={due} solved={sessionSolved} />
-      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'center' }}>
         <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} />
         <div style={{ minWidth: 200 }}>
           <div style={{ marginBottom: 16 }}>
