@@ -1,9 +1,10 @@
 import type { Stats } from '../api-types.js'
+import { accuracyColor } from '../accuracyColor.js'
 
 export function SummaryCard({ stats }: { stats: Stats }) {
   const r = stats.record
-  const tiles = [
-    { label: 'Accuracy', value: `${stats.accuracy}%` },
+  const tiles: { label: string; value: string; color?: string }[] = [
+    { label: 'Accuracy', value: `${stats.accuracy}%`, color: accuracyColor(stats.accuracy) },
     { label: 'Record', value: `${r.wins}W-${r.losses}L-${r.draws}D` },
     { label: 'Games', value: String(stats.gamesAnalyzed) },
     { label: 'Mistakes', value: String(stats.mistakeCount) },
@@ -15,7 +16,7 @@ export function SummaryCard({ stats }: { stats: Stats }) {
       <div className="stats">
         {tiles.map((t) => (
           <div className="stat" key={t.label}>
-            <div className="stat-value">{t.value}</div>
+            <div className="stat-value" style={t.color ? { color: t.color } : undefined}>{t.value}</div>
             <div className="stat-label">{t.label}</div>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { sinceFromRange, RANGE_LABELS, type RangeKey } from './sinceFromRange.js'
 
 export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string }
 
@@ -6,14 +7,16 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
   const [user, setUser] = useState('avraham00')
   const [last, setLast] = useState('10')
   const [depth, setDepth] = useState('12')
-  const [since, setSince] = useState('')
+  const [range, setRange] = useState<RangeKey>('1year')
+  const [customSince, setCustomSince] = useState('')
   const [variations, setVariations] = useState(false)
   const [timeControl, setTimeControl] = useState('')
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: since || undefined, variations, timeControl: timeControl || undefined })
+    const since = range === 'custom' ? (customSince || undefined) : sinceFromRange(range, new Date())
+    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since, variations, timeControl: timeControl || undefined })
   }
 
   return (
@@ -21,7 +24,16 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
       <label>chess.com username<br /><input value={user} onChange={(e) => setUser(e.target.value)} placeholder="username" required /></label>
       <label>last N<br /><input value={last} onChange={(e) => setLast(e.target.value)} style={{ width: 60 }} /></label>
       <label>depth<br /><input value={depth} onChange={(e) => setDepth(e.target.value)} style={{ width: 60 }} /></label>
-      <label>since (YYYY-MM)<br /><input value={since} onChange={(e) => setSince(e.target.value)} style={{ width: 100 }} /></label>
+      <label>range<br />
+        <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)}>
+          {(Object.keys(RANGE_LABELS) as RangeKey[]).map((k) => (
+            <option key={k} value={k}>{RANGE_LABELS[k]}</option>
+          ))}
+        </select>
+      </label>
+      {range === 'custom' && (
+        <label>since (YYYY-MM)<br /><input value={customSince} onChange={(e) => setCustomSince(e.target.value)} placeholder="2025-01" style={{ width: 100 }} /></label>
+      )}
       <label>time control<br />
         <select value={timeControl} onChange={(e) => setTimeControl(e.target.value)}>
           <option value="">any</option>

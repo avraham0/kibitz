@@ -5,6 +5,7 @@ import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { GameSummary } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
+import { accuracyColor } from '../accuracyColor.js'
 
 // Pick a game, see its eval graph, and step through it move by move.
 export function GameReview({ games }: { games: GameSummary[] }) {
@@ -39,7 +40,10 @@ export function GameReview({ games }: { games: GameSummary[] }) {
   const arrows: Arrow[] = []
   if (playedMv) arrows.push([playedMv.from as Arrow[0], playedMv.to as Arrow[1], isMistake ? 'rgb(200,80,80)' : 'rgb(90,140,220)'])
   if (bestMv) arrows.push([bestMv.from as Arrow[0], bestMv.to as Arrow[1], 'rgb(80,160,80)'])
-  const data = moves.map((m) => ({ ply: m.ply, eval: m.evalCp }))
+  const data = moves.map((m) => ({ ply: m.ply, eval: m.evalCp, mistake: m.isPlayerMove && m.severity !== 'ok' }))
+  const mistakeIdxs = moves.map((m, i) => (m.isPlayerMove && m.severity !== 'ok' ? i : -1)).filter((i) => i >= 0)
+  const jumpPrevMistake = () => setPly((p) => [...mistakeIdxs].reverse().find((i) => i < p) ?? p)
+  const jumpNextMistake = () => setPly((p) => mistakeIdxs.find((i) => i > p) ?? p)
 
   function pick(i: number) { setGi(i); setPly(0) }
 
@@ -55,6 +59,7 @@ export function GameReview({ games }: { games: GameSummary[] }) {
           ))}
         </select>
       </label>
+      <span style={{ marginLeft: 10, fontWeight: 600, color: accuracyColor(g.accuracy) }}>Accuracy {g.accuracy}%</span>
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>
       ) : (
@@ -75,6 +80,13 @@ export function GameReview({ games }: { games: GameSummary[] }) {
                 <button type="button" onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
                 <span style={{ fontSize: 13 }}>move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san}</span>
               </div>
+              {mistakeIdxs.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
+                  <button type="button" onClick={jumpPrevMistake} disabled={!mistakeIdxs.some((i) => i < idx)}>‹ mistake</button>
+                  <button type="button" onClick={jumpNextMistake} disabled={!mistakeIdxs.some((i) => i > idx)}>mistake ›</button>
+                  <span style={{ color: 'var(--muted)' }}>{mistakeIdxs.length} mistakes</span>
+                </div>
+              )}
               {isMistake && cur && (
                 <div style={{ fontSize: 13, color: 'rgb(224,121,107)' }}>
                   {cur.severity} −{cur.cpLoss}cp · {cur.type} · best {cur.bestSan}
@@ -98,7 +110,12 @@ export function GameReview({ games }: { games: GameSummary[] }) {
             <Tooltip {...TOOLTIP} />
             <ReferenceLine y={0} stroke="#4a525e" />
             {cur && <ReferenceLine x={cur.ply} stroke={COLORS.accent} />}
-            <Line type="monotone" dataKey="eval" stroke={COLORS.line} strokeWidth={2} dot={false} isAnimationActive={false} />
+            <Line
+              type="monotone" dataKey="eval" stroke={COLORS.line} strokeWidth={2} isAnimationActive={false}
+              dot={(p: { cx: number; cy: number; index: number; payload?: { mistake?: boolean } }) => (
+                <circle key={p.index} cx={p.cx} cy={p.cy} r={p.payload?.mistake ? 4 : 0} fill="rgb(224,121,107)" stroke="none" />
+              )}
+            />
           </LineChart>
         </div>
       )}

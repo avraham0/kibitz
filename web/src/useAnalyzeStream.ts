@@ -54,7 +54,7 @@ export function useAnalyzeStream() {
     })
     es.addEventListener('error', (e: MessageEvent) => {
       // SSE 'error' with data = our app error; without data = transport error
-      const msg = (e as MessageEvent).data ? JSON.parse((e as MessageEvent).data).message : 'Connection failed'
+      const msg = (e as MessageEvent).data ? JSON.parse((e as MessageEvent).data).message : 'Could not reach the analysis server'
       setError(msg); setStatus('error'); es.close()
     })
   }, [])

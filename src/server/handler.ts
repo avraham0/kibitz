@@ -20,6 +20,14 @@ const CONTENT_TYPES: Record<string, string> = {
 
 let busy = false
 
+// EventSource cannot read the body of a non-2xx response, so send app-level errors
+// as an SSE `error` event over a 200 stream — the browser hook then shows the message.
+function sseError(res: ServerResponse, message: string): void {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
+  writeSse((c) => res.write(c), 'error', { message })
+  res.end()
+}
+
 export function createHandler(deps: Deps) {
   return function handler(req: IncomingMessage, res: ServerResponse): void {
     const url = new URL(req.url ?? '/', 'http://localhost')
@@ -34,13 +42,11 @@ export function createHandler(deps: Deps) {
 async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise<void> {
   const user = url.searchParams.get('user')
   if (!user) {
-    res.writeHead(400, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ message: 'Missing required "user" parameter' }))
+    sseError(res, 'Missing required "user" parameter')
     return
   }
   if (busy) {
-    res.writeHead(409, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ message: 'An analysis is already running' }))
+    sseError(res, 'An analysis is already running')
     return
   }
   busy = true

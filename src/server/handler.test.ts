@@ -42,24 +42,26 @@ describe('createHandler — /api/analyze', () => {
     expect(res.body).toContain('"user":"bob"')
   })
 
-  it('returns 400 when user is missing', async () => {
+  it('streams an error event when user is missing', async () => {
     const analyze = async () => sample
     const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
     const res = mockRes()
     handler(mockReq('/api/analyze?depth=8'), res)
     await res.ended
-    expect(res.statusCode).toBe(400)
+    expect(res.body).toContain('event: error')
+    expect(res.body).toContain('user')
   })
 
-  it('returns 409 when an analysis is already running', async () => {
+  it('streams an error event when an analysis is already running', async () => {
     let release!: () => void
     const gate = new Promise<void>((r) => { release = r })
     const analyze = async (_o: any, onP: any) => { await gate; onP(1, 1); return sample }
     const handler = createHandler({ analyze, staticDir: '/nonexistent', nowISO: () => '2026-06-18T00:00:00Z' })
     const res1 = mockRes(); handler(mockReq('/api/analyze?user=a'), res1) // starts, holds busy
-    const res2 = mockRes(); handler(mockReq('/api/analyze?user=b'), res2) // busy → 409
+    const res2 = mockRes(); handler(mockReq('/api/analyze?user=b'), res2) // busy → error event
     await res2.ended
-    expect(res2.statusCode).toBe(409)
+    expect(res2.body).toContain('event: error')
+    expect(res2.body).toContain('already running')
     release(); await res1.ended // release lock so other tests aren't affected
   })
 })
