@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react'
 export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string }
 
 export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) => void; disabled: boolean }) {
-  const [user, setUser] = useState('')
+  const [user, setUser] = useState('avraham00')
   const [last, setLast] = useState('10')
   const [depth, setDepth] = useState('15')
   const [since, setSince] = useState('')

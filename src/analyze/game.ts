@@ -8,7 +8,9 @@ import { detectMotif } from './motifs.js'
 export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string; pv: string[] }>
 
 export const MAX_CPLOSS = 2000
-export const LOST_POSITION_CP = -500
+// If the best move before a move still leaves the player worse than this (≈ already
+// down a piece), treat the move as a lost-position move — not a coachable mistake.
+export const LOST_POSITION_CP = -300
 
 export function cpFromMoverPov(ev: Eval): number {
   if (ev.mate !== null) {
