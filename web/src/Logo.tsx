@@ -23,7 +23,7 @@ export function KibitzMark({ size = 48 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="Kibitz logo">
       <rect x="1" y="1" width="62" height="62" rx="15" fill={TILE} stroke="#2a313d" />
-      <g transform="translate(0 1) scale(0.9)"><Bishop fill={AMBER} slit={TILE} /></g>
+      <g transform="translate(3.2 2.5) scale(0.9)"><Bishop fill={AMBER} slit={TILE} /></g>
     </svg>
   )
 }
