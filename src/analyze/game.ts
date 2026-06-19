@@ -127,23 +127,29 @@ export async function analyzeGame(
     if (severity === 'ok') {
       type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
     } else {
+      // What the move did to YOU ranks over what it failed to do. A move that hangs
+      // material or walks into a tactic is explained by that — not by some unrelated
+      // tactic in the engine's best line (which previously produced wrong "missed a
+      // pin" labels on plain piece-hangs).
       const playedDiffersFromBest = playedUci !== before.bestUci
+      const allowedHit = afterPv ? detectMotif(fenAfter, afterPv) : null
+      const hungAfter = fenAfter ? maxHangingGain(fenAfter) : 0 // material the opponent can now grab
       const missedHit = playedDiffersFromBest ? detectMotif(rm.fenBefore, before.pv) : null
-      if (missedHit) {
+      if (allowedHit) {
+        missed = false
+        type = allowedHit.motif
+      } else if (hungAfter >= 200) {
+        missed = false
+        type = 'hung_piece'
+      } else if (missedHit) {
         missed = true
         type = missedHit.motif
+      } else if (maxHangingGain(rm.fenBefore) >= 200 && playedDiffersFromBest) {
+        missed = true
+        type = 'missed_tactic'
       } else {
-        const allowedHit = afterPv ? detectMotif(fenAfter, afterPv) : null
-        if (allowedHit) {
-          missed = false
-          type = allowedHit.motif
-        } else if (maxHangingGain(rm.fenBefore) >= 200 && playedDiffersFromBest) {
-          missed = true
-          type = 'missed_tactic'
-        } else {
-          missed = false
-          type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
-        }
+        missed = false
+        type = classifyMistake({ fenBefore: rm.fenBefore, san: rm.san, bestUci: before.bestUci })
       }
     }
 
