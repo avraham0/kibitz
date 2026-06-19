@@ -81,6 +81,10 @@ export function parseGame(raw: any, user: string): RawGame | null {
   if (resultStr === '1-0') result = color === 'white' ? 'win' : 'loss'
   else if (resultStr === '0-1') result = color === 'black' ? 'win' : 'loss'
 
+  // chess.com puts ratings on the game JSON; fall back to PGN Elo headers.
+  const whiteElo = Number(raw.white?.rating ?? header.WhiteElo ?? 0) || null
+  const blackElo = Number(raw.black?.rating ?? header.BlackElo ?? 0) || null
+
   // chess.js 1.x verbose history includes `before` (FEN before the move)
   // but does NOT include `.comment`.  We fall back to parsing clocks from
   // the raw PGN movetext.
@@ -111,6 +115,8 @@ export function parseGame(raw: any, user: string): RawGame | null {
       }
       return 'Unknown'
     })(),
+    playerRating: color === 'white' ? whiteElo : blackElo,
+    opponentRating: color === 'white' ? blackElo : whiteElo,
     moves,
   }
 }

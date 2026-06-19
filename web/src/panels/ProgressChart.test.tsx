@@ -5,7 +5,8 @@ import type { GameSummary } from '../api-types.js'
 
 const g = (playedAt: string, accuracy: number): GameSummary => ({
   gameId: playedAt, url: playedAt, playedAt, color: 'white', result: 'win',
-  eco: 'C50', openingName: 'Italian Game', accuracy, accuracyStrict: accuracy, moves: [],
+  eco: 'C50', openingName: 'Italian Game', accuracy, accuracyStrict: accuracy,
+  playerRating: null, opponentRating: null, wasWinning: false, turningPointIdx: null, moves: [],
 })
 
 describe('ProgressChart', () => {

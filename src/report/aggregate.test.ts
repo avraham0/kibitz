@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aggregate } from './aggregate.js'
+import { aggregate, perGameSummaries } from './aggregate.js'
 import type { GameAnalysis, MoveAnalysis } from '../types.js'
 
 describe('aggregate — already-losing exclusion (by eval, report-time)', () => {
@@ -83,6 +83,36 @@ describe('aggregate — winning-position conversion', () => {
   })
 })
 
+describe('aggregate — opponent strength split', () => {
+  it('bands games by opponent rating relative to the player', () => {
+    const strong = game({ playerRating: 1500, opponentRating: 1700, result: 'loss', moves: [mv({ isPlayerMove: true })] })
+    const weak = game({ playerRating: 1500, opponentRating: 1300, result: 'win', moves: [mv({ isPlayerMove: true })] })
+    const even = game({ playerRating: 1500, opponentRating: 1510, result: 'draw', moves: [mv({ isPlayerMove: true })] })
+    const s = aggregate([strong, weak, even])
+    expect(s.byOpponent.stronger.games).toBe(1)
+    expect(s.byOpponent.weaker.games).toBe(1)
+    expect(s.byOpponent.similar.games).toBe(1)
+    expect(s.byOpponent.weaker.wins).toBe(1)
+  })
+})
+
+describe('perGameSummaries — turning point & winning peak', () => {
+  it('flags the move that surrendered an equal position and whether the game was winning', () => {
+    const g = game({
+      result: 'loss',
+      moves: [
+        mv({ isPlayerMove: true, evalBefore: { cp: 600, mate: null } }), // peak winning
+        mv({ isPlayerMove: false, evalBefore: { cp: -550, mate: null } }),
+        // player move from ~equal that collapses the position
+        mv({ isPlayerMove: true, severity: 'blunder', cpLoss: 800, evalBefore: { cp: 20, mate: null }, evalAfterPlayed: { cp: 700, mate: null } }),
+      ],
+    })
+    const [sum] = perGameSummaries([g])
+    expect(sum.wasWinning).toBe(true)
+    expect(sum.turningPointIdx).toBe(2)
+  })
+})
+
 describe('aggregate — color split', () => {
   it('splits games, wins, and mistakes by color', () => {
     const w = game({ color: 'white', result: 'win', moves: [mv({ isPlayerMove: true, severity: 'blunder', cpLoss: 400, type: 'fork' })] })
@@ -128,6 +158,7 @@ function mv(p: Partial<MoveAnalysis>): MoveAnalysis {
 const game = (over: Partial<GameAnalysis>): GameAnalysis => ({
   gameId: 'g', url: 'u', playedAt: '2026-01-01T00:00:00.000Z',
   color: 'white', result: 'win', eco: 'C50', openingName: 'Italian',
+  playerRating: null, opponentRating: null,
   depth: 15, moves: [], ...over,
 })
 

@@ -19,9 +19,9 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
   const [tab, setTab] = useState<Tab>('overview')
   // Which game to focus in Game Review; `seq` bumps each request so re-clicking the
   // same game still triggers the jump.
-  const [focus, setFocus] = useState<{ id: string; seq: number } | null>(null)
-  function openGame(id: string) {
-    setFocus((f) => ({ id, seq: (f?.seq ?? 0) + 1 }))
+  const [focus, setFocus] = useState<{ id: string; seq: number; ply?: number } | null>(null)
+  function openGame(id: string, ply?: number) {
+    setFocus((f) => ({ id, ply, seq: (f?.seq ?? 0) + 1 }))
     setTab('review')
   }
   const tabs: { id: Tab; label: string }[] = [
@@ -47,7 +47,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
           <PhaseChart stats={stats} />
           <TimePressureChart stats={stats} />
-          <Splits stats={stats} />
+          <Splits stats={stats} games={games} onOpenGame={openGame} />
           <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
           <CoachingCards suggestions={suggestions} />
         </>

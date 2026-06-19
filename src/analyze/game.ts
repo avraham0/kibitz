@@ -135,6 +135,8 @@ export async function analyzeGame(
     result: raw.result,
     eco: raw.eco,
     openingName: raw.openingName,
+    playerRating: raw.playerRating,
+    opponentRating: raw.opponentRating,
     depth,
     moves,
   }
