@@ -23,6 +23,9 @@ type AnalyzeOpts = {
   variations?: boolean
   // Only analyze games of this chess.com time class (bullet|blitz|rapid|daily).
   timeControl?: string
+  // Only analyze games with this result from the player's POV (default: 'loss').
+  // 'all' analyzes everything.
+  result?: 'all' | 'win' | 'loss' | 'draw'
   // Abort the run early (e.g. the web client disconnected / cancelled).
   signal?: AbortSignal
 }
@@ -43,6 +46,9 @@ export async function analyze(
   const tc = opts.timeControl?.toLowerCase()
   const rawFiltered = tc ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tc) : raw
   let parsed = rawFiltered.map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
+  // Result filter (default: losses — the games with the most to learn from).
+  const wantResult = opts.result && opts.result !== 'all' ? opts.result : null
+  if (wantResult) parsed = parsed.filter((g) => g.result === wantResult)
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
   if (opts.last && opts.last > 0) parsed = parsed.slice(-opts.last)
 

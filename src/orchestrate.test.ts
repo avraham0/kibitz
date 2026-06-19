@@ -61,6 +61,24 @@ describe('analyze', () => {
     expect(res.stats.gamesAnalyzed).toBe(1) // only the blitz game
   })
 
+  it('filters games by result when result is set', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'cc-res-'))
+    const pgn = (r: string) => `[White "bob"]\n[Black "x"]\n[Result "${r}"]\n[ECO "C50"]\n[Opening "Italian"]\n\n1. e4 e5 ${r}`
+    const games = [
+      { url: 'g-win', end_time: 1, white: { username: 'bob' }, black: { username: 'x' }, pgn: pgn('1-0') },   // bob wins
+      { url: 'g-loss', end_time: 2, white: { username: 'bob' }, black: { username: 'x' }, pgn: pgn('0-1') },  // bob loses
+      { url: 'g-loss2', end_time: 3, white: { username: 'bob' }, black: { username: 'x' }, pgn: pgn('0-1') },
+    ]
+    const fetchFn = async (url: string) => {
+      if (url.endsWith('/archives')) return new Response(JSON.stringify({ archives: [] }), { status: 200 })
+      return new Response(JSON.stringify({ games }), { status: 200 })
+    }
+    const evaluate = async (fen: string) => ({ eval: { cp: fen.includes(' w ') ? 20 : -20, mate: null }, bestUci: 'e2e4', pv: [] })
+    const res = await analyze({ user: 'bob', since: '2026-06', depth: 8, root, nowISO: '2026-06-18T00:00:00Z', evaluate: evaluate as any, fetchFn: fetchFn as any, result: 'loss' })
+    expect(res.stats.gamesAnalyzed).toBe(2) // only the two losses
+    expect(res.stats.record).toEqual({ wins: 0, losses: 2, draws: 0 })
+  })
+
   it('spreads games across a pool of evaluators (parallel) and analyzes them all', async () => {
     const root = mkdtempSync(join(tmpdir(), 'cc-pool-'))
     const mkPgn = (w: string) => `[White "${w}"]\n[Black "x"]\n[Result "1-0"]\n[ECO "C50"]\n[Opening "Italian"]\n\n1. e4 e5 2. Nf3 Nc6 1-0`

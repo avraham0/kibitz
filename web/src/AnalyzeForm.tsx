@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { sinceFromRange, RANGE_LABELS, type RangeKey } from './sinceFromRange.js'
 
-export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string }
+export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string }
 
 export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) => void; disabled: boolean }) {
   const [user, setUser] = useState('avraham00')
@@ -11,6 +11,7 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
   const [customSince, setCustomSince] = useState('')
   const [variations, setVariations] = useState(false)
   const [timeControl, setTimeControl] = useState('')
+  const [result, setResult] = useState('loss') // default to losses — most to learn from
 
   function sinceValue() {
     return range === 'custom' ? (customSince || undefined) : sinceFromRange(range, new Date())
@@ -19,14 +20,14 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: sinceValue(), variations, timeControl: timeControl || undefined })
+    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: sinceValue(), variations, timeControl: timeControl || undefined, result })
   }
 
   // Quick scan: shallow depth + a cap on games, for a fast pass over a big range.
   function quickScan() {
     if (!user.trim()) return
     setLast('50'); setDepth('8') // reflect the preset in the fields
-    onSubmit({ user: user.trim(), last: '50', depth: '8', since: sinceValue(), variations, timeControl: timeControl || undefined })
+    onSubmit({ user: user.trim(), last: '50', depth: '8', since: sinceValue(), variations, timeControl: timeControl || undefined, result })
   }
 
   return (
@@ -48,6 +49,14 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
       {range === 'custom' && (
         <label>since (YYYY-MM)<br /><input value={customSince} onChange={(e) => setCustomSince(e.target.value)} placeholder="2025-01" style={{ width: 100 }} /></label>
       )}
+      <label>result<br />
+        <select value={result} onChange={(e) => setResult(e.target.value)}>
+          <option value="loss">losses</option>
+          <option value="all">all</option>
+          <option value="win">wins</option>
+          <option value="draw">draws</option>
+        </select>
+      </label>
       <label>time control<br />
         <select value={timeControl} onChange={(e) => setTimeControl(e.target.value)}>
           <option value="">any</option>
