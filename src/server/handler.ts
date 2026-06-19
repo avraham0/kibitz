@@ -1,56 +1,85 @@
 import { readFile } from 'node:fs/promises'
 import { join, extname, normalize, resolve, sep } from 'node:path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { monthsSince } from '../api/chesscom.js'
+import { writeSse } from './sse.js'
+import { defaultSince, type AnalyzeResult } from '../orchestrate.js'
 
-type Deps = { staticDir: string }
+type AnalyzeFn = (
+  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean; timeControl?: string; result?: 'all' | 'win' | 'loss' | 'draw'; signal?: AbortSignal },
+  onProgress: (done: number, total: number) => void,
+) => Promise<AnalyzeResult>
+
+type Deps = { analyze: AnalyzeFn; staticDir: string; nowISO: () => string }
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
   '.woff2': 'font/woff2', '.map': 'application/json; charset=utf-8',
-  '.wasm': 'application/wasm',
 }
 
-const CHESS_COM = 'https://api.chess.com/pub/player'
+let busy = false
+
+// EventSource cannot read the body of a non-2xx response, so send app-level errors
+// as an SSE `error` event over a 200 stream — the browser hook then shows the message.
+function sseError(res: ServerResponse, message: string): void {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
+  writeSse((c) => res.write(c), 'error', { message })
+  res.end()
+}
 
 export function createHandler(deps: Deps) {
   return function handler(req: IncomingMessage, res: ServerResponse): void {
     const url = new URL(req.url ?? '/', 'http://localhost')
-    if (url.pathname === '/api/games') {
-      void handleGames(url, res)
+    if (url.pathname === '/api/analyze') {
+      void handleAnalyze(deps, url, res)
       return
     }
     void handleStatic(deps.staticDir, url.pathname, res)
   }
 }
 
-// Proxy chess.com game archives to avoid CORS. Fetches all months since `since`
-// and returns the raw game objects as a JSON array.
-async function handleGames(url: URL, res: ServerResponse): Promise<void> {
+async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise<void> {
   const user = url.searchParams.get('user')
-  const since = url.searchParams.get('since')
-  const nowISO = url.searchParams.get('nowISO') ?? new Date().toISOString()
-  if (!user || !since) {
-    res.writeHead(400, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ error: 'Missing user or since' }))
+  if (!user) {
+    sseError(res, 'Missing required "user" parameter')
     return
   }
-  res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+  if (busy) {
+    sseError(res, 'An analysis is already running')
+    return
+  }
+  busy = true
+  // If the client disconnects (refresh / Cancel / navigate away), abort the run so
+  // the engine pool is freed and the busy lock doesn't block the next request.
+  const controller = new AbortController()
+  res.on('close', () => controller.abort())
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  })
+  const write = (c: string) => res.write(c)
   try {
-    const months = monthsSince(since, nowISO)
-    const all: unknown[] = []
-    for (const ym of months) {
-      const r = await fetch(`${CHESS_COM}/${encodeURIComponent(user)}/games/${ym}`)
-      if (r.status === 404) throw new Error(`Unknown chess.com user: ${user}`)
-      if (!r.ok) continue
-      const data = await r.json() as { games?: unknown[] }
-      all.push(...(data.games ?? []))
-    }
-    res.end(JSON.stringify(all))
+    const nowISO = deps.nowISO()
+    const since = url.searchParams.get('since') ?? defaultSince(nowISO)
+    const depth = Number(url.searchParams.get('depth') ?? '18')
+    const lastParam = url.searchParams.get('last')
+    const last = lastParam ? Number(lastParam) : undefined
+    const variations = url.searchParams.get('variations') === '1'
+    const timeControl = url.searchParams.get('timeControl') ?? undefined
+    // Default to losses — the games worth studying. 'all' opts back in.
+    const resultFilter = (url.searchParams.get('result') ?? 'loss') as 'all' | 'win' | 'loss' | 'draw'
+    const result = await deps.analyze(
+      { user, since, depth, last, nowISO, variations, timeControl, result: resultFilter, signal: controller.signal },
+      (done, total) => writeSse(write, 'progress', { done, total }),
+    )
+    writeSse(write, 'result', result)
   } catch (err) {
-    res.end(JSON.stringify({ error: String((err as Error)?.message ?? err) }))
+    writeSse(write, 'error', { message: String((err as Error)?.message ?? err) })
+  } finally {
+    busy = false
+    res.end()
   }
 }
 
