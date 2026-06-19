@@ -26,7 +26,7 @@ function escapeCell(s: string): string {
 
 export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Meta): string {
   const lines: string[] = []
-  lines.push(`# chess-coach report for ${meta.user}`)
+  lines.push(`# kibitz report for ${meta.user}`)
   lines.push('')
   lines.push(`Games since ${meta.since} • analyzed at depth ${meta.depth}`)
   lines.push('')
@@ -107,7 +107,7 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
 
 export function renderTerminal(stats: Stats, suggestions: Suggestion[], meta: Meta): string {
   const lines: string[] = []
-  lines.push(`chess-coach — ${meta.user} (since ${meta.since}, depth ${meta.depth})`)
+  lines.push(`kibitz — ${meta.user} (since ${meta.since}, depth ${meta.depth})`)
   lines.push(`Games: ${stats.gamesAnalyzed}  Record: ${recordStr(stats.record)}  Accuracy: ${stats.accuracy}%  Mistakes: ${stats.mistakeCount}`)
   lines.push(`Moves in already-lost positions (excluded): ${stats.lostPositionMoves}`)
   lines.push('')

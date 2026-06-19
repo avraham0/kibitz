@@ -7,7 +7,7 @@ type StartParams = { user: string; last?: string; depth?: string; since?: string
 // Persist the last result so a browser refresh doesn't lose the analysis.
 // The payload is versioned so a result saved by an older build (different shape) is
 // discarded instead of rendered with missing fields. Bump on AnalyzeResult changes.
-const STORAGE_KEY = 'chess-coach:lastResult'
+const STORAGE_KEY = 'kibitz:lastResult'
 const STORAGE_VERSION = 11
 function loadStored(): AnalyzeResult | null {
   try {

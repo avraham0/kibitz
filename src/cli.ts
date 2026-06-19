@@ -21,7 +21,7 @@ async function main() {
   })
 
   if (!values.user) {
-    console.error('Usage: chess-coach --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--time-control blitz] [--out report.md]')
+    console.error('Usage: kibitz --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--time-control blitz] [--out report.md]')
     process.exit(2)
   }
 

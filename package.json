@@ -1,8 +1,8 @@
 {
-  "name": "chess-coach",
+  "name": "kibitz",
   "version": "0.1.0",
   "type": "module",
-  "bin": { "chess-coach": "dist/cli.js" },
+  "bin": { "kibitz": "dist/cli.js" },
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc",

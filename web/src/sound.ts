@@ -4,7 +4,7 @@
 
 export type MoveSound = 'move' | 'capture'
 
-export const SOUND_KEY = 'chess-coach:sound'
+export const SOUND_KEY = 'kibitz:sound'
 export function soundEnabled(): boolean {
   try { return localStorage.getItem(SOUND_KEY) !== '0' } catch { return true }
 }
