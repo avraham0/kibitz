@@ -15,6 +15,10 @@ import { HangFrequency } from './panels/HangFrequency.js'
 import { CriticalPositions } from './panels/CriticalPositions.js'
 import { MoveQualityChart } from './panels/MoveQualityChart.js'
 import { EndgameStats } from './panels/EndgameStats.js'
+import { RatingChart } from './panels/RatingChart.js'
+import { BestGames } from './panels/BestGames.js'
+import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
+import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
 
 type Tab = 'overview' | 'blunders' | 'review'
 
@@ -50,10 +54,14 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           <HangFrequency blunders={stats.topBlunders} />
           <CriticalPositions games={games} />
           <ProgressChart games={games} />
+          <RatingChart games={games} />
+          <BestGames games={games} onOpenGame={openGame} />
+          <OpeningRecommendations stats={stats} />
           <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
           <PhaseChart stats={stats} />
           <MoveQualityChart games={games} />
           <TimePressureChart stats={stats} />
+          {stats.gamesWithClock > 0 && <ClockAccuracyChart games={games} />}
           <Splits stats={stats} games={games} onOpenGame={openGame} />
           <EndgameStats games={games} />
           <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
