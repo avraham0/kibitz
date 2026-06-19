@@ -36,11 +36,10 @@ function hangingAfter(fenBefore: string, san: string): { piece: string } | null 
 // Pure and model-free — just turns the analysis into a sentence.
 export function explainBlunder(b: Explainable): string {
   const best = b.bestSan
-  const pawns = (b.cpLoss / 100).toFixed(1)
 
   // A direct material hang is the headline, whatever the engine's best line contained.
   const hung = hangingAfter(b.fenBefore, b.san)
-  if (hung) return `${b.san} left your ${PIECE_NAME[hung.piece] ?? 'piece'} hanging — about ${pawns} pawns. ${best} kept it safe.`
+  if (hung) return `${b.san} left your ${PIECE_NAME[hung.piece] ?? 'piece'} hanging. ${best} kept it safe.`
   const tactic = (name: string) =>
     b.missed
       ? `Missed a ${name} — ${best} won material.`
@@ -48,7 +47,7 @@ export function explainBlunder(b: Explainable): string {
 
   switch (b.type) {
     case 'hung_piece':
-      return `${b.san} left a piece undefended (hung ~${pawns} pawns). ${best} kept it safe.`
+      return `${b.san} left a piece undefended. ${best} kept it safe.`
     case 'fork': return tactic('fork')
     case 'pin': return tactic('pin')
     case 'skewer': return tactic('skewer')
@@ -59,14 +58,14 @@ export function explainBlunder(b: Explainable): string {
         ? `Missed trapping a piece — ${best} boxed it in.`
         : `Let a piece get trapped; ${best} kept it active.`
     case 'missed_tactic':
-      return `Missed a tactic worth ~${pawns} pawns — ${best} was the shot.`
+      return `Missed a tactic — ${best} was the shot.`
     case 'king_safety':
       return `${b.san} exposed your king; ${best} was safer.`
     case 'bad_trade':
-      return `Unfavorable trade giving up ~${pawns} pawns; ${best} kept the better pieces.`
+      return `Unfavorable trade; ${best} kept the better pieces.`
     case 'positional':
-      return `Positional slip — gave up ~${pawns} pawns of position. ${best} was stronger.`
+      return `Positional slip — ${best} was stronger.`
     default:
-      return `${best} was clearly better (worth ~${pawns} pawns).`
+      return `${best} was clearly better.`
   }
 }
