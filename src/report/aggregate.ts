@@ -1,36 +1,16 @@
 import type { GameAnalysis, MistakeType, Phase, Color } from '../types.js'
 import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
-import type { MoveAnalysis, Eval } from '../types.js'
-
-function sameEval(a: Eval, b: Eval): boolean {
-  return a.cp === b.cp && a.mate === b.mate
-}
-
-// Player win% AFTER their move. Best-move plies skip the after-search and store
-// evalAfterPlayed === evalBefore (player POV) — those have no win% change. For all
-// other moves evalAfterPlayed is from the opponent's POV, so negate to the player's.
-function playerWinAfter(m: MoveAnalysis): number {
-  return sameEval(m.evalAfterPlayed, m.evalBefore)
-    ? winPct(cpFromMoverPov(m.evalBefore))
-    : winPct(-cpFromMoverPov(m.evalAfterPlayed))
-}
+import type { MoveAnalysis } from '../types.js'
+import { accuracyOf } from './accuracy.js'
 
 // A player move counts as "already losing" (excluded from mistakes) when the best
 // available eval before it was already worse than the threshold. Computed from the
 // stored eval at report time, so the cutoff can change without re-analysis. The
 // legacy `type === 'lost_position'` check covers caches written before this change.
+// NOTE: this gates the coaching mistake buckets only — accuracy intentionally
+// includes losing-position moves (the win% model already dampens their penalty).
 function isLostPosition(m: MoveAnalysis): boolean {
   return m.type === 'lost_position' || cpFromMoverPov(m.evalBefore) <= LOST_POSITION_CP
-}
-
-// Win-% for the side to move from a centipawn eval (lichess model).
-function winPct(cp: number): number {
-  return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1)
-}
-// Per-move accuracy from the win-% the move gave up (lichess accuracy curve).
-function moveAccuracy(winBefore: number, winAfter: number): number {
-  const drop = Math.max(0, winBefore - winAfter)
-  return Math.max(0, Math.min(100, 103.1668 * Math.exp(-0.04354 * drop) - 3.1669))
 }
 
 export type BlunderRef = {
@@ -98,15 +78,9 @@ export type GameSummary = {
 // (clamped to ±1500 for a readable graph); accuracy is this game's player accuracy.
 export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
   return games.map((g) => {
-    let accSum = 0
-    let accN = 0
     const moves: GameMove[] = g.moves.map((m) => {
       const moverPov = cpFromMoverPov(m.evalBefore)
       const whitePov = m.fenBefore.split(' ')[1] === 'w' ? moverPov : -moverPov
-      if (m.isPlayerMove && !isLostPosition(m)) {
-        accSum += moveAccuracy(winPct(moverPov), playerWinAfter(m))
-        accN++
-      }
       return {
         ply: m.ply, san: m.san, bestSan: m.bestSan, cpLoss: m.cpLoss, isPlayerMove: m.isPlayerMove,
         severity: m.severity, type: m.type, fenBefore: m.fenBefore,
@@ -116,7 +90,8 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
     })
     return {
       gameId: g.gameId, url: g.url, playedAt: g.playedAt, color: g.color, result: g.result,
-      eco: g.eco, openingName: g.openingName, accuracy: accN ? Math.round(accSum / accN) : 100, moves,
+      eco: g.eco, openingName: g.openingName,
+      accuracy: accuracyOf(g.moves.filter((m) => m.isPlayerMove)), moves,
     }
   })
 }
@@ -137,16 +112,17 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   const timeAcc: Record<TimeBucket, { moves: number; mistakes: number; blunders: number; sum: number }> =
     Object.fromEntries(TIME_BUCKETS.map((b) => [b, { moves: 0, mistakes: 0, blunders: 0, sum: 0 }])) as Record<TimeBucket, { moves: number; mistakes: number; blunders: number; sum: number }>
   let gamesWithClock = 0
-  let accuracySum = 0
-  let accuracyMoves = 0
+  // Accuracy is blended per-game (lichess weighted+harmonic), so collect the player's
+  // moves into segments and run the blend once per segment at the end.
+  let accWeightedSum = 0
+  let accWeightTotal = 0
   const conversion = { winningGames: 0, converted: 0 }
-  const colorAgg: Record<Color, { games: number; wins: number; mistakes: number; accSum: number; accN: number }> = {
-    white: { games: 0, wins: 0, mistakes: 0, accSum: 0, accN: 0 },
-    black: { games: 0, wins: 0, mistakes: 0, accSum: 0, accN: 0 },
+  const colorAgg: Record<Color, { games: number; wins: number; mistakes: number }> = {
+    white: { games: 0, wins: 0, mistakes: 0 },
+    black: { games: 0, wins: 0, mistakes: 0 },
   }
-  const phaseAcc: Record<Phase, { sum: number; n: number }> = {
-    opening: { sum: 0, n: 0 }, middlegame: { sum: 0, n: 0 }, endgame: { sum: 0, n: 0 },
-  }
+  const phaseMoves: Record<Phase, MoveAnalysis[]> = { opening: [], middlegame: [], endgame: [] }
+  const colorMoves: Record<Color, MoveAnalysis[]> = { white: [], black: [] }
 
   for (const g of games) {
     if (g.result === 'win') record.wins++
@@ -164,6 +140,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
 
     let gameHadClock = false
     let gamePeak = -Infinity
+    const gamePlayerMoves: MoveAnalysis[] = []
 
     for (const m of g.moves) {
       // Peak position quality from the player's POV across the whole game.
@@ -180,20 +157,14 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
           if (m.severity === 'blunder') timeAcc[tb].blunders++
         }
       }
+      // Accuracy includes every player move (even losing positions).
+      gamePlayerMoves.push(m)
+      phaseMoves[m.phase].push(m)
+      colorMoves[g.color].push(m)
       if (isLostPosition(m)) {
         lostPositionMoves++
         continue
       }
-      // Accuracy over every real decision (including good moves), not just mistakes.
-      const winBefore = winPct(cpFromMoverPov(m.evalBefore))
-      const winAfter = playerWinAfter(m)
-      const acc = moveAccuracy(winBefore, winAfter)
-      accuracySum += acc
-      accuracyMoves++
-      phaseAcc[m.phase].sum += acc
-      phaseAcc[m.phase].n++
-      colorAgg[g.color].accSum += acc
-      colorAgg[g.color].accN++
       if (m.severity === 'ok') continue
       mistakeCount++
       o.mistakes++
@@ -211,6 +182,11 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       }
     }
     if (gameHadClock) gamesWithClock++
+    // Per-game accuracy, weighted by the number of decisions in the game.
+    if (gamePlayerMoves.length) {
+      accWeightedSum += accuracyOf(gamePlayerMoves) * gamePlayerMoves.length
+      accWeightTotal += gamePlayerMoves.length
+    }
     if (gamePeak >= WINNING_CP) {
       conversion.winningGames++
       if (g.result === 'win') conversion.converted++
@@ -246,9 +222,9 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
 
   const topBlunders = blunders.sort((a, b) => b.cpLoss - a.cpLoss).slice(0, 10)
 
-  const accuracy = accuracyMoves ? Math.round(accuracySum / accuracyMoves) : 100
+  const accuracy = accWeightTotal ? Math.round(accWeightedSum / accWeightTotal) : 100
   const accuracyByPhase = Object.fromEntries(
-    (['opening', 'middlegame', 'endgame'] as Phase[]).map((p) => [p, phaseAcc[p].n ? Math.round(phaseAcc[p].sum / phaseAcc[p].n) : 100]),
+    (['opening', 'middlegame', 'endgame'] as Phase[]).map((p) => [p, accuracyOf(phaseMoves[p])]),
   ) as Record<Phase, number>
   const byColor = Object.fromEntries(
     (['white', 'black'] as Color[]).map((c) => {
@@ -256,7 +232,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       return [c, {
         games: a.games, wins: a.wins,
         winPct: a.games ? Math.round((a.wins / a.games) * 100) : 0,
-        accuracy: a.accN ? Math.round(a.accSum / a.accN) : 100,
+        accuracy: accuracyOf(colorMoves[c]),
         mistakes: a.mistakes,
       }]
     }),
