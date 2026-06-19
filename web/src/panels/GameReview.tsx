@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Chess } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
@@ -35,6 +36,12 @@ function fmtClock(sec: number | null): string | null {
   const m = Math.floor(sec / 60)
   const s = sec % 60
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+// Position with the move played — we store the position before each move, so apply
+// the SAN to show the move as played (chess.com/lichess convention).
+function fenAfter(fen: string, san: string): string {
+  try { const c = new Chess(fen); c.move(san); return c.fen() } catch { return fen }
 }
 
 // Pick a game, see its eval graph, and step through it move by move.
@@ -83,13 +90,11 @@ export function GameReview({ games }: { games: GameSummary[] }) {
   }
 
   // Play a move sound whenever the position changes (step, jump, or game switch).
-  // The board at index i shows the position BEFORE move i, so the move that just
-  // landed on the board is move i-1 — sound that one, not the (arrowed) next move.
+  // The board shows the current move as played, so sound that same move.
   useEffect(() => {
     if (firstRef.current) { firstRef.current = false; return }
     if (!soundOnRef.current) return
-    const i = Math.min(ply, maxPly)
-    const m = i > 0 ? moves[i - 1] : null
+    const m = moves[Math.min(ply, maxPly)]
     if (m) playMoveSound(soundForSan(m.san))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ply, gi])
@@ -146,7 +151,7 @@ export function GameReview({ games }: { games: GameSummary[] }) {
           <div style={{ width: 320 }}>
             {cur && (
               <Chessboard
-                position={cur.fenBefore}
+                position={fenAfter(cur.fenBefore, cur.san)}
                 boardOrientation={flipped ? (g.color === 'white' ? 'black' : 'white') : g.color}
                 customArrows={arrows}
                 arePiecesDraggable={false}

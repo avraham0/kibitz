@@ -7,6 +7,7 @@ export type CoachableType = Exclude<MistakeType, 'lost_position'>
 export type BlunderRef = { url: string; ply: number; san: string; bestSan: string; fenBefore: string; cpLoss: number; type: MistakeType }
 export type OpeningStat = { eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number }
 export type Phase = 'opening' | 'middlegame' | 'endgame'
+export type Color = 'white' | 'black'
 
 export type Stats = {
   gamesAnalyzed: number
@@ -21,6 +22,8 @@ export type Stats = {
   gamesWithClock: number
   accuracy: number
   accuracyByPhase: Record<Phase, number>
+  conversion: { winningGames: number; converted: number }
+  byColor: Record<Color, { games: number; wins: number; winPct: number; accuracy: number; mistakes: number }>
 }
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'

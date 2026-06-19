@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AnalyzeResult } from './api-types.js'
 import { SummaryCard } from './panels/SummaryCard.js'
 import { TopLeaks } from './panels/TopLeaks.js'
+import { Splits } from './panels/Splits.js'
 import { OpeningsTable } from './panels/OpeningsTable.js'
 import { BlunderList } from './panels/BlunderList.js'
 import { CoachingCards } from './panels/CoachingCards.js'
@@ -39,7 +40,8 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           <MistakeTypesChart stats={stats} />
           <PhaseChart stats={stats} />
           <TimePressureChart stats={stats} />
-          <OpeningsTable openings={stats.openings} />
+          <Splits stats={stats} />
+          <OpeningsTable openings={stats.openings} games={games} />
           <CoachingCards suggestions={suggestions} />
         </>
       )}

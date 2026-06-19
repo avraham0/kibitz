@@ -26,6 +26,8 @@ const sample: AnalyzeResult = {
     lostPositionMoves: 12,
     byTimeBucket: { '<10s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '10-30s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '30-60s': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 }, '60s+': { moves: 0, mistakes: 0, blunders: 0, avgCpLoss: 0 } },
     gamesWithClock: 0, accuracy: 88, accuracyByPhase: { opening: 95, middlegame: 85, endgame: 80 },
+    conversion: { winningGames: 3, converted: 2 },
+    byColor: { white: { games: 2, wins: 1, winPct: 50, accuracy: 89, mistakes: 5 }, black: { games: 2, wins: 0, winPct: 0, accuracy: 84, mistakes: 7 } },
   },
 }
 
