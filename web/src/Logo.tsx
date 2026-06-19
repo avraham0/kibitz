@@ -18,7 +18,7 @@ function Pawn({ fill, face }: { fill: string; face: string }) {
         <path d="M31.6 16.9 L32.4 16.9" />
         <path d="M23.4 16.9 L21.2 16.4" />
         <path d="M40.6 16.9 L42.8 16.4" />
-        <path d="M27.2 23 Q32 26.6 36.8 23" />
+        <path d="M28.6 23.2 Q32 25.8 35.4 23.2" />
       </g>
     </g>
   )
