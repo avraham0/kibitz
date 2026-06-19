@@ -69,18 +69,18 @@ export function GameReview({ games }: { games: GameSummary[] }) {
                 boardWidth={320}
               />
             )}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
-              <button type="button" onClick={prev} disabled={idx === 0}>‹ prev</button>
-              <span style={{ fontSize: 13 }}>
-                move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san}
-                {isMistake && cur && (
-                  <span style={{ color: 'rgb(224,121,107)' }}>
-                    {' '}· {cur.severity} −{cur.cpLoss}cp · {cur.type} · best {cur.bestSan}
-                  </span>
-                )}
-              </span>
-              <button type="button" onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button type="button" onClick={prev} disabled={idx === 0}>‹ prev</button>
+                <button type="button" onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
+                <span style={{ fontSize: 13 }}>move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san}</span>
+              </div>
+              {isMistake && cur && (
+                <div style={{ fontSize: 13, color: 'rgb(224,121,107)' }}>
+                  {cur.severity} −{cur.cpLoss}cp · {cur.type} · best {cur.bestSan}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump</div>
             </div>
           </div>
           <LineChart
