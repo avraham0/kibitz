@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { Dashboard } from './Dashboard.js'
 import type { AnalyzeResult } from './api-types.js'
 
@@ -36,5 +36,13 @@ describe('Dashboard', () => {
     expect(screen.getByText('88%')).toBeTruthy() // accuracy tile value
     expect(screen.getByText('Italian Game')).toBeTruthy()
     expect(screen.getByText(/Forks are your most common mistake/)).toBeTruthy()
+  })
+
+  it('switches tabs (overview content hidden on the blunders tab)', () => {
+    render(<Dashboard result={sample} />)
+    expect(screen.queryByText('Top blunders')).toBeNull() // blunders behind a tab
+    fireEvent.click(screen.getByRole('button', { name: /blunders/i }))
+    expect(screen.getByText('Top blunders')).toBeTruthy()
+    expect(screen.queryByText('88%')).toBeNull() // overview hidden now
   })
 })

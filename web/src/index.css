@@ -71,6 +71,20 @@ button { cursor: pointer; font-weight: 600; }
 button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 button:disabled { opacity: 0.45; cursor: default; }
 
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--muted);
+  padding: 9px 14px;
+  font-weight: 600;
+}
+.tab:hover:not(:disabled) { color: var(--text); border-color: transparent; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
 /* Summary stat tiles */
 .stats { display: flex; gap: 12px; flex-wrap: wrap; }
 .stat {
