@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import type { BlunderRef } from '../api-types.js'
 import { PuzzleBoard } from './PuzzleBoard.js'
 import {
@@ -28,7 +28,13 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
   const [epoch, setEpoch] = useState(0)
 
   const now = Date.now()
-  const queue = orderByDue(blunders, srs, now)
+  // Freeze the queue order at mount (and when blunders change) so that recording a
+  // result mid-puzzle doesn't reorder the list and remount the current PuzzleBoard.
+  const queue = useMemo(
+    () => orderByDue(blunders, srsRef.current, now),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [blunders],
+  )
   const due = dueCount(blunders, srs, now)
 
   // After solving, auto-advance after a short pause.
