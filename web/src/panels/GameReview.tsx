@@ -80,10 +80,18 @@ export function GameReview({ games }: { games: GameSummary[] }) {
                 )}
               </span>
               <button type="button" onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step</span>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump</span>
             </div>
           </div>
-          <LineChart width={420} height={240} data={data}>
+          <LineChart
+            width={420}
+            height={240}
+            data={data}
+            style={{ cursor: 'pointer' }}
+            onClick={(s: { activeTooltipIndex?: number }) => {
+              if (s && typeof s.activeTooltipIndex === 'number') setPly(s.activeTooltipIndex)
+            }}
+          >
             <CartesianGrid stroke={GRID} vertical={false} />
             <XAxis dataKey="ply" tick={AXIS.tick} stroke={AXIS.stroke} />
             <YAxis domain={[-1500, 1500]} tick={AXIS.tick} stroke={AXIS.stroke} />
