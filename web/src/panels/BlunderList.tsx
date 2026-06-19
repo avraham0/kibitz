@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { Chessboard } from 'react-chessboard'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { BlunderRef, MistakeType } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 import { PuzzleBoard } from './PuzzleBoard.js'
+import { loadSrs, saveSrs, recordResult, orderByDue, dueCount, isDue, puzzleKey, type SrsStore } from '../puzzleSrs.js'
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
+}
+
+function statusTag(store: SrsStore, b: BlunderRef, now: number): { text: string; color: string } {
+  const key = puzzleKey(b)
+  if (!store[key]) return { text: 'new', color: 'var(--muted)' }
+  return isDue(store, key, now) ? { text: 'due', color: 'rgb(224,121,107)' } : { text: 'scheduled', color: '#7bc47f' }
 }
 
 export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
@@ -15,8 +22,27 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
   const [mode, setMode] = useState<'review' | 'solve'>('review')
   const [solved, setSolved] = useState(0)
   const [cur, setCur] = useState(0)
+  const [srs, setSrs] = useState<SrsStore>(() => loadSrs())
+  // Used to order the solve queue without re-sorting it every time a result lands.
+  const srsRef = useRef(srs)
+  srsRef.current = srs
   const types = Array.from(new Set(blunders.map((b) => b.type)))
   const shown = filter === 'all' ? blunders : blunders.filter((b) => b.type === filter)
+
+  // Order the solve queue most-overdue-first, frozen per filter so recording a
+  // result doesn't reshuffle the puzzle under you mid-session.
+  const queue = useMemo(
+    () => orderByDue(shown, srsRef.current, Date.now()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filter, blunders, mode],
+  )
+  const now = Date.now()
+  const due = dueCount(shown, srs, now)
+
+  function recordPuzzle(b: BlunderRef, correct: boolean) {
+    setSrs((prev) => { const next = recordResult(prev, puzzleKey(b), correct, Date.now()); saveSrs(next); return next })
+    if (correct) setSolved((c) => c + 1)
+  }
 
   // Reset solve progress whenever the puzzle set changes.
   function reset() { setSolved(0); setCur(0) }
@@ -39,21 +65,29 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
             <option value="solve">solve (puzzle)</option>
           </select>
         </label>
-        {mode === 'solve' && <span style={{ color: 'var(--muted)' }}>Solved {solved} / {shown.length}</span>}
+        {mode === 'solve' && (
+          <span style={{ color: 'var(--muted)' }}>Solved {solved} / {shown.length} · {due} due for review</span>
+        )}
       </div>
       {mode === 'solve' ? (
-        shown.length === 0 ? (
+        queue.length === 0 ? (
           <p style={{ marginTop: 8 }}>No puzzles for this filter.</p>
-        ) : (
+        ) : (() => {
+          const idx = Math.min(cur, queue.length - 1)
+          const b = queue[idx]
+          const tag = statusTag(srs, b, now)
+          return (
           <div style={{ marginTop: 8 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-              <button type="button" onClick={() => setCur((c) => Math.max(0, c - 1))} disabled={cur === 0}>‹ prev</button>
-              <button type="button" onClick={() => setCur((c) => Math.min(shown.length - 1, c + 1))} disabled={cur >= shown.length - 1}>next ›</button>
-              <span style={{ color: 'var(--muted)' }}>Puzzle {cur + 1} / {shown.length}</span>
+              <button type="button" onClick={() => setCur((c) => Math.max(0, c - 1))} disabled={idx === 0}>‹ prev</button>
+              <button type="button" onClick={() => setCur((c) => Math.min(queue.length - 1, c + 1))} disabled={idx >= queue.length - 1}>next ›</button>
+              <span style={{ color: 'var(--muted)' }}>Puzzle {idx + 1} / {queue.length}</span>
+              <span style={{ color: tag.color, fontWeight: 600 }}>{tag.text}</span>
             </div>
-            <PuzzleBoard key={`${filter}-${cur}`} blunder={shown[Math.min(cur, shown.length - 1)]} onSolve={() => setSolved((c) => c + 1)} />
+            <PuzzleBoard key={`${filter}-${idx}`} blunder={b} onResult={(correct) => recordPuzzle(b, correct)} />
           </div>
-        )
+          )
+        })()
       ) : (
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
         {shown.map((b, i) => {

@@ -11,9 +11,9 @@ const games: GameSummary[] = [
     gameId: 'g', url: 'u', playedAt: '2026-01-02T00:00:00.000Z', color: 'white',
     result: 'win', eco: 'C50', openingName: 'Italian Game', accuracy: 88,
     moves: [
-      { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', fenBefore: start },
-      { ply: 2, san: 'e5', bestSan: 'e5', evalCp: 20, cpLoss: 0, isPlayerMove: false, severity: 'ok', type: 'positional', fenBefore: afterE4 },
-      { ply: 3, san: 'a3', bestSan: 'd4', evalCp: -400, cpLoss: 400, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', fenBefore: afterE4E5 },
+      { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', fenBefore: start, phase: 'opening', clockSeconds: 180 },
+      { ply: 2, san: 'e5', bestSan: 'e5', evalCp: 20, cpLoss: 0, isPlayerMove: false, severity: 'ok', type: 'positional', fenBefore: afterE4, phase: 'opening', clockSeconds: 178 },
+      { ply: 3, san: 'a3', bestSan: 'd4', evalCp: -400, cpLoss: 400, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', fenBefore: afterE4E5, phase: 'middlegame', clockSeconds: 8 },
     ],
   },
 ]
