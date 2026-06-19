@@ -12,7 +12,7 @@ const PIECE_VAL: Record<string, number> = { q: 9, r: 5, b: 3, n: 3, p: 1 }
 // — the same simplified-SEE check the engine uses. Returns the dropped piece, if any.
 // This is the truth of "you hung your queen", independent of any motif the engine
 // happened to see in the best line.
-function hangingAfter(fenBefore: string, san: string): { piece: string } | null {
+export function hangingAfter(fenBefore: string, san: string): { piece: string } | null {
   try {
     const c = new Chess(fenBefore)
     c.move(san)

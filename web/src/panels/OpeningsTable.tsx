@@ -2,6 +2,29 @@ import { useState, Fragment } from 'react'
 import type { OpeningStat, GameSummary } from '../api-types.js'
 import { accuracyColor } from '../accuracyColor.js'
 
+function avgDepth(gs: GameSummary[]): string {
+  const depths: number[] = []
+  for (const g of gs) {
+    const m = g.moves.find((mv) => mv.isPlayerMove && mv.phase === 'middlegame')
+    if (m) depths.push(Math.ceil(m.ply / 2))
+  }
+  if (depths.length === 0) return '—'
+  return `move ${Math.round(depths.reduce((a, b) => a + b, 0) / depths.length)}`
+}
+
+function trend(gs: GameSummary[]): string {
+  if (gs.length < 4) return '—'
+  const sorted = [...gs].sort((a, b) => a.playedAt.localeCompare(b.playedAt))
+  const mid = Math.floor(sorted.length / 2)
+  const earlier = sorted.slice(0, mid)
+  const recent = sorted.slice(mid)
+  const winPct = (arr: GameSummary[]) => Math.round((arr.filter((g) => g.result === 'win').length / arr.length) * 100)
+  const diff = winPct(recent) - winPct(earlier)
+  if (diff >= 10) return '↑'
+  if (diff <= -10) return '↓'
+  return '—'
+}
+
 // Recurring mistakes + game list for the games in one opening (grouped by ECO).
 function OpeningDetail({ games, onOpenGame }: { games: GameSummary[]; onOpenGame?: (id: string) => void }) {
   const tally: Record<string, number> = {}
@@ -46,7 +69,7 @@ export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: 
       <h2>Openings</h2>
       <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Click a row to see its games and recurring mistakes.</p>
       <table>
-        <thead><tr><th></th><th>ECO</th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th></tr></thead>
+        <thead><tr><th></th><th>ECO</th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Avg depth</th><th>Trend</th></tr></thead>
         <tbody>
           {openings.map((o, i) => {
             const expanded = open === i
@@ -55,10 +78,12 @@ export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: 
                 <tr style={{ cursor: 'pointer' }} onClick={() => setOpen(expanded ? null : i)}>
                   <td>{expanded ? '▾' : '▸'}</td>
                   <td>{o.eco}</td><td>{o.name}</td><td>{o.games}</td><td>{o.winPct}</td><td>{o.avgMistakes}</td>
+                  <td>{avgDepth(games.filter((g) => g.eco === o.eco))}</td>
+                  <td>{trend(games.filter((g) => g.eco === o.eco))}</td>
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={6}><OpeningDetail games={games.filter((g) => g.eco === o.eco)} onOpenGame={onOpenGame} /></td>
+                    <td colSpan={8}><OpeningDetail games={games.filter((g) => g.eco === o.eco)} onOpenGame={onOpenGame} /></td>
                   </tr>
                 )}
               </Fragment>

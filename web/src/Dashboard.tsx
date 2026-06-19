@@ -11,6 +11,8 @@ import { PhaseChart } from './panels/PhaseChart.js'
 import { TimePressureChart } from './panels/TimePressureChart.js'
 import { GameReview } from './panels/GameReview.js'
 import { ProgressChart } from './panels/ProgressChart.js'
+import { HangFrequency } from './panels/HangFrequency.js'
+import { CriticalPositions } from './panels/CriticalPositions.js'
 
 type Tab = 'overview' | 'blunders' | 'review'
 
@@ -43,6 +45,8 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
         <>
           <SummaryCard stats={stats} />
           <TopLeaks stats={stats} />
+          <HangFrequency blunders={stats.topBlunders} />
+          <CriticalPositions games={games} />
           <ProgressChart games={games} />
           <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
           <PhaseChart stats={stats} />
