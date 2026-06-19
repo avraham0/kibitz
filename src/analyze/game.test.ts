@@ -61,7 +61,7 @@ describe('analyzeGame', () => {
   })
 
   it('exports LOST_POSITION_CP constant', () => {
-    expect(LOST_POSITION_CP).toBe(-500)
+    expect(LOST_POSITION_CP).toBe(-300)
   })
 
   it('caps cpLoss at MAX_CPLOSS on a mate swing and still classifies as blunder', async () => {
