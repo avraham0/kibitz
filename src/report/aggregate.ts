@@ -78,6 +78,7 @@ export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
   result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
   accuracy: number; accuracyStrict: number
+  accuracyByPhase: Record<Phase, number>
   playerRating: number | null; opponentRating: number | null
   wasWinning: boolean; turningPointIdx: number | null
   moves: GameMove[]
@@ -98,11 +99,17 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
       }
     })
     const playerMoves = g.moves.filter((m) => m.isPlayerMove)
+    const phasePlayerMoves: Record<Phase, MoveAnalysis[]> = { opening: [], middlegame: [], endgame: [] }
+    for (const m of playerMoves) phasePlayerMoves[m.phase].push(m)
+    const accuracyByPhase = Object.fromEntries(
+      (['opening', 'middlegame', 'endgame'] as Phase[]).map((p) => [p, accuracyOf(phasePlayerMoves[p])]),
+    ) as Record<Phase, number>
     return {
       gameId: g.gameId, url: g.url, playedAt: g.playedAt, color: g.color, result: g.result,
       eco: g.eco, openingName: g.openingName,
       accuracy: accuracyOf(playerMoves),
       accuracyStrict: accuracyStrictOf(playerMoves),
+      accuracyByPhase,
       playerRating: g.playerRating, opponentRating: g.opponentRating,
       wasWinning: reachedWinning(g.moves), turningPointIdx: turningPointIdx(g.moves),
       moves,

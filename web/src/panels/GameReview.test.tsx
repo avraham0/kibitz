@@ -10,6 +10,7 @@ const games: GameSummary[] = [
   {
     gameId: 'g', url: 'u', playedAt: '2026-01-02T00:00:00.000Z', color: 'white',
     result: 'win', eco: 'C50', openingName: 'Italian Game', accuracy: 88, accuracyStrict: 75,
+    accuracyByPhase: { opening: 90, middlegame: 80, endgame: 100 },
     playerRating: 1500, opponentRating: 1480, wasWinning: true, turningPointIdx: 2,
     moves: [
       { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', missed: false, fenBefore: start, phase: 'opening', clockSeconds: 180 },

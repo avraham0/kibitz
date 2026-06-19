@@ -168,13 +168,24 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
         <select value={gi} onChange={(e) => pick(Number(e.target.value))}>
           {games.map((gg, i) => (
             <option key={i} value={i}>
-              {gg.playedAt.slice(0, 10)} · {gg.color} · {gg.result} · {gg.accuracy}% · {gg.openingName}
+              {gg.wasWinning && gg.result !== 'win' ? '⚑ ' : ''}{gg.playedAt.slice(0, 10)} · {gg.color} · {gg.result} · {gg.accuracy}% · {gg.openingName}
             </option>
           ))}
         </select>
       </label>
       <span style={{ marginLeft: 10, fontWeight: 600, color: accuracyColor(g.accuracy) }}>Accuracy {g.accuracy}%</span>
+      {g.wasWinning && g.result !== 'win' && (
+        <span style={{ marginLeft: 10, color: 'rgb(224,121,107)', fontWeight: 600 }}>⚑ missed win</span>
+      )}
       {g.url && <a style={{ marginLeft: 10 }} href={g.url} target="_blank" rel="noreferrer">open on chess.com ↗</a>}
+      <div style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)', display: 'flex', gap: 12 }}>
+        {(['opening', 'middlegame', 'endgame'] as const).map((p) => (
+          <span key={p}>
+            {p.slice(0, 3).toUpperCase()}{' '}
+            <span style={{ color: accuracyColor(g.accuracyByPhase[p]), fontWeight: 600 }}>{g.accuracyByPhase[p]}%</span>
+          </span>
+        ))}
+      </div>
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>
       ) : (

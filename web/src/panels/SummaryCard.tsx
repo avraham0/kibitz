@@ -3,12 +3,14 @@ import { accuracyColor } from '../accuracyColor.js'
 
 export function SummaryCard({ stats }: { stats: Stats }) {
   const r = stats.record
+  const { winningGames, converted } = stats.conversion
+  const missedWins = winningGames - converted
   const tiles: { label: string; value: string; color?: string; sub?: string }[] = [
     { label: 'Accuracy', value: `${stats.accuracy}%`, color: accuracyColor(stats.accuracy) },
     { label: 'Record', value: `${r.wins}W-${r.losses}L-${r.draws}D` },
     { label: 'Games', value: String(stats.gamesAnalyzed) },
     { label: 'Mistakes', value: String(stats.mistakeCount) },
-    { label: 'Lost-pos (excluded)', value: String(stats.lostPositionMoves) },
+    { label: 'Missed wins', value: winningGames ? `${missedWins} / ${winningGames}` : '—', color: missedWins > 0 ? 'rgb(224,121,107)' : undefined, sub: winningGames ? `converted ${converted}` : undefined },
   ]
   return (
     <section>

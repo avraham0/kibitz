@@ -35,6 +35,7 @@ describe('Splits', () => {
     const blown: GameSummary = {
       gameId: 'g1', url: 'u', playedAt: '2026-03-04T00:00:00.000Z', color: 'white',
       result: 'loss', eco: 'C50', openingName: 'Italian', accuracy: 70, accuracyStrict: 55,
+      accuracyByPhase: { opening: 72, middlegame: 68, endgame: 100 },
       playerRating: 1500, opponentRating: 1490, wasWinning: true, turningPointIdx: 17, moves: [],
     }
     const onOpenGame = vi.fn()
