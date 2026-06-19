@@ -12,7 +12,7 @@ const games: GameSummary[] = [
     result: 'loss', eco: 'C50', openingName: 'Italian Game', accuracy: 72, accuracyStrict: 58,
     playerRating: 1500, opponentRating: 1520, wasWinning: false, turningPointIdx: null,
     moves: [
-      { ply: 5, san: 'Ng5', bestSan: 'O-O', evalCp: -200, cpLoss: 300, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', fenBefore: 'x', phase: 'opening', clockSeconds: 30 },
+      { ply: 5, san: 'Ng5', bestSan: 'O-O', evalCp: -200, cpLoss: 300, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', missed: false, fenBefore: 'x', phase: 'opening', clockSeconds: 30 },
     ],
   },
 ]

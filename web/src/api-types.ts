@@ -32,7 +32,7 @@ export type Suggestion = { title: string; why: string; drill: string; impact: nu
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
 export type GameMove = {
   ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
-  isPlayerMove: boolean; severity: Severity; type: MistakeType; fenBefore: string
+  isPlayerMove: boolean; severity: Severity; type: MistakeType; missed: boolean; fenBefore: string
   phase: Phase; clockSeconds: number | null
 }
 export type GameSummary = {

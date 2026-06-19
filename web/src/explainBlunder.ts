@@ -1,9 +1,12 @@
 import type { BlunderRef } from './api-types.js'
 
+// Just the fields needed to explain a move — satisfied by BlunderRef and GameMove.
+type Explainable = Pick<BlunderRef, 'san' | 'bestSan' | 'cpLoss' | 'type' | 'missed'>
+
 // Plain-language reason a move was a mistake, from the classified type + whether the
 // tactic was missed (you had it) or allowed (you let the opponent have it) + cost.
 // Pure and model-free — just turns the analysis into a sentence.
-export function explainBlunder(b: BlunderRef): string {
+export function explainBlunder(b: Explainable): string {
   const best = b.bestSan
   const pawns = (b.cpLoss / 100).toFixed(1)
   const tactic = (name: string) =>
