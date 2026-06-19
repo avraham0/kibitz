@@ -229,18 +229,23 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
               )}
             />
           </LineChart>
-          <div style={{ width: 210, maxHeight: 340, overflowY: 'auto', fontSize: 13, lineHeight: 1.6 }}>
-            {Array.from({ length: Math.ceil(moves.length / 2) }, (_, r) => {
-              const wi = r * 2
-              const bi = r * 2 + 1
-              return (
-                <div key={r} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                  <span style={{ color: 'var(--muted)', width: 26, textAlign: 'right' }}>{r + 1}.</span>
-                  <MoveSan m={moves[wi]} active={wi === idx} onClick={() => setPly(wi)} />
-                  {bi < moves.length && <MoveSan m={moves[bi]} active={bi === idx} onClick={() => setPly(bi)} />}
-                </div>
-              )
-            })}
+          {/* Stretch to the row's full height (board/graph bottom) and scroll inside.
+              The inner div is absolutely positioned so the list's length doesn't drive
+              the row taller — it fills whatever height the board column sets. */}
+          <div style={{ width: 210, alignSelf: 'stretch', position: 'relative', minHeight: 240 }}>
+            <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', fontSize: 13, lineHeight: 1.6 }}>
+              {Array.from({ length: Math.ceil(moves.length / 2) }, (_, r) => {
+                const wi = r * 2
+                const bi = r * 2 + 1
+                return (
+                  <div key={r} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <span style={{ color: 'var(--muted)', width: 26, textAlign: 'right' }}>{r + 1}.</span>
+                    <MoveSan m={moves[wi]} active={wi === idx} onClick={() => setPly(wi)} />
+                    {bi < moves.length && <MoveSan m={moves[bi]} active={bi === idx} onClick={() => setPly(bi)} />}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
