@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
@@ -6,6 +6,7 @@ import type { GameSummary } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 import { accuracyColor } from '../accuracyColor.js'
+import { soundForSan, playMoveSound, SOUND_KEY } from '../sound.js'
 
 const TIME_TROUBLE_SEC = 20
 
@@ -26,6 +27,31 @@ export function GameReview({ games }: { games: GameSummary[] }) {
 
   const prev = useCallback(() => setPly((p) => Math.max(0, p - 1)), [])
   const next = useCallback(() => setPly((p) => Math.min(maxPly, p + 1)), [maxPly])
+
+  const [soundOn, setSoundOn] = useState<boolean>(() => {
+    try { return localStorage.getItem(SOUND_KEY) !== '0' } catch { return true }
+  })
+  const soundOnRef = useRef(soundOn)
+  soundOnRef.current = soundOn
+  const firstRef = useRef(true)
+
+  function toggleSound() {
+    setSoundOn((v) => {
+      const nv = !v
+      try { localStorage.setItem(SOUND_KEY, nv ? '1' : '0') } catch { /* unavailable */ }
+      if (nv) playMoveSound('move') // sample + unlocks audio on this gesture
+      return nv
+    })
+  }
+
+  // Play a move sound whenever the position changes (step, jump, or game switch).
+  useEffect(() => {
+    if (firstRef.current) { firstRef.current = false; return }
+    if (!soundOnRef.current) return
+    const m = moves[Math.min(ply, maxPly)]
+    if (m) playMoveSound(soundForSan(m.san))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ply, gi])
 
   // ← / → step through the game (ignored while a form control is focused).
   useEffect(() => {
@@ -89,6 +115,7 @@ export function GameReview({ games }: { games: GameSummary[] }) {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={prev} disabled={idx === 0}>‹ prev</button>
                 <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
+                <button type="button" style={{ flexShrink: 0 }} onClick={toggleSound} title={soundOn ? 'mute move sounds' : 'enable move sounds'} aria-label="toggle move sounds">{soundOn ? '🔊' : '🔇'}</button>
               </div>
               <div style={{ fontSize: 13 }}>
                 move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san} · {cur?.phase}

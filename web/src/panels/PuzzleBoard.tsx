@@ -5,6 +5,7 @@ import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { BlunderRef } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
+import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
@@ -27,6 +28,7 @@ export function PuzzleBoard({ blunder, onResult }: { blunder: BlunderRef; onResu
       const c = new Chess(blunder.fenBefore)
       try { c.move(blunder.bestSan) } catch { /* keep fenBefore */ }
       setPosition(c.fen())
+      if (soundEnabled()) playMoveSound(soundForSan(blunder.bestSan))
       if (!solved && !revealed) onResult?.(true)
       setSolved(true)
       return true
