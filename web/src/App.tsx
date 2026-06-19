@@ -2,12 +2,13 @@ import { useAnalyzeStream } from './useAnalyzeStream.js'
 import { AnalyzeForm } from './AnalyzeForm.js'
 import { ProgressBar } from './ProgressBar.js'
 import { Dashboard } from './Dashboard.js'
+import { KibitzLogo } from './Logo.js'
 
 export default function App() {
   const { status, progress, result, error, start, cancel } = useAnalyzeStream()
   return (
     <main style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
-      <h1>chess-coach</h1>
+      <header style={{ margin: '4px 0 18px' }}><KibitzLogo /></header>
       <AnalyzeForm onSubmit={start} disabled={status === 'running'} />
       {status === 'running' && (
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '12px 0' }}>
