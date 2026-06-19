@@ -19,6 +19,13 @@ describe('AnalyzeForm', () => {
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ user: 'bob', since: expect.stringMatching(/^\d{4}-\d{2}$/) }))
   })
 
+  it('Quick scan submits depth 8 and last 50', () => {
+    const onSubmit = vi.fn()
+    render(<AnalyzeForm onSubmit={onSubmit} disabled={false} />)
+    fireEvent.click(screen.getByRole('button', { name: /quick scan/i }))
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ depth: '8', last: '50' }))
+  })
+
   it('shows the YYYY-MM field only when range is custom and submits its value', () => {
     const onSubmit = vi.fn()
     render(<AnalyzeForm onSubmit={onSubmit} disabled={false} />)

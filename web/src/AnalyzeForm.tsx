@@ -12,11 +12,21 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
   const [variations, setVariations] = useState(false)
   const [timeControl, setTimeControl] = useState('')
 
+  function sinceValue() {
+    return range === 'custom' ? (customSince || undefined) : sinceFromRange(range, new Date())
+  }
+
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    const since = range === 'custom' ? (customSince || undefined) : sinceFromRange(range, new Date())
-    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since, variations, timeControl: timeControl || undefined })
+    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: sinceValue(), variations, timeControl: timeControl || undefined })
+  }
+
+  // Quick scan: shallow depth + a cap on games, for a fast pass over a big range.
+  function quickScan() {
+    if (!user.trim()) return
+    setLast('50'); setDepth('8') // reflect the preset in the fields
+    onSubmit({ user: user.trim(), last: '50', depth: '8', since: sinceValue(), variations, timeControl: timeControl || undefined })
   }
 
   return (
@@ -51,8 +61,10 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
         <input type="checkbox" checked={variations} onChange={(e) => setVariations(e.target.checked)} /> split variations
       </label>
       <button type="submit" disabled={disabled || !user.trim()}>Analyze</button>
+      <button type="button" onClick={quickScan} disabled={disabled || !user.trim()} title="depth 8 · last 50 games — a fast pass">Quick scan</button>
       <div style={{ flexBasis: '100%', fontSize: 12, color: 'var(--muted)' }}>
         Both apply: range sets the window, then <em>last N</em> keeps the most recent N within it. Clear <em>last N</em> to use date only.
+        {' '}<strong>Quick scan</strong> = depth 8 · last 50, for a fast look over a big range.
       </div>
     </form>
   )
