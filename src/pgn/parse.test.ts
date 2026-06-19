@@ -13,8 +13,8 @@ const PGN = `[Event "Live Chess"]
 const raw = {
   url: 'https://www.chess.com/game/live/123',
   end_time: 1_700_000_000,
-  white: { username: 'alice' },
-  black: { username: 'bob' },
+  white: { username: 'alice', rating: 1500 },
+  black: { username: 'bob', rating: 1620 },
   pgn: PGN,
 }
 
@@ -31,6 +31,8 @@ describe('parseGame', () => {
     expect(g.moves[0].fenBefore).toContain('rnbqkbnr/pppppppp')
     expect(g.moves[0].clockSeconds).toBe(180)
     expect(g.moves[1].clockSeconds).toBe(178)
+    expect(g.playerRating).toBe(1620) // bob (black)
+    expect(g.opponentRating).toBe(1500)
   })
 
   it('derives opening name from ECOUrl when Opening header is absent', () => {

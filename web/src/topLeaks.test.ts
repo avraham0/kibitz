@@ -22,6 +22,7 @@ function stats(over: Partial<Stats>): Stats {
     gamesWithClock: 0, accuracy: 100, accuracyStrict: 100, accuracyByPhase: { opening: 100, middlegame: 100, endgame: 100 },
     conversion: { winningGames: 0, converted: 0 },
     byColor: { white: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 }, black: { games: 0, wins: 0, winPct: 0, accuracy: 100, mistakes: 0 } },
+    byOpponent: { stronger: { games: 0, wins: 0, accuracy: 100, mistakes: 0 }, similar: { games: 0, wins: 0, accuracy: 100, mistakes: 0 }, weaker: { games: 0, wins: 0, accuracy: 100, mistakes: 0 } },
     ...over,
   }
 }

@@ -28,6 +28,7 @@ const sample: AnalyzeResult = {
     gamesWithClock: 0, accuracy: 88, accuracyStrict: 76, accuracyByPhase: { opening: 95, middlegame: 85, endgame: 80 },
     conversion: { winningGames: 3, converted: 2 },
     byColor: { white: { games: 2, wins: 1, winPct: 50, accuracy: 89, mistakes: 5 }, black: { games: 2, wins: 0, winPct: 0, accuracy: 84, mistakes: 7 } },
+    byOpponent: { stronger: { games: 1, wins: 0, accuracy: 80, mistakes: 4 }, similar: { games: 2, wins: 1, accuracy: 86, mistakes: 6 }, weaker: { games: 1, wins: 0, accuracy: 90, mistakes: 2 } },
   },
 }
 

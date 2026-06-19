@@ -1,7 +1,9 @@
 import type { GameAnalysis, MistakeType, Phase, Color } from '../types.js'
 import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
 import type { MoveAnalysis } from '../types.js'
-import { accuracyOf, accuracyStrictOf } from './accuracy.js'
+import { accuracyOf, accuracyStrictOf, turningPointIdx, reachedWinning } from './accuracy.js'
+
+export type OpponentBand = 'stronger' | 'similar' | 'weaker'
 
 // A player move counts as "already losing" (excluded from mistakes) when the best
 // available eval before it was already worse than the threshold. Computed from the
@@ -55,6 +57,8 @@ export type Stats = {
   conversion: { winningGames: number; converted: number }
   // Per-color split of games, results, accuracy, and mistakes.
   byColor: Record<Color, { games: number; wins: number; winPct: number; accuracy: number; mistakes: number }>
+  // Accuracy / mistakes split by opponent strength relative to the player.
+  byOpponent: Record<OpponentBand, { games: number; wins: number; accuracy: number; mistakes: number }>
 }
 
 // Eval (player POV, cp) at/above which a position is considered "clearly winning".
@@ -74,6 +78,8 @@ export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
   result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
   accuracy: number; accuracyStrict: number
+  playerRating: number | null; opponentRating: number | null
+  wasWinning: boolean; turningPointIdx: number | null
   moves: GameMove[]
 }
 
@@ -91,11 +97,14 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
         evalCp: Math.max(-1500, Math.min(1500, whitePov)),
       }
     })
+    const playerMoves = g.moves.filter((m) => m.isPlayerMove)
     return {
       gameId: g.gameId, url: g.url, playedAt: g.playedAt, color: g.color, result: g.result,
       eco: g.eco, openingName: g.openingName,
-      accuracy: accuracyOf(g.moves.filter((m) => m.isPlayerMove)),
-      accuracyStrict: accuracyStrictOf(g.moves.filter((m) => m.isPlayerMove)),
+      accuracy: accuracyOf(playerMoves),
+      accuracyStrict: accuracyStrictOf(playerMoves),
+      playerRating: g.playerRating, opponentRating: g.opponentRating,
+      wasWinning: reachedWinning(g.moves), turningPointIdx: turningPointIdx(g.moves),
       moves,
     }
   })
@@ -129,6 +138,16 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
   }
   const phaseMoves: Record<Phase, MoveAnalysis[]> = { opening: [], middlegame: [], endgame: [] }
   const colorMoves: Record<Color, MoveAnalysis[]> = { white: [], black: [] }
+  const oppAgg: Record<OpponentBand, { games: number; wins: number; mistakes: number }> = {
+    stronger: { games: 0, wins: 0, mistakes: 0 }, similar: { games: 0, wins: 0, mistakes: 0 }, weaker: { games: 0, wins: 0, mistakes: 0 },
+  }
+  const oppMoves: Record<OpponentBand, MoveAnalysis[]> = { stronger: [], similar: [], weaker: [] }
+  // Opponent strength relative to the player (±50 Elo band). null when ratings unknown.
+  const bandOf = (g: GameAnalysis): OpponentBand | null => {
+    if (g.playerRating == null || g.opponentRating == null) return null
+    const d = g.opponentRating - g.playerRating
+    return d >= 50 ? 'stronger' : d <= -50 ? 'weaker' : 'similar'
+  }
 
   for (const g of games) {
     if (g.result === 'win') record.wins++
@@ -136,6 +155,11 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
     else record.draws++
     colorAgg[g.color].games++
     if (g.result === 'win') colorAgg[g.color].wins++
+    const band = bandOf(g)
+    if (band) {
+      oppAgg[band].games++
+      if (g.result === 'win') oppAgg[band].wins++
+    }
 
     const key = byVariation ? g.eco + '|' + g.openingName : (g.eco || 'Unknown')
     const o = openingMap.get(key) ?? { eco: g.eco, name: g.openingName, games: 0, wins: 0, mistakes: 0 }
@@ -167,6 +191,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       gamePlayerMoves.push(m)
       phaseMoves[m.phase].push(m)
       colorMoves[g.color].push(m)
+      if (band) oppMoves[band].push(m)
       if (isLostPosition(m)) {
         lostPositionMoves++
         continue
@@ -175,6 +200,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       mistakeCount++
       o.mistakes++
       colorAgg[g.color].mistakes++
+      if (band) oppAgg[band].mistakes++
       byPhase[m.phase]++
       typeAcc[m.type].count++
       typeAcc[m.type].sum += m.cpLoss
@@ -245,10 +271,16 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       }]
     }),
   ) as Stats['byColor']
+  const byOpponent = Object.fromEntries(
+    (['stronger', 'similar', 'weaker'] as OpponentBand[]).map((b) => [b, {
+      games: oppAgg[b].games, wins: oppAgg[b].wins,
+      accuracy: accuracyOf(oppMoves[b]), mistakes: oppAgg[b].mistakes,
+    }]),
+  ) as Stats['byOpponent']
 
   return {
     gamesAnalyzed: games.length,
     record, mistakeCount, byPhase, byType, openings, topBlunders, lostPositionMoves,
-    byTimeBucket, gamesWithClock, accuracy, accuracyStrict, accuracyByPhase, conversion, byColor,
+    byTimeBucket, gamesWithClock, accuracy, accuracyStrict, accuracyByPhase, conversion, byColor, byOpponent,
   }
 }

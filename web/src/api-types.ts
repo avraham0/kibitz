@@ -25,7 +25,9 @@ export type Stats = {
   accuracyByPhase: Record<Phase, number>
   conversion: { winningGames: number; converted: number }
   byColor: Record<Color, { games: number; wins: number; winPct: number; accuracy: number; mistakes: number }>
+  byOpponent: Record<OpponentBand, { games: number; wins: number; accuracy: number; mistakes: number }>
 }
+export type OpponentBand = 'stronger' | 'similar' | 'weaker'
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
 export type GameMove = {
@@ -37,6 +39,8 @@ export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
   result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
   accuracy: number; accuracyStrict: number
+  playerRating: number | null; opponentRating: number | null
+  wasWinning: boolean; turningPointIdx: number | null
   moves: GameMove[]
 }
 export type AnalyzeResult = { stats: Stats; suggestions: Suggestion[]; meta: { user: string; since: string; depth: number }; games: GameSummary[] }

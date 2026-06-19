@@ -65,6 +65,11 @@ export async function analyze(
       if (!analysis) {
         analysis = await analyzeGame(g, opts.depth, evaluate)
         await writeCached(analysis, opts.user, opts.root)
+      } else {
+        // Ratings come from the freshly-fetched game list, so overlay them onto
+        // caches written before ratings were tracked (no re-analysis needed).
+        analysis.playerRating = g.playerRating
+        analysis.opponentRating = g.opponentRating
       }
       analyses[i] = analysis
       done++

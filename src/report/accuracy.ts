@@ -67,6 +67,33 @@ export function accuracyOf(playerMoves: MoveAnalysis[]): number {
   return blendAccuracy(accs, wins)
 }
 
+// Index into the move list of the player move that surrendered the game: the
+// largest win% drop on a move that began at least equal (≥45%) and left the player
+// worse (<45%). null when no single move decisively lost it.
+export function turningPointIdx(moves: MoveAnalysis[]): number | null {
+  let bestIdx = -1
+  let bestDrop = 0
+  for (let i = 0; i < moves.length; i++) {
+    const m = moves[i]
+    if (!m.isPlayerMove) continue
+    const wb = winPct(cpFromMoverPov(m.evalBefore))
+    const wa = playerWinAfter(m)
+    const drop = wb - wa
+    if (wb >= 45 && wa < 45 && drop > bestDrop) { bestDrop = drop; bestIdx = i }
+  }
+  return bestIdx >= 0 && bestDrop >= 15 ? bestIdx : null
+}
+
+// Did the player reach a clearly winning position (peak eval ≥ threshold, their POV)?
+export function reachedWinning(moves: MoveAnalysis[], cpThreshold = 300): boolean {
+  let peak = -Infinity
+  for (const m of moves) {
+    const pov = m.isPlayerMove ? cpFromMoverPov(m.evalBefore) : -cpFromMoverPov(m.evalBefore)
+    if (pov > peak) peak = pov
+  }
+  return peak >= cpThreshold
+}
+
 function harmonicMean(accs: number[]): number {
   if (accs.length === 0) return 100
   return accs.length / accs.reduce((a, b) => a + 1 / Math.max(b, 1), 0)

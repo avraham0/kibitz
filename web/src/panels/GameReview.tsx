@@ -45,15 +45,15 @@ function fenAfter(fen: string, san: string): string {
 }
 
 // Pick a game, see its eval graph, and step through it move by move.
-export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { id: string; seq: number } | null }) {
+export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { id: string; seq: number; ply?: number } | null }) {
   const [gi, setGi] = useState(0)
   const [ply, setPly] = useState(0)
 
-  // Jump to a game requested from elsewhere (e.g. the openings drill-down).
+  // Jump to a game (and optionally a specific move) requested from elsewhere.
   useEffect(() => {
     if (!focus) return
     const i = games.findIndex((g) => g.gameId === focus.id)
-    if (i >= 0) { setGi(i); setPly(0) }
+    if (i >= 0) { setGi(i); setPly(focus.ply ?? 0) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus?.seq])
   const g = games.length ? games[Math.min(gi, games.length - 1)] : null
@@ -188,6 +188,12 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   <span style={{ color: 'var(--muted)' }}>{mistakeIdxs.length} mistakes</span>
                 </div>
               )}
+              {g.turningPointIdx != null && (
+                <div style={{ fontSize: 13 }}>
+                  <button type="button" onClick={() => setPly(g.turningPointIdx!)}>⚠ jump to turning point</button>
+                  <span style={{ color: 'var(--muted)' }}> — where the game slipped away</span>
+                </div>
+              )}
               {isMistake && cur && (
                 <div style={{ fontSize: 13, color: 'rgb(224,121,107)' }}>
                   {cur.severity} −{cur.cpLoss}cp · {cur.type} · best {cur.bestSan}
@@ -210,6 +216,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
             <YAxis domain={[-1500, 1500]} tick={AXIS.tick} stroke={AXIS.stroke} />
             <Tooltip {...TOOLTIP} />
             <ReferenceLine y={0} stroke="#4a525e" />
+            {g.turningPointIdx != null && moves[g.turningPointIdx] && (
+              <ReferenceLine x={moves[g.turningPointIdx].ply} stroke="rgb(224,121,107)" strokeDasharray="4 4" />
+            )}
             {cur && <ReferenceLine x={cur.ply} stroke={COLORS.accent} />}
             <Line
               type="monotone" dataKey="eval" stroke={COLORS.line} strokeWidth={2} isAnimationActive={false}

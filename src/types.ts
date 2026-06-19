@@ -43,6 +43,8 @@ export type RawGame = {
   result: 'win' | 'loss' | 'draw'
   eco: string
   openingName: string
+  playerRating: number | null
+  opponentRating: number | null
   moves: RawMove[] // only the player's-and-opponent's full move list
 }
 
@@ -70,6 +72,8 @@ export type GameAnalysis = {
   result: 'win' | 'loss' | 'draw'
   eco: string
   openingName: string
+  playerRating: number | null
+  opponentRating: number | null
   depth: number
   moves: MoveAnalysis[]
 }

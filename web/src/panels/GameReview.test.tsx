@@ -10,6 +10,7 @@ const games: GameSummary[] = [
   {
     gameId: 'g', url: 'u', playedAt: '2026-01-02T00:00:00.000Z', color: 'white',
     result: 'win', eco: 'C50', openingName: 'Italian Game', accuracy: 88, accuracyStrict: 75,
+    playerRating: 1500, opponentRating: 1480, wasWinning: true, turningPointIdx: 2,
     moves: [
       { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', fenBefore: start, phase: 'opening', clockSeconds: 180 },
       { ply: 2, san: 'e5', bestSan: 'e5', evalCp: 20, cpLoss: 0, isPlayerMove: false, severity: 'ok', type: 'positional', fenBefore: afterE4, phase: 'opening', clockSeconds: 178 },
@@ -48,6 +49,12 @@ describe('GameReview', () => {
     // The move list renders a clickable SAN button for the blunder move "a3".
     fireEvent.click(screen.getByRole('button', { name: 'a3' }))
     expect(screen.getByText(/best d4/)).toBeTruthy() // landed on the blunder
+  })
+
+  it('jumps to the turning point when its button is clicked', () => {
+    render(<GameReview games={games} />)
+    fireEvent.click(screen.getByRole('button', { name: /turning point/i }))
+    expect(screen.getByText(/best d4/)).toBeTruthy() // turningPointIdx 2 = the blunder
   })
 
   it('renders nothing when there are no games', () => {
