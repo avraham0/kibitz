@@ -44,7 +44,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           <SummaryCard stats={stats} />
           <TopLeaks stats={stats} />
           <ProgressChart games={games} />
-          <MistakeTypesChart stats={stats} />
+          <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
           <PhaseChart stats={stats} />
           <TimePressureChart stats={stats} />
           <Splits stats={stats} />

@@ -27,6 +27,7 @@ describe('charts', () => {
   it('renders the mistake-types chart heading without throwing', () => {
     render(<MistakeTypesChart stats={base({})} />)
     expect(screen.getByText(/Mistake types/i)).toBeTruthy()
+    expect(screen.getByText(/Click a type to see the games/i)).toBeTruthy()
   })
   it('omits the time-pressure chart when there is no clock data', () => {
     render(<TimePressureChart stats={base({ gamesWithClock: 0 })} />)
