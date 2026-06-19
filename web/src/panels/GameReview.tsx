@@ -2,13 +2,33 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chessboard } from 'react-chessboard'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
-import type { GameSummary } from '../api-types.js'
+import type { GameSummary, GameMove } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 import { accuracyColor } from '../accuracyColor.js'
 import { soundForSan, playMoveSound, SOUND_KEY } from '../sound.js'
 
 const TIME_TROUBLE_SEC = 20
+
+// One clickable move in the notation list. Player mistakes are tinted red; the
+// current move is highlighted.
+function MoveSan({ m, active, onClick }: { m: GameMove; active: boolean; onClick: () => void }) {
+  const isMistake = m.isPlayerMove && m.severity !== 'ok'
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: active ? COLORS.accent : 'transparent',
+        color: active ? '#0b0e13' : isMistake ? 'rgb(224,121,107)' : 'inherit',
+        border: 'none', cursor: 'pointer', padding: '1px 5px', borderRadius: 3,
+        fontWeight: active || isMistake ? 700 : 400, width: 72, textAlign: 'left',
+      }}
+    >
+      {m.san}
+    </button>
+  )
+}
 
 function fmtClock(sec: number | null): string | null {
   if (sec == null) return null
@@ -34,6 +54,24 @@ export function GameReview({ games }: { games: GameSummary[] }) {
   const soundOnRef = useRef(soundOn)
   soundOnRef.current = soundOn
   const firstRef = useRef(true)
+
+  const [flipped, setFlipped] = useState(false)
+  const [playing, setPlaying] = useState(false)
+
+  // Autoplay: advance one ply on a timer while playing; stop at the last move.
+  useEffect(() => {
+    if (!playing) return
+    const id = setInterval(() => setPly((p) => (p >= maxPly ? p : p + 1)), 900)
+    return () => clearInterval(id)
+  }, [playing, maxPly])
+  useEffect(() => {
+    if (playing && Math.min(ply, maxPly) >= maxPly) setPlaying(false)
+  }, [ply, maxPly, playing])
+
+  function togglePlay() {
+    setPly((p) => (p >= maxPly ? 0 : p)) // restart if parked at the end
+    setPlaying((v) => !v)
+  }
 
   function toggleSound() {
     setSoundOn((v) => {
@@ -100,6 +138,7 @@ export function GameReview({ games }: { games: GameSummary[] }) {
         </select>
       </label>
       <span style={{ marginLeft: 10, fontWeight: 600, color: accuracyColor(g.accuracy) }}>Accuracy {g.accuracy}%</span>
+      {g.url && <a style={{ marginLeft: 10 }} href={g.url} target="_blank" rel="noreferrer">open on chess.com ↗</a>}
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>
       ) : (
@@ -108,7 +147,7 @@ export function GameReview({ games }: { games: GameSummary[] }) {
             {cur && (
               <Chessboard
                 position={cur.fenBefore}
-                boardOrientation={g.color}
+                boardOrientation={flipped ? (g.color === 'white' ? 'black' : 'white') : g.color}
                 customArrows={arrows}
                 arePiecesDraggable={false}
                 boardWidth={320}
@@ -117,13 +156,16 @@ export function GameReview({ games }: { games: GameSummary[] }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={prev} disabled={idx === 0}>‹ prev</button>
+                <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={togglePlay} title="autoplay">{playing ? '⏸' : '▶'}</button>
                 <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
+                <button type="button" style={{ flexShrink: 0 }} onClick={() => setFlipped((f) => !f)} title="flip board" aria-label="flip board">⇅</button>
                 <button type="button" style={{ flexShrink: 0 }} onClick={toggleSound} title={soundOn ? 'mute move sounds' : 'enable move sounds'} aria-label="toggle move sounds">{soundOn ? '🔊' : '🔇'}</button>
               </div>
               <div style={{ fontSize: 13 }}>
                 move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san} · {cur?.phase}
                 {clock && <> · ⏱ {clock}</>}
                 {timeTrouble && <span style={{ color: 'rgb(224,121,107)' }}> · time trouble</span>}
+                {cur && <> · <a href={`https://www.chess.com/analysis?fen=${encodeURIComponent(cur.fenBefore)}`} target="_blank" rel="noreferrer">analyze ↗</a></>}
               </div>
               {mistakeIdxs.length > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
@@ -162,6 +204,19 @@ export function GameReview({ games }: { games: GameSummary[] }) {
               )}
             />
           </LineChart>
+          <div style={{ width: 210, maxHeight: 340, overflowY: 'auto', fontSize: 13, lineHeight: 1.6 }}>
+            {Array.from({ length: Math.ceil(moves.length / 2) }, (_, r) => {
+              const wi = r * 2
+              const bi = r * 2 + 1
+              return (
+                <div key={r} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  <span style={{ color: 'var(--muted)', width: 26, textAlign: 'right' }}>{r + 1}.</span>
+                  <MoveSan m={moves[wi]} active={wi === idx} onClick={() => setPly(wi)} />
+                  {bi < moves.length && <MoveSan m={moves[bi]} active={bi === idx} onClick={() => setPly(bi)} />}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </section>

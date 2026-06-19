@@ -43,6 +43,13 @@ describe('GameReview', () => {
     expect(screen.getByText(/· e5/)).toBeTruthy()
   })
 
+  it('jumps to a move when clicked in the move list', () => {
+    render(<GameReview games={games} />)
+    // The move list renders a clickable SAN button for the blunder move "a3".
+    fireEvent.click(screen.getByRole('button', { name: 'a3' }))
+    expect(screen.getByText(/best d4/)).toBeTruthy() // landed on the blunder
+  })
+
   it('renders nothing when there are no games', () => {
     const { container } = render(<GameReview games={[]} />)
     expect(container.firstChild).toBeNull()
