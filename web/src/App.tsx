@@ -4,14 +4,20 @@ import { ProgressBar } from './ProgressBar.js'
 import { Dashboard } from './Dashboard.js'
 
 export default function App() {
-  const { status, progress, result, error, start } = useAnalyzeStream()
+  const { status, progress, result, error, start, cancel } = useAnalyzeStream()
   return (
-    <main style={{ maxWidth: 1000, margin: '0 auto', padding: 16, fontFamily: 'system-ui' }}>
+    <main style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
       <h1>chess-coach</h1>
       <AnalyzeForm onSubmit={start} disabled={status === 'running'} />
-      {status === 'running' && progress && <ProgressBar done={progress.done} total={progress.total} />}
-      {status === 'running' && !progress && <p>Starting analysis…</p>}
-      {status === 'error' && <p style={{ color: '#c33' }}>Error: {error}</p>}
+      {status === 'running' && (
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '12px 0' }}>
+          <div style={{ flex: 1 }}>
+            {progress ? <ProgressBar done={progress.done} total={progress.total} /> : <span>Starting analysis…</span>}
+          </div>
+          <button type="button" onClick={cancel}>Cancel</button>
+        </div>
+      )}
+      {status === 'error' && <p style={{ color: '#e0796b' }}>Error: {error}</p>}
       {result && <Dashboard result={result} />}
     </main>
   )
