@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
 import type { GameAnalysis } from '../types.js'
 
-const DEFAULT_ROOT = join(homedir(), '.chess-coach', 'cache')
+const DEFAULT_ROOT = join(homedir(), '.kibitz', 'cache')
 
 function sanitize(id: string): string {
   return id.replace(/[^a-zA-Z0-9]/g, '_')

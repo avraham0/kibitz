@@ -31,7 +31,7 @@ async function main() {
 
   const server = createServer(handler)
   server.listen(port, '127.0.0.1', () => {
-    console.log(`chess-coach web UI on http://127.0.0.1:${port} (engines: ${pool.size} ${pool.backend})`)
+    console.log(`kibitz web UI on http://127.0.0.1:${port} (engines: ${pool.size} ${pool.backend})`)
   })
   const shutdown = () => { pool.quit(); server.close(() => process.exit(0)) }
   process.on('SIGINT', shutdown)

@@ -129,7 +129,7 @@ describe('run', () => {
       user: 'bob', since: '2026-06', depth: 8, root,
       nowISO: '2026-06-18T00:00:00Z', evaluate: evaluate as any, fetchFn: fetchFn as any,
     })
-    expect(out.markdown).toContain('# chess-coach report for bob')
+    expect(out.markdown).toContain('# kibitz report for bob')
     expect(out.terminal).toContain('bob')
     expect(out.terminal).toContain('Games: 1')
   })

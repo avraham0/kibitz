@@ -36,7 +36,7 @@ const sugg: Suggestion[] = [{ title: 'Hung pieces', why: 'w', drill: 'd', impact
 describe('render', () => {
   it('markdown contains all sections and a usable analysis link', () => {
     const md = renderMarkdown(stats, sugg, { user: 'bob', since: '2025-06', depth: 15 })
-    expect(md).toContain('# chess-coach report for bob')
+    expect(md).toContain('# kibitz report for bob')
     expect(md).toContain('Top blunders')
     expect(md).toContain('Mistake types')
     expect(md).toContain('Openings')

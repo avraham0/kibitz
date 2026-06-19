@@ -9,7 +9,7 @@ export type SrsStore = Record<string, SrsRecord>
 const DAY = 86_400_000
 const INTERVALS = [0, DAY, 3 * DAY, 7 * DAY, 16 * DAY, 35 * DAY] // box → wait before due again
 const MAX_BOX = INTERVALS.length - 1
-const STORAGE_KEY = 'chess-coach:puzzleSrs'
+const STORAGE_KEY = 'kibitz:puzzleSrs'
 
 export function puzzleKey(b: Pick<BlunderRef, 'url' | 'ply'>): string {
   return `${b.url}#${b.ply}`
