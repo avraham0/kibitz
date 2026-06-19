@@ -19,12 +19,13 @@ function mockRes() {
     writeHead: (s: number, h?: Record<string, string>) => { statusCode = s; Object.assign(headers, h ?? {}) },
     write: (c: string) => { chunks.push(c); return true },
     end: (c?: string) => { if (c) chunks.push(c); resolveEnd() },
+    on: () => {}, // res.on('close', …) — no-op in the mock
     ended,
   } as any
 }
 
 const sample: AnalyzeResult = {
-  stats: { gamesAnalyzed: 1 } as any, suggestions: [], meta: { user: 'bob', since: '2025-06', depth: 15 },
+  stats: { gamesAnalyzed: 1 } as any, suggestions: [], meta: { user: 'bob', since: '2025-06', depth: 15 }, games: [],
 }
 
 describe('createHandler — /api/analyze', () => {

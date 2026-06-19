@@ -5,7 +5,7 @@ import { writeSse } from './sse.js'
 import { defaultSince, type AnalyzeResult } from '../orchestrate.js'
 
 type AnalyzeFn = (
-  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean; timeControl?: string },
+  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean; timeControl?: string; signal?: AbortSignal },
   onProgress: (done: number, total: number) => void,
 ) => Promise<AnalyzeResult>
 
@@ -44,6 +44,10 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
     return
   }
   busy = true
+  // If the client disconnects (refresh / Cancel / navigate away), abort the run so
+  // the engine pool is freed and the busy lock doesn't block the next request.
+  const controller = new AbortController()
+  res.on('close', () => controller.abort())
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -59,7 +63,7 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
     const variations = url.searchParams.get('variations') === '1'
     const timeControl = url.searchParams.get('timeControl') ?? undefined
     const result = await deps.analyze(
-      { user, since, depth, last, nowISO, variations, timeControl },
+      { user, since, depth, last, nowISO, variations, timeControl, signal: controller.signal },
       (done, total) => writeSse(write, 'progress', { done, total }),
     )
     writeSse(write, 'result', result)

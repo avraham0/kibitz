@@ -10,7 +10,7 @@ class MockES {
   close() { this.closed = true }
   emit(t: string, data: unknown) { this.listeners[t]?.({ data: JSON.stringify(data) }) }
 }
-beforeEach(() => { (globalThis as any).EventSource = MockES as any })
+beforeEach(() => { (globalThis as any).EventSource = MockES as any; localStorage.clear() })
 
 const result = {
   meta: { user: 'bob', since: '2025-06', depth: 8 }, suggestions: [], games: [],

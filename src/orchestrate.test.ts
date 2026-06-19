@@ -30,6 +30,21 @@ describe('analyze', () => {
     expect(seen).toEqual([[1, 1]]) // one game → one progress callback at done=1,total=1
   })
 
+  it('aborts the run when the signal is already aborted', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'cc-abort-'))
+    const pgn = `[White "bob"]\n[Black "x"]\n[Result "1-0"]\n[ECO "C50"]\n[Opening "Italian"]\n\n1. e4 e5 1-0`
+    const fetchFn = async (url: string) => {
+      if (url.endsWith('/archives')) return new Response(JSON.stringify({ archives: [] }), { status: 200 })
+      return new Response(JSON.stringify({ games: [{ url: 'g', end_time: 1, white: { username: 'bob' }, black: { username: 'x' }, pgn }] }), { status: 200 })
+    }
+    const evaluate = async () => ({ eval: { cp: 0, mate: null }, bestUci: 'e2e4', pv: [] })
+    const ac = new AbortController()
+    ac.abort()
+    await expect(
+      analyze({ user: 'bob', since: '2026-06', depth: 8, root, nowISO: '2026-06-18T00:00:00Z', evaluate: evaluate as any, fetchFn: fetchFn as any, signal: ac.signal }),
+    ).rejects.toThrow(/abort/)
+  })
+
   it('filters games by time control when timeControl is set', async () => {
     const root = mkdtempSync(join(tmpdir(), 'cc-tc-'))
     const pgn = `[White "bob"]\n[Black "x"]\n[Result "1-0"]\n[ECO "C50"]\n[Opening "Italian"]\n\n1. e4 e5 1-0`

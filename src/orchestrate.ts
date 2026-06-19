@@ -23,6 +23,8 @@ type AnalyzeOpts = {
   variations?: boolean
   // Only analyze games of this chess.com time class (bullet|blitz|rapid|daily).
   timeControl?: string
+  // Abort the run early (e.g. the web client disconnected / cancelled).
+  signal?: AbortSignal
 }
 
 export type AnalyzeResult = {
@@ -55,6 +57,7 @@ export async function analyze(
   // run concurrently. Results are stored by game index (order-stable).
   async function worker(evaluate: Evaluator): Promise<void> {
     while (true) {
+      if (opts.signal?.aborted) return // stop pulling new games once cancelled
       const i = cursor++
       if (i >= total) return
       const g = parsed[i]
@@ -70,6 +73,7 @@ export async function analyze(
   }
 
   await Promise.all(evaluators.slice(0, Math.max(1, total)).map((e) => worker(e)))
+  if (opts.signal?.aborted) throw new Error('analysis aborted')
 
   const stats = aggregate(analyses, { variations: opts.variations })
   const suggestions = coach(stats)
