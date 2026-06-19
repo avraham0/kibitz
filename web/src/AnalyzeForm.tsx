@@ -5,8 +5,8 @@ export type FormParams = { user: string; last?: string; depth?: string; since?: 
 
 export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) => void; disabled: boolean }) {
   const [user, setUser] = useState('avraham00')
-  const [last, setLast] = useState('10')
-  const [depth, setDepth] = useState('12')
+  const [last, setLast] = useState('50')
+  const [depth, setDepth] = useState('16')
   const [range, setRange] = useState<RangeKey>('1year')
   const [customSince, setCustomSince] = useState('')
   const [variations, setVariations] = useState(false)
