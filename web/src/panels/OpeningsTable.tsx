@@ -26,7 +26,10 @@ function OpeningDetail({ games, onOpenGame }: { games: GameSummary[]; onOpenGame
               <td>{g.playedAt.slice(0, 10)}</td>
               <td>{g.color}</td>
               <td>{g.result}</td>
-              <td style={{ color: accuracyColor(g.accuracy), fontWeight: 600 }}>{g.accuracy}%</td>
+              <td>
+                <span style={{ color: accuracyColor(g.accuracy), fontWeight: 600 }}>{g.accuracy}%</span>
+                <span style={{ color: 'var(--muted)', fontSize: 12 }}> (≈{g.accuracyStrict}%)</span>
+              </td>
               <td>{onOpenGame && <button type="button" onClick={() => onOpenGame(g.gameId)}>review ›</button>}</td>
             </tr>
           ))}
