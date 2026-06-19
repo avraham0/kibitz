@@ -196,11 +196,11 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   <span style={{ color: 'var(--muted)' }}> — where the game slipped away</span>
                 </div>
               )}
-              {isMistake && cur && (
-                <div style={{ fontSize: 13, color: 'rgb(224,121,107)' }}>
-                  {cur.severity} −{cur.cpLoss}cp · {cur.type} · best {cur.bestSan}
-                </div>
-              )}
+              {/* Always reserve this line so the column height (and the move-list
+                  scrollbar) doesn't jump between normal and mistake moves. */}
+              <div style={{ fontSize: 13, color: 'rgb(224,121,107)', minHeight: 18 }}>
+                {isMistake && cur ? `${cur.severity} −${cur.cpLoss}cp · ${cur.type} · best ${cur.bestSan}` : ''}
+              </div>
               <div style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump</div>
             </div>
           </div>
