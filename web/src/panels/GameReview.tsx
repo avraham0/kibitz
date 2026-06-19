@@ -45,9 +45,17 @@ function fenAfter(fen: string, san: string): string {
 }
 
 // Pick a game, see its eval graph, and step through it move by move.
-export function GameReview({ games }: { games: GameSummary[] }) {
+export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { id: string; seq: number } | null }) {
   const [gi, setGi] = useState(0)
   const [ply, setPly] = useState(0)
+
+  // Jump to a game requested from elsewhere (e.g. the openings drill-down).
+  useEffect(() => {
+    if (!focus) return
+    const i = games.findIndex((g) => g.gameId === focus.id)
+    if (i >= 0) { setGi(i); setPly(0) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.seq])
   const g = games.length ? games[Math.min(gi, games.length - 1)] : null
   const moves = g?.moves ?? []
   const maxPly = Math.max(0, moves.length - 1)

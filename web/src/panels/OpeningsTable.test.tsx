@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { OpeningsTable } from './OpeningsTable.js'
 import type { OpeningStat, GameSummary } from '../api-types.js'
@@ -24,5 +24,13 @@ describe('OpeningsTable', () => {
     expect(screen.getByText(/Common mistakes/)).toBeTruthy()
     expect(screen.getByText(/hung_piece \(1\)/)).toBeTruthy()
     expect(screen.getByText('2026-02-03')).toBeTruthy()
+  })
+
+  it('calls onOpenGame with the game id from a row', () => {
+    const onOpenGame = vi.fn()
+    render(<OpeningsTable openings={openings} games={games} onOpenGame={onOpenGame} />)
+    fireEvent.click(screen.getByText('Italian Game'))
+    fireEvent.click(screen.getByRole('button', { name: /review/i }))
+    expect(onOpenGame).toHaveBeenCalledWith('g')
   })
 })
