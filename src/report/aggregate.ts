@@ -71,7 +71,7 @@ const TYPES: CoachableMistakeType[] = [
 
 export type GameMove = {
   ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
-  isPlayerMove: boolean; severity: MoveAnalysis['severity']; type: MistakeType; fenBefore: string
+  isPlayerMove: boolean; severity: MoveAnalysis['severity']; type: MistakeType; missed: boolean; fenBefore: string
   phase: Phase; clockSeconds: number | null
 }
 export type GameSummary = {
@@ -92,7 +92,7 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
       const whitePov = m.fenBefore.split(' ')[1] === 'w' ? moverPov : -moverPov
       return {
         ply: m.ply, san: m.san, bestSan: m.bestSan, cpLoss: m.cpLoss, isPlayerMove: m.isPlayerMove,
-        severity: m.severity, type: m.type, fenBefore: m.fenBefore,
+        severity: m.severity, type: m.type, missed: m.missed, fenBefore: m.fenBefore,
         phase: m.phase, clockSeconds: m.clockSeconds,
         evalCp: Math.max(-1500, Math.min(1500, whitePov)),
       }

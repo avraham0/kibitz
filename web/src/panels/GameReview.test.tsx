@@ -12,9 +12,9 @@ const games: GameSummary[] = [
     result: 'win', eco: 'C50', openingName: 'Italian Game', accuracy: 88, accuracyStrict: 75,
     playerRating: 1500, opponentRating: 1480, wasWinning: true, turningPointIdx: 2,
     moves: [
-      { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', fenBefore: start, phase: 'opening', clockSeconds: 180 },
-      { ply: 2, san: 'e5', bestSan: 'e5', evalCp: 20, cpLoss: 0, isPlayerMove: false, severity: 'ok', type: 'positional', fenBefore: afterE4, phase: 'opening', clockSeconds: 178 },
-      { ply: 3, san: 'a3', bestSan: 'd4', evalCp: -400, cpLoss: 400, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', fenBefore: afterE4E5, phase: 'middlegame', clockSeconds: 8 },
+      { ply: 1, san: 'e4', bestSan: 'e4', evalCp: 30, cpLoss: 0, isPlayerMove: true, severity: 'ok', type: 'positional', missed: false, fenBefore: start, phase: 'opening', clockSeconds: 180 },
+      { ply: 2, san: 'e5', bestSan: 'e5', evalCp: 20, cpLoss: 0, isPlayerMove: false, severity: 'ok', type: 'positional', missed: false, fenBefore: afterE4, phase: 'opening', clockSeconds: 178 },
+      { ply: 3, san: 'a3', bestSan: 'd4', evalCp: -400, cpLoss: 400, isPlayerMove: true, severity: 'blunder', type: 'hung_piece', missed: false, fenBefore: afterE4E5, phase: 'middlegame', clockSeconds: 8 },
     ],
   },
 ]
@@ -34,7 +34,7 @@ describe('GameReview', () => {
     fireEvent.click(screen.getByRole('button', { name: /next/i })) // → e5
     fireEvent.click(screen.getByRole('button', { name: /next/i })) // → a3 (blunder)
     expect(screen.getByText(/best d4/)).toBeTruthy()
-    expect(screen.getByText(/hung_piece/)).toBeTruthy()
+    expect(screen.getByText(/undefended/)).toBeTruthy() // plain-language explanation
   })
 
   it('steps forward with the right arrow key', () => {
