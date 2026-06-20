@@ -24,7 +24,7 @@ export function MistakeTypesChart({ stats, games = [], onOpenGame }: { stats: St
         <BarChart
           layout="vertical" data={data} margin={{ left: 30, right: 12 }}
           style={{ cursor: 'pointer' }}
-          onClick={(s: { activeLabel?: string }) => { if (s?.activeLabel) setSel(s.activeLabel as CoachableType) }}
+          onClick={(s: any) => { if (s?.activeLabel) setSel(s.activeLabel as CoachableType) }}
         >
           <CartesianGrid stroke={GRID} horizontal={false} />
           <XAxis type="number" allowDecimals={false} tick={AXIS.tick} stroke={AXIS.stroke} />

@@ -46,7 +46,7 @@ function ScorePerformance({ games }: { games: GameSummary[] }) {
             <CartesianGrid stroke={GRID} vertical={false} />
             <XAxis dataKey="result" tick={AXIS.tick} stroke={AXIS.stroke} />
             <YAxis domain={[0, 100]} tick={AXIS.tick} stroke={AXIS.stroke} />
-            <Tooltip {...TOOLTIP} formatter={(v: number) => [`${v}%`, 'Accuracy']} />
+            <Tooltip {...TOOLTIP} formatter={((v: number) => [`${v}%`, 'Accuracy']) as any} />
             <Bar dataKey="accuracy" radius={[4, 4, 0, 0]}>
               {data.map((d) => (
                 <Cell key={d.result} fill={d.result === 'Win' ? '#7bc47f' : d.result === 'Draw' ? '#6db3f2' : '#e0796b'} />
@@ -96,7 +96,7 @@ function SeverityProfile({ games }: { games: GameSummary[] }) {
             <CartesianGrid stroke={GRID} vertical={false} />
             <XAxis dataKey="name" tick={AXIS.tick} stroke={AXIS.stroke} />
             <YAxis tick={AXIS.tick} stroke={AXIS.stroke} unit="%" />
-            <Tooltip {...TOOLTIP} formatter={(v: number) => [`${v}%`, '% of moves']} />
+            <Tooltip {...TOOLTIP} formatter={((v: number) => [`${v}%`, '% of moves']) as any} />
             <Bar dataKey="pct" radius={[4, 4, 0, 0]}>
               {data.map((d) => <Cell key={d.name} fill={d.color} />)}
             </Bar>
@@ -164,7 +164,7 @@ function EndgameAccuracy({ games }: { games: GameSummary[] }) {
             <CartesianGrid stroke={GRID} />
             <XAxis dataKey="i" name="Game" tick={AXIS.tick} stroke={AXIS.stroke} label={{ value: 'game #', position: 'insideBottom', offset: -2, style: { fontSize: 11, fill: '#6b7280' } }} />
             <YAxis dataKey="endgame" name="Accuracy" domain={[0, 100]} tick={AXIS.tick} stroke={AXIS.stroke} unit="%" />
-            <Tooltip {...TOOLTIP} formatter={(v: number) => [`${v}%`, 'Endgame accuracy']} labelFormatter={(_, p) => p[0]?.payload?.date ?? ''} />
+            <Tooltip {...TOOLTIP} formatter={((v: number) => [`${v}%`, 'Endgame accuracy']) as any} labelFormatter={((_: any, p: any[]) => p[0]?.payload?.date ?? '') as any} />
             <Scatter data={pts}>
               {pts.map((p, idx) => (
                 <Cell key={idx} fill={p.result === 'win' ? '#7bc47f' : p.result === 'draw' ? '#6db3f2' : '#e0796b'} fillOpacity={0.8} />

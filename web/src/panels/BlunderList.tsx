@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react'
 import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
-import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
+import type { Arrow } from '../ThemedBoard.js'
 import type { BlunderRef, MistakeType } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'

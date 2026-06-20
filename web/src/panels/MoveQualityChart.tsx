@@ -30,8 +30,8 @@ export function MoveQualityChart({ games }: { games: GameSummary[] }) {
         <YAxis tick={AXIS.tick} stroke={AXIS.stroke} />
         <Tooltip
           {...TOOLTIP}
-          formatter={(v: number, _name: string, entry: { payload?: { pct?: number } }) =>
-            [`${v} (${entry.payload?.pct ?? 0}%)`, 'moves']
+          formatter={((v: number, _name: string, entry: { payload?: { pct?: number } }) =>
+            [`${v} (${entry.payload?.pct ?? 0}%)`, 'moves']) as any
           }
         />
         <Bar dataKey="count" isAnimationActive={false} radius={[3, 3, 0, 0]}>

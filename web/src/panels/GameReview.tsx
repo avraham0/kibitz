@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
 import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
-import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
+import type { Arrow } from '../ThemedBoard.js'
 import type { GameSummary, GameMove } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
@@ -305,7 +305,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
             height={240}
             data={data}
             style={{ cursor: 'pointer' }}
-            onClick={(s: { activeTooltipIndex?: number }) => {
+            onClick={(s: any) => {
               if (s && typeof s.activeTooltipIndex === 'number') setPly(s.activeTooltipIndex)
             }}
           >
@@ -320,9 +320,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
             {cur && <ReferenceLine x={cur.ply} stroke={COLORS.accent} />}
             <Line
               type="monotone" dataKey="eval" stroke={COLORS.line} strokeWidth={2} isAnimationActive={false}
-              dot={(p: { cx: number; cy: number; index: number; payload?: { mistake?: boolean } }) => (
+              dot={((p: { cx: number; cy: number; index: number; payload?: { mistake?: boolean } }) => (
                 <circle key={p.index} cx={p.cx} cy={p.cy} r={p.payload?.mistake ? 4 : 0} fill="rgb(224,121,107)" stroke="none" />
-              )}
+              )) as any}
             />
           </LineChart>
           {/* Stretch to the row's full height (board/graph bottom) and scroll inside.
