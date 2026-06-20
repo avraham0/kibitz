@@ -86,6 +86,14 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
     }
   }
 
+  // Treat reveal as a failed attempt so Enter/→ works and SRS is updated
+  useEffect(() => {
+    if (puzzleState.revealed && !puzzleAnswered && key) {
+      handleResult(false)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleState.revealed])
+
   // Enter / → to advance after puzzle is answered
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -118,7 +126,7 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
           <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Session complete</div>
-          <div style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 24 }}>
+          <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 24 }}>
             {sessionSolved} solved · {queue.length - sessionSolved} revealed
           </div>
           <button type="button" onClick={() => { setCur(0); setAnswered(new Set()); setEpoch((e) => e + 1); setPuzzleAnswered(false) }}>
@@ -135,25 +143,22 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
 
   return (
     <section>
-      <h2>Training</h2>
-      <PatternBreakdown blunders={blunders} />
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-        <label style={{ fontSize: 13, color: 'var(--muted)' }}>
-          Opening:{' '}
-          <select value={openingFilter} onChange={(e) => { setOpeningFilter(e.target.value); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13 }}>
-            <option value="all">all ({blunders.length})</option>
-            {openings.map((o) => (
-              <option key={o} value={o}>{o} ({blunders.filter((b) => b.openingName === o).length})</option>
-            ))}
-          </select>
-        </label>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
+        <h2 style={{ margin: 0 }}>Training</h2>
+        <select value={openingFilter} onChange={(e) => { setOpeningFilter(e.target.value); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13 }}>
+          <option value="all">all ({blunders.length})</option>
+          {openings.map((o) => (
+            <option key={o} value={o}>{o} ({blunders.filter((b) => b.openingName === o).length})</option>
+          ))}
+        </select>
       </div>
+      <PatternBreakdown blunders={blunders} />
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
             Find the best move for {colorLabel}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>
+          <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10, width: 380, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             Move {Math.ceil(b.ply / 2)} · {b.type.replace(/_/g, ' ')} · −{b.cpLoss}cp
             {b.openingName && <> · {b.openingName}</>}
           </div>

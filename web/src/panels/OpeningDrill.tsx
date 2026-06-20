@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import type { GameSummary, OpeningStat } from '../api-types.js'
 import { buildTree, topMove } from '../openingTree.js'
 
@@ -14,6 +14,7 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
   const [feedback, setFeedback] = useState<{ text: string; good: boolean } | null>(null)
   const [outOfBook, setOutOfBook] = useState(false)
   const [waiting, setWaiting] = useState(false)
+  const [selectedSq, setSelectedSq] = useState<string | null>(null)
   const opponentTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const ecoGames = useMemo(() => games.filter((g) => g.eco === eco), [games, eco])
@@ -37,7 +38,7 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
 
   function reset() {
     if (opponentTimer.current) clearTimeout(opponentTimer.current)
-    setFen(START); setPgn(''); setHalfMove(0); setFeedback(null); setOutOfBook(false); setWaiting(false)
+    setFen(START); setPgn(''); setHalfMove(0); setFeedback(null); setOutOfBook(false); setWaiting(false); setSelectedSq(null)
   }
 
   // Reset when ECO changes
@@ -56,6 +57,24 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
       setHalfMove((h) => h + 1)
       setWaiting(false)
     }, 800)
+  }
+
+  function onSquareClick(square: string) {
+    if (!isPlayerTurn) return
+    const playerColorChar = playerColor === 'white' ? 'w' : 'b'
+    if (selectedSq) {
+      const moved = onDrop(selectedSq, square)
+      setSelectedSq(null)
+      if (!moved) {
+        const c = new Chess(fen)
+        const piece = c.get(square as Parameters<typeof c.get>[0])
+        if (piece && piece.color === playerColorChar) setSelectedSq(square)
+      }
+    } else {
+      const c = new Chess(fen)
+      const piece = c.get(square as Parameters<typeof c.get>[0])
+      if (piece && piece.color === playerColorChar) setSelectedSq(square)
+    }
   }
 
   function onDrop(from: string, to: string): boolean {
@@ -107,7 +126,7 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
       </div>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontSize: 14, marginBottom: 8, minHeight: 22 }}>
+          <div style={{ fontSize: 13, marginBottom: 8, minHeight: 22 }}>
             {outOfBook
               ? <span style={{ color: 'rgb(224,121,107)' }}>Out of book — position not in your history</span>
               : waiting
@@ -120,13 +139,15 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
             position={fen}
             boardOrientation={playerColor}
             arePiecesDraggable={isPlayerTurn}
-            onPieceDrop={(s, t) => onDrop(s, t)}
+            onPieceDrop={(s, t) => { setSelectedSq(null); return onDrop(s, t) }}
+            onSquareClick={onSquareClick}
+            customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
             boardWidth={360}
           />
         </div>
         <div style={{ minWidth: 200 }}>
           {feedback && (
-            <div style={{ marginBottom: 16, fontSize: 14, color: feedback.good ? '#7bc47f' : '#e0b15a', fontWeight: 600 }}>
+            <div style={{ marginBottom: 16, fontSize: 13, color: feedback.good ? '#7bc47f' : '#e0b15a', fontWeight: 600 }}>
               {feedback.text}
             </div>
           )}

@@ -42,7 +42,7 @@ export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameS
         {tiles.map((t) => (
           <div className="stat" key={t.label}>
             <div className="stat-value" style={t.color ? { color: t.color } : undefined}>{t.value}</div>
-            {t.sub && <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.sub}</div>}
+            {t.sub && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t.sub}</div>}
             <div className="stat-label">{t.label}</div>
           </div>
         ))}

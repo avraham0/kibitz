@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
+import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { GameSummary, GameMove } from '../api-types.js'
@@ -47,7 +47,7 @@ function fenAfter(fen: string, san: string): string {
 
 // Pick a game, see its eval graph, and step through it move by move.
 export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { id: string; seq: number; ply?: number } | null }) {
-  const [gi, setGi] = useState(0)
+  const [gi, setGi] = useState(() => Math.max(0, games.length - 1))
   const [ply, setPly] = useState(0)
   // Free-play exploration forked from the current position; null = following the game.
   const [explore, setExplore] = useState<{ fen: string; n: number } | null>(null)
@@ -58,7 +58,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   useEffect(() => {
     if (!focus) return
     const i = games.findIndex((g) => g.gameId === focus.id)
-    if (i >= 0) { setGi(i); setPly(focus.ply ?? 0) }
+    if (i >= 0) { suppressSoundRef.current = true; setGi(i); setPly(focus.ply ?? 0) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus?.seq])
   const g = games.length ? games[Math.min(gi, games.length - 1)] : null
@@ -74,6 +74,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   const soundOnRef = useRef(soundOn)
   soundOnRef.current = soundOn
   const firstRef = useRef(true)
+  const suppressSoundRef = useRef(false)
 
   const [flipped, setFlipped] = useState(false)
   const [playing, setPlaying] = useState(false)
@@ -141,6 +142,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   // The board shows the current move as played, so sound that same move.
   useEffect(() => {
     if (firstRef.current) { firstRef.current = false; return }
+    if (suppressSoundRef.current) { suppressSoundRef.current = false; return }
     if (!soundOnRef.current) return
     const m = moves[Math.min(ply, maxPly)]
     if (m) playMoveSound(soundForSan(m.san))
@@ -198,16 +200,19 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
 
   return (
     <section>
-      <h2>Game review</h2>
-      <label>
-        <select value={gi} onChange={(e) => pick(Number(e.target.value))}>
-          {games.map((gg, i) => (
-            <option key={i} value={i}>
-              {gg.wasWinning && gg.result !== 'win' ? '⚑ ' : ''}{gg.playedAt.slice(0, 10)} · {gg.color} · {gg.result} · {gg.chesscomAccuracy != null ? `${Math.round(gg.chesscomAccuracy)}%` : `${gg.accuracy}%`} · {gg.openingName}
-            </option>
-          ))}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <h2 style={{ margin: 0 }}>Game review</h2>
+        <select value={gi} onChange={(e) => pick(Number(e.target.value))} style={{ fontSize: 13 }}>
+          {[...games].reverse().map((gg, ri) => {
+            const i = games.length - 1 - ri
+            return (
+              <option key={i} value={i}>
+                {gg.wasWinning && gg.result !== 'win' ? '⚑ ' : ''}{gg.playedAt.slice(0, 10)} · {gg.color} · {gg.result} · {gg.chesscomAccuracy != null ? `${Math.round(gg.chesscomAccuracy)}%` : `${gg.accuracy}%`} · {gg.openingName}
+              </option>
+            )
+          })}
         </select>
-      </label>
+      </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center', marginTop: 6 }}>
         <span style={{ fontWeight: 600, color: accuracyColor(g.accuracy) }}>Kibitz {g.accuracy}%</span>
         {g.chesscomAccuracy != null && (
@@ -227,15 +232,6 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
             ⚠ turning point
           </button>
         )}
-        {g.url && <a href={g.url} target="_blank" rel="noreferrer">chess.com ↗</a>}
-        <button
-          type="button"
-          onClick={exportToLichess}
-          title="Copy PGN and open Lichess import"
-          style={{ fontSize: 13, padding: '1px 7px' }}
-        >
-          {pgnCopied ? '✓ PGN copied' : '⬇ Lichess'}
-        </button>
       </div>
       <div style={{ marginTop: 4, fontSize: 13, color: 'var(--muted)', display: 'flex', gap: 12 }}>
         {(['opening', 'middlegame', 'endgame'] as const).map((p) => (
@@ -245,10 +241,14 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
           </span>
         ))}
       </div>
+      <div style={{ fontSize: 13, marginTop: 6, visibility: isMistake && cur ? 'visible' : 'hidden' }}>
+        <div style={{ color: 'rgb(224,121,107)' }}>{cur && isMistake ? `${cur.severity} −${cur.cpLoss}cp · best ${cur.bestSan}` : ' '}</div>
+        <div style={{ color: 'var(--muted)' }}>{cur && isMistake ? explainBlunder(cur) : ' '}</div>
+      </div>
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>
       ) : (
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
           <div style={{ width: 320 }}>
             {cur && (
               <Chessboard
@@ -287,17 +287,17 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   <span style={{ color: 'var(--muted)' }}>{mistakeIdxs.length} mistakes</span>
                 </div>
               )}
-              {/* Always reserve this block so the column height (and the move-list
-                  scrollbar) doesn't jump between normal and mistake moves. */}
-              <div style={{ fontSize: 13, minHeight: 40 }}>
-                {isMistake && cur && (
-                  <>
-                    <div style={{ color: 'rgb(224,121,107)' }}>{cur.severity} −{cur.cpLoss}cp · best {cur.bestSan}</div>
-                    <div style={{ color: 'var(--muted)' }}>{explainBlunder(cur)}</div>
-                  </>
-                )}
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {g.url && <a href={g.url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>chess.com ↗</a>}
+                <button
+                  type="button"
+                  onClick={exportToLichess}
+                  title="Copy PGN and open Lichess import"
+                  style={{ fontSize: 13, padding: '1px 7px' }}
+                >
+                  {pgnCopied ? '✓ PGN copied' : '⬇ Lichess'}
+                </button>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>← / → to step · click graph to jump · drag a piece to explore</div>
             </div>
           </div>
           <LineChart

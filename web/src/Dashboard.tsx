@@ -21,8 +21,9 @@ import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
 import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
 import { TrainingTab } from './panels/TrainingTab.js'
 import { OpeningDrill } from './panels/OpeningDrill.js'
+import { MasteryTab } from './panels/MasteryTab.js'
 
-type Tab = 'overview' | 'blunders' | 'train' | 'openings' | 'review'
+type Tab = 'overview' | 'blunders' | 'train' | 'openings' | 'review' | 'mastery'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
@@ -40,6 +41,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
     { id: 'train', label: 'Train' },
     { id: 'openings', label: 'Openings' },
     { id: 'review', label: 'Game review' },
+    { id: 'mastery', label: 'Mastery' },
   ]
   return (
     <div>
@@ -58,11 +60,11 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
             <TopLeaks stats={stats} />
             <HangFrequency blunders={stats.topBlunders} />
           </div>
-          <CriticalPositions games={games} />
+          <CriticalPositions games={games} onOpenGame={openGame} />
           <ProgressChart games={games} />
           <BestGames games={games} onOpenGame={openGame} />
           <OpeningRecommendations stats={stats} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, alignItems: 'start' }}>
             <RatingChart games={games} />
             <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
           </div>
@@ -88,6 +90,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
         </>
       )}
       {tab === 'review' && <GameReview games={games} focus={focus} />}
+      {tab === 'mastery' && <MasteryTab games={games} onOpenGame={openGame} />}
     </div>
   )
 }

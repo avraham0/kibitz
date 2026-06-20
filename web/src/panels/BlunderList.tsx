@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Chessboard } from 'react-chessboard'
+import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import type { Arrow } from 'react-chessboard/dist/chessboard/types/index.js'
 import type { BlunderRef, MistakeType } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
@@ -99,8 +99,8 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           if (played) arrows.push([played.from as Arrow[0], played.to as Arrow[1], 'rgb(200,80,80)'])
           if (best) arrows.push([best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'])
           return (
-            <div key={i} style={{ width: 260 }}>
-              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={260} />
+            <div key={i} style={{ width: 240 }}>
+              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={240} />
               <div style={{ fontSize: 13 }}>
                 Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp{' '}
                 <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>

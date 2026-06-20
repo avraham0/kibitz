@@ -3,3 +3,5 @@ dist/
 *.log
 chess-coach-report.md
 *-report.md
+web/public/book.bin
+web/public/*.wasm

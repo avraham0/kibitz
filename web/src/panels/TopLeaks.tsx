@@ -13,7 +13,7 @@ export function TopLeaks({ stats }: { stats: Stats }) {
         {leaks.map((l, i) => (
           <li key={i}>
             <strong>{l.title}</strong>
-            <div style={{ color: 'var(--muted)', fontSize: 14 }}>{l.detail}</div>
+            <div style={{ color: 'var(--muted)', fontSize: 13 }}>{l.detail}</div>
           </li>
         ))}
       </ol>
