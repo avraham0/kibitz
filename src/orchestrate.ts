@@ -5,7 +5,10 @@ import { readCached, writeCached } from './cache/store.js'
 import { aggregate, perGameSummaries, type Stats, type GameSummary } from './report/aggregate.js'
 import { coach, type Suggestion } from './report/coach.js'
 import { renderMarkdown, renderTerminal } from './report/render.js'
+import { loadBook, type BookLookup } from './polyglot/serverBook.js'
 import type { GameAnalysis } from './types.js'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 
 export function defaultSince(nowISO: string): string {
   const d = new Date(nowISO)
@@ -28,6 +31,9 @@ type AnalyzeOpts = {
   result?: 'all' | 'win' | 'loss' | 'draw'
   // Abort the run early (e.g. the web client disconnected / cancelled).
   signal?: AbortSignal
+  // Path to a Polyglot .bin opening book. Defaults to ~/.kibitz/book.bin.
+  // Moves found in the book are skipped (cpLoss=0) without engine evaluation.
+  bookPath?: string
 }
 
 export type AnalyzeResult = {
@@ -53,6 +59,9 @@ export async function analyze(
   if (opts.last && opts.last > 0) parsed = parsed.slice(-opts.last)
 
   const evaluators = opts.evaluators && opts.evaluators.length > 0 ? opts.evaluators : [opts.evaluate]
+  const bookPath = opts.bookPath ?? join(homedir(), '.kibitz', 'book.bin')
+  const book: BookLookup | null = await loadBook(bookPath)
+
   const total = parsed.length
   const analyses: GameAnalysis[] = new Array(total)
   let cursor = 0
@@ -69,8 +78,8 @@ export async function analyze(
       const g = parsed[i]
       let analysis = await readCached(opts.user, g.gameId, opts.depth, opts.root)
       if (!analysis) {
-        analysis = await analyzeGame(g, opts.depth, evaluate)
-        await writeCached(analysis, opts.user, opts.root)
+        analysis = await analyzeGame(g, opts.depth, evaluate, book ?? undefined)
+        writeCached(analysis, opts.user, opts.root).catch(() => {})
       } else {
         // Ratings and chess.com accuracy come from the freshly-fetched game list;
         // overlay them onto caches written before these fields were tracked.

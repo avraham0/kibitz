@@ -4,6 +4,7 @@ import { cpLossToSeverity } from '../types.js'
 import { detectPhase } from './phase.js'
 import { classifyMistake, maxHangingGain } from './classify.js'
 import { detectMotif } from './motifs.js'
+import type { BookLookup } from '../polyglot/serverBook.js'
 
 export type Evaluator = ((fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string; pv: string[] }>) & {
   newGame?(): void
@@ -53,6 +54,7 @@ export async function analyzeGame(
   raw: RawGame,
   depth: number,
   evaluate: Evaluator,
+  bookLookup?: BookLookup,
 ): Promise<GameAnalysis> {
   // Reset engine hash table once per game (not per position) so the transposition
   // table persists across consecutive positions — consecutive positions share a huge
@@ -68,6 +70,29 @@ export async function analyzeGame(
       (sideToMove === 'b' && raw.color === 'black')
 
     const scanDepth = Math.min(SCAN_DEPTH, depth)
+
+    // Opening book: if the played move is a known book move, it's theory — skip
+    // both engine evaluations and record it as a zero-loss move.
+    if (bookLookup) {
+      const bookMoves = bookLookup(rm.fenBefore)
+      if (bookMoves.length > 0) {
+        const playedV = (new Chess(rm.fenBefore).moves({ verbose: true }) as any[]).find((m) => m.san === rm.san)
+        const playedUci = playedV ? `${playedV.from}${playedV.to}${playedV.promotion ?? ''}` : ''
+        const inBook = bookMoves.some((bm) => {
+          const bmUci = bm.from + bm.to + (bm.promotion ?? '')
+          return bmUci === playedUci
+        })
+        if (inBook) {
+          moves.push({
+            ply, fenBefore: rm.fenBefore, san: rm.san, bestSan: rm.san,
+            evalBefore: { cp: 0, mate: null }, evalAfterPlayed: { cp: 0, mate: null },
+            cpLoss: 0, severity: 'ok', type: 'positional', missed: false,
+            phase: detectPhase(rm.fenBefore, ply), clockSeconds: rm.clockSeconds, isPlayerMove,
+          })
+          continue
+        }
+      }
+    }
 
     // Opponent moves never count as the player's mistakes — a single shallow eval is
     // enough to feed the eval graph. Skip the after-search and classification.
