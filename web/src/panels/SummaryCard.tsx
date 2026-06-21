@@ -22,15 +22,25 @@ function blunderRecovery(games: GameSummary[]): { afterPct: number; basePct: num
   }
 }
 
+function ratingTrend(games: GameSummary[]): { delta: number; first: number; last: number } | null {
+  const rated = games.filter((g) => g.playerRating != null).sort((a, b) => a.playedAt.localeCompare(b.playedAt))
+  if (rated.length < 2) return null
+  const first = rated[0].playerRating!
+  const last = rated[rated.length - 1].playerRating!
+  return { delta: last - first, first, last }
+}
+
 export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameSummary[] }) {
   const r = stats.record
   const { winningGames, converted } = stats.conversion
   const missedWins = winningGames - converted
   const rec = blunderRecovery(games)
-  const tiles: { label: string; value: string; color?: string; sub?: string }[] = [
+  const trend = ratingTrend(games)
+  const tiles: { label: string; value: string; color?: string; sub?: string; badge?: string; badgeColor?: string }[] = [
     { label: 'Accuracy', value: `${stats.accuracy}%`, color: accuracyColor(stats.accuracy) },
     { label: 'Record', value: `${r.wins}W-${r.losses}L-${r.draws}D` },
     { label: 'Games', value: String(stats.gamesAnalyzed) },
+    ...(trend ? [{ label: 'Rating', value: String(trend.last), badge: `${trend.delta >= 0 ? '+' : ''}${trend.delta}`, badgeColor: trend.delta >= 0 ? '#7bc47f' : '#e0796b', sub: `from ${trend.first}` }] : []),
     { label: 'Mistakes', value: String(stats.mistakeCount) },
     { label: 'Missed wins', value: winningGames ? `${missedWins} / ${winningGames}` : '—', color: missedWins > 0 ? 'rgb(224,121,107)' : undefined, sub: winningGames ? `converted ${converted}` : undefined },
     ...(rec ? [{ label: 'After blunder', value: `${rec.afterPct}%`, color: rec.afterPct > rec.basePct + 10 ? 'rgb(224,121,107)' : undefined, sub: `baseline ${rec.basePct}%` }] : []),
@@ -41,7 +51,10 @@ export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameS
       <div className="stats">
         {tiles.map((t) => (
           <div className="stat" key={t.label}>
-            <div className="stat-value" style={t.color ? { color: t.color } : undefined}>{t.value}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+              <div className="stat-value" style={t.color ? { color: t.color } : undefined}>{t.value}</div>
+              {t.badge && <span style={{ fontSize: 13, fontWeight: 700, color: t.badgeColor }}>{t.badge}</span>}
+            </div>
             {t.sub && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t.sub}</div>}
             <div className="stat-label">{t.label}</div>
           </div>

@@ -5,7 +5,9 @@ import { detectPhase } from './phase.js'
 import { classifyMistake, maxHangingGain } from './classify.js'
 import { detectMotif } from './motifs.js'
 
-export type Evaluator = (fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string; pv: string[] }>
+export type Evaluator = ((fen: string, depth: number) => Promise<{ eval: Eval; bestUci: string; pv: string[] }>) & {
+  newGame?(): void
+}
 
 export const MAX_CPLOSS = 2000
 
@@ -52,6 +54,10 @@ export async function analyzeGame(
   depth: number,
   evaluate: Evaluator,
 ): Promise<GameAnalysis> {
+  // Reset engine hash table once per game (not per position) so the transposition
+  // table persists across consecutive positions — consecutive positions share a huge
+  // subtree, so hash hits from move N dramatically speed up move N+1.
+  evaluate.newGame?.()
   const moves: MoveAnalysis[] = []
   for (let i = 0; i < raw.moves.length; i++) {
     const rm = raw.moves[i]

@@ -55,6 +55,7 @@ export class Engine {
     if (!sf) throw new Error('Stockfish failed to initialize (no ready module)')
     const engine = new Engine(sf)
     await engine._send('uci', (l) => l === 'uciok')
+    engine.sf.queue.put('setoption name Hash value 256')
     await engine._send('isready', (l) => l === 'readyok')
     return engine
   }
@@ -74,11 +75,11 @@ export class Engine {
     })
   }
 
-  async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }> {
-    // Clear the transposition table before each position so the result depends only on
-    // the position + depth — not on what this engine searched before. This makes analysis
-    // reproducible regardless of how games are split across a parallel engine pool.
+  newGame(): void {
     this.sf.queue.put('ucinewgame')
+  }
+
+  async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }> {
     this.sf.queue.put(`position fen ${fen}`)
     const lines = await this._send(`go depth ${depth}`, (l) => l.startsWith('bestmove'))
     let cp: number | null = null

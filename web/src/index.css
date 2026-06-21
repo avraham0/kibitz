@@ -83,7 +83,7 @@ button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent);
 button:disabled { opacity: 0.45; cursor: default; }
 
 /* Tabs */
-.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; background: var(--bg); }
 .tab {
   background: transparent;
   border: none;

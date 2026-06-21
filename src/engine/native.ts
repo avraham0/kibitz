@@ -30,6 +30,7 @@ export class NativeEngine {
       const engine = new NativeEngine(proc)
       const timer = setTimeout(() => reject(new Error('stockfish init timed out')), timeoutMs)
       engine._send('uci', (l) => l === 'uciok')
+        .then(() => { proc.stdin!.write('setoption name Hash value 256\n') })
         .then(() => engine._send('isready', (l) => l === 'readyok'))
         .then(() => { clearTimeout(timer); proc.off('error', reject); resolve(engine) })
         .catch(reject)
@@ -48,8 +49,11 @@ export class NativeEngine {
     })
   }
 
-  async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }> {
+  newGame(): void {
     this.proc.stdin!.write('ucinewgame\n')
+  }
+
+  async evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }> {
     this.proc.stdin!.write(`position fen ${fen}\n`)
     const lines = await this._send(`go depth ${depth}`, (l) => l.startsWith('bestmove'))
     let cp: number | null = null

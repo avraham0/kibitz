@@ -7,6 +7,7 @@ import type { Eval } from '../types.js'
 // Either backend exposes the same surface.
 interface UciEngine {
   evaluate(fen: string, depth: number): Promise<{ eval: Eval; bestUci: string; pv: string[] }>
+  newGame(): void
   quit(): void
 }
 
@@ -19,8 +20,10 @@ export function autoConcurrency(): number {
 
 // A pool of N Stockfish engines. Each engine serializes its own searches, so the
 // pool's `evaluators` array gives `analyze()` N independent evaluators to run N
-// games concurrently. Prefers a native Stockfish binary (much faster); falls back
-// to the bundled WASM build when none is installed.
+// games concurrently. Each evaluator exposes newGame() which resets the hash table
+// once per game (not per position), letting the TT persist across consecutive
+// positions in the same game for a significant speedup. Prefers a native Stockfish
+// binary (much faster); falls back to the bundled WASM build when none is installed.
 export class EnginePool {
   private readonly engines: UciEngine[]
   readonly evaluators: Evaluator[]
@@ -29,7 +32,11 @@ export class EnginePool {
   private constructor(engines: UciEngine[], backend: 'native' | 'wasm') {
     this.engines = engines
     this.backend = backend
-    this.evaluators = engines.map((e) => (fen: string, depth: number) => e.evaluate(fen, depth))
+    this.evaluators = engines.map((e) => {
+      const fn = (fen: string, depth: number) => e.evaluate(fen, depth)
+      fn.newGame = () => e.newGame()
+      return fn
+    })
   }
 
   static async create(n: number): Promise<EnginePool> {
