@@ -5,7 +5,7 @@ import { writeSse } from './sse.js'
 import { defaultSince, type AnalyzeResult } from '../orchestrate.js'
 
 type AnalyzeFn = (
-  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean; timeControl?: string; result?: 'all' | 'win' | 'loss' | 'draw'; signal?: AbortSignal },
+  opts: { user: string; since: string; depth: number; last?: number; nowISO: string; variations?: boolean; timeControl?: string; result?: 'all' | 'win' | 'loss' | 'draw'; opening?: string; signal?: AbortSignal },
   onProgress: (done: number, total: number) => void,
 ) => Promise<AnalyzeResult>
 
@@ -68,10 +68,11 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
     const last = lastParam ? Number(lastParam) : undefined
     const variations = url.searchParams.get('variations') === '1'
     const timeControl = url.searchParams.get('timeControl') ?? undefined
+    const opening = url.searchParams.get('opening') ?? undefined
     // Default to losses — the games worth studying. 'all' opts back in.
     const resultFilter = (url.searchParams.get('result') ?? 'loss') as 'all' | 'win' | 'loss' | 'draw'
     const result = await deps.analyze(
-      { user, since, depth, last, nowISO, variations, timeControl, result: resultFilter, signal: controller.signal },
+      { user, since, depth, last, nowISO, variations, timeControl, opening, result: resultFilter, signal: controller.signal },
       (done, total) => writeSse(write, 'progress', { done, total }),
     )
     writeSse(write, 'result', result)

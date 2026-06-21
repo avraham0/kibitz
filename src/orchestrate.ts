@@ -29,6 +29,9 @@ type AnalyzeOpts = {
   // Only analyze games with this result from the player's POV (default: 'loss').
   // 'all' analyzes everything.
   result?: 'all' | 'win' | 'loss' | 'draw'
+  // Case-insensitive substring filter on openingName or ECO code.
+  // e.g. "italian" matches "Italian Game: Giuoco Piano", "C50" matches ECO C50.
+  opening?: string
   // Abort the run early (e.g. the web client disconnected / cancelled).
   signal?: AbortSignal
   // Path to a Polyglot .bin opening book. Defaults to ~/.kibitz/book.bin.
@@ -55,6 +58,12 @@ export async function analyze(
   // Result filter (default: losses — the games with the most to learn from).
   const wantResult = opts.result && opts.result !== 'all' ? opts.result : null
   if (wantResult) parsed = parsed.filter((g) => g.result === wantResult)
+  if (opts.opening) {
+    const q = opts.opening.toLowerCase()
+    parsed = parsed.filter((g) =>
+      g.openingName.toLowerCase().includes(q) || g.eco.toLowerCase().includes(q)
+    )
+  }
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
   if (opts.last && opts.last > 0) parsed = parsed.slice(-opts.last)
 

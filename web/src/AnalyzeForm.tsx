@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { sinceFromRange, RANGE_LABELS, type RangeKey } from './sinceFromRange.js'
 
-export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string }
+export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string }
 
 export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) => void; disabled: boolean }) {
   const [user, setUser] = useState('avraham00')
@@ -12,6 +12,7 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
   const [variations, setVariations] = useState(false)
   const [timeControl, setTimeControl] = useState('')
   const [result, setResult] = useState('loss') // default to losses — most to learn from
+  const [opening, setOpening] = useState('')
 
   function sinceValue() {
     return range === 'custom' ? (customSince || undefined) : sinceFromRange(range, new Date())
@@ -20,14 +21,14 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: sinceValue(), variations, timeControl: timeControl || undefined, result })
+    onSubmit({ user: user.trim(), last: last || undefined, depth: depth || undefined, since: sinceValue(), variations, timeControl: timeControl || undefined, result, opening: opening || undefined })
   }
 
   // Quick scan: shallow depth + a cap on games, for a fast pass over a big range.
   function quickScan() {
     if (!user.trim()) return
     setLast('50'); setDepth('8') // reflect the preset in the fields
-    onSubmit({ user: user.trim(), last: '50', depth: '8', since: sinceValue(), variations, timeControl: timeControl || undefined, result })
+    onSubmit({ user: user.trim(), last: '50', depth: '8', since: sinceValue(), variations, timeControl: timeControl || undefined, result, opening: opening || undefined })
   }
 
   return (
@@ -66,6 +67,11 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
           <option value="daily">daily</option>
         </select>
       </label>
+      <label>opening<br /><input
+        value={opening} onChange={(e) => setOpening(e.target.value)}
+        placeholder="e.g. Italian" style={{ width: 110 }}
+        autoCorrect="off" autoCapitalize="off" spellCheck={false}
+      /></label>
       <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
         <input type="checkbox" checked={variations} onChange={(e) => setVariations(e.target.checked)} /> split variations
       </label>
