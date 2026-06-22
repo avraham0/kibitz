@@ -90,11 +90,12 @@ export async function analyze(
         analysis = await analyzeGame(g, opts.depth, evaluate, book ?? undefined)
         writeCached(analysis, opts.user, opts.root).catch(() => {})
       } else {
-        // Ratings and chess.com accuracy come from the freshly-fetched game list;
+        // Ratings, accuracy, and time control come from the freshly-fetched game list;
         // overlay them onto caches written before these fields were tracked.
         analysis.playerRating = g.playerRating
         analysis.opponentRating = g.opponentRating
         analysis.chesscomAccuracy = g.chesscomAccuracy
+        analysis.timeControl = g.timeControl
       }
       analyses[i] = analysis
       done++

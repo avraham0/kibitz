@@ -40,6 +40,7 @@ export type GameSummary = {
   result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
   accuracy: number; accuracyStrict: number
   chesscomAccuracy?: number
+  timeControl?: string
   accuracyByPhase: Record<Phase, number>
   playerRating: number | null; opponentRating: number | null
   wasWinning: boolean; turningPointIdx: number | null

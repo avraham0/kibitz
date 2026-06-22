@@ -46,6 +46,7 @@ export type RawGame = {
   playerRating: number | null
   opponentRating: number | null
   chesscomAccuracy?: number // chess.com's own CAPS2 accuracy, if available
+  timeControl?: string // chess.com time_class: bullet|blitz|rapid|daily
   moves: RawMove[] // only the player's-and-opponent's full move list
 }
 
@@ -76,6 +77,7 @@ export type GameAnalysis = {
   playerRating: number | null
   opponentRating: number | null
   chesscomAccuracy?: number
+  timeControl?: string
   depth: number
   moves: MoveAnalysis[]
 }

@@ -51,7 +51,19 @@ export default function App() {
             {lastOptsRef.current && <button type="button" onClick={() => start(lastOptsRef.current!)}>Try again</button>}
           </div>
         )}
-        {result && <Dashboard result={result} />}
+        {result && (
+          <div className={status === 'running' ? 'loading-content' : undefined}>
+            <Dashboard result={result} />
+          </div>
+        )}
+        {status === 'running' && (
+          <div className="loading-overlay">
+            <div className="loading-spinner" />
+            <span className="loading-label">
+              {progress ? `Analyzing ${progress.done} / ${progress.total} games…` : 'Starting…'}
+            </span>
+          </div>
+        )}
       </main>
     </SettingsContext.Provider>
   )

@@ -75,12 +75,24 @@ input, button, select {
   border-radius: 7px;
   padding: 6px 9px;
   font: inherit;
+  box-sizing: border-box;
+}
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
 }
 input:focus, select:focus { outline: none; border-color: var(--accent); }
 label { font-size: 13px; color: var(--muted); }
 button { cursor: pointer; font-weight: 600; }
 button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 button:disabled { opacity: 0.45; cursor: default; }
+
+/* Override react-chessboard's inline cursor:grab on non-draggable boards */
+[data-piece] { cursor: default !important; }
 
 /* Tabs */
 .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; background: var(--bg); }
@@ -107,3 +119,41 @@ button:disabled { opacity: 0.45; cursor: default; }
 }
 .stat-value { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.1; }
 .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Loading state */
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.3; filter: blur(3px); }
+  50% { opacity: 0.2; filter: blur(4px); }
+}
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+.loading-content {
+  animation: loading-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 100;
+  pointer-events: none;
+}
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spinner-rotate 0.8s linear infinite;
+}
+.loading-label {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
+}

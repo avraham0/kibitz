@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { AnalyzeResult } from './api-types.js'
 import { SummaryCard } from './panels/SummaryCard.js'
 import { TopLeaks } from './panels/TopLeaks.js'
@@ -12,7 +12,6 @@ import { TimePressureChart } from './panels/TimePressureChart.js'
 import { GameReview } from './panels/GameReview.js'
 import { ProgressChart } from './panels/ProgressChart.js'
 import { HangFrequency } from './panels/HangFrequency.js'
-import { CriticalPositions } from './panels/CriticalPositions.js'
 import { MoveQualityChart } from './panels/MoveQualityChart.js'
 import { EndgameStats } from './panels/EndgameStats.js'
 import { RatingChart } from './panels/RatingChart.js'
@@ -22,14 +21,20 @@ import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
 import { TrainingTab } from './panels/TrainingTab.js'
 import { OpeningDrill } from './panels/OpeningDrill.js'
 import { MasteryTab } from './panels/MasteryTab.js'
+import { recomputeStats } from './recomputeStats.js'
+import { coach } from './coach.js'
 
 type Tab = 'overview' | 'blunders' | 'train' | 'openings' | 'review' | 'mastery'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
   const [tab, setTab] = useState<Tab>('overview')
-  // Which game to focus in Game Review; `seq` bumps each request so re-clicking the
-  // same game still triggers the jump.
+  const [tc, setTc] = useState('all')
+  const tcs = Array.from(new Set(games.map((g) => g.timeControl).filter(Boolean) as string[])).sort()
+  const filteredGames = tc === 'all' ? games : games.filter((g) => g.timeControl === tc)
+  const filteredStats = useMemo(() => tc === 'all' ? stats : recomputeStats(filteredGames), [filteredGames, tc, stats])
+  const filteredSuggestions = useMemo(() => tc === 'all' ? suggestions : coach(filteredStats), [filteredStats, tc, suggestions])
+
   const [focus, setFocus] = useState<{ id: string; seq: number; ply?: number } | null>(null)
   function openGame(id: string, ply?: number) {
     setFocus((f) => ({ id, ply, seq: (f?.seq ?? 0) + 1 }))
@@ -45,52 +50,57 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
   ]
   return (
     <div>
-      <div className="tabs">
+      <div className="tabs" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {tabs.map((t) => (
           <button key={t.id} type="button" className={tab === t.id ? 'tab active' : 'tab'} onClick={() => setTab(t.id)}>
             {t.label}
           </button>
         ))}
+        {tcs.length > 1 && (
+          <select value={tc} onChange={(e) => setTc(e.target.value)} style={{ marginLeft: 'auto', fontSize: 13 }}>
+            <option value="all">all time controls</option>
+            {tcs.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
       </div>
 
       {tab === 'overview' && (
         <>
-          <SummaryCard stats={stats} games={games} />
+          <SummaryCard stats={filteredStats} games={filteredGames} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start' }}>
-            <TopLeaks stats={stats} />
-            <HangFrequency blunders={stats.topBlunders} />
+            <TopLeaks stats={filteredStats} />
+            <HangFrequency blunders={filteredStats.topBlunders} />
           </div>
-          <CriticalPositions games={games} onOpenGame={openGame} />
-          <ProgressChart games={games} />
-          <BestGames games={games} onOpenGame={openGame} />
-          <OpeningRecommendations stats={stats} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, alignItems: 'start' }}>
-            <RatingChart games={games} />
-            <MistakeTypesChart stats={stats} games={games} onOpenGame={openGame} />
+            <ProgressChart games={filteredGames} />
+            <RatingChart games={filteredGames} />
+          </div>
+          <BestGames games={filteredGames} onOpenGame={openGame} />
+          <OpeningRecommendations stats={filteredStats} />
+          <MistakeTypesChart stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+            <PhaseChart stats={filteredStats} />
+            <MoveQualityChart games={filteredGames} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
-            <PhaseChart stats={stats} />
-            <MoveQualityChart games={games} />
+            <TimePressureChart stats={filteredStats} />
+            {stats.gamesWithClock > 0 && <ClockAccuracyChart games={filteredGames} />}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
-            <TimePressureChart stats={stats} />
-            {stats.gamesWithClock > 0 && <ClockAccuracyChart games={games} />}
-          </div>
-          <Splits stats={stats} games={games} onOpenGame={openGame} />
-          <EndgameStats games={games} />
-          <CoachingCards suggestions={suggestions} />
+          <Splits stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
+          <EndgameStats games={filteredGames} />
+          <CoachingCards suggestions={filteredSuggestions} />
         </>
       )}
-      {tab === 'blunders' && <BlunderList blunders={stats.topBlunders} />}
-      {tab === 'train' && <TrainingTab blunders={stats.topBlunders} />}
+      {tab === 'blunders' && <BlunderList blunders={filteredStats.topBlunders} games={filteredGames} onOpenGame={openGame} />}
+      {tab === 'train' && <TrainingTab games={filteredGames} />}
       {tab === 'openings' && (
         <>
-          <OpeningsTable openings={stats.openings} games={games} onOpenGame={openGame} />
-          <OpeningDrill openings={stats.openings} games={games} />
+          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} />
+          <OpeningDrill openings={filteredStats.openings} games={filteredGames} />
         </>
       )}
-      {tab === 'review' && <GameReview games={games} focus={focus} />}
-      {tab === 'mastery' && <MasteryTab games={games} onOpenGame={openGame} />}
+      {tab === 'review' && <GameReview games={filteredGames} focus={focus} />}
+      {tab === 'mastery' && <MasteryTab games={filteredGames} onOpenGame={openGame} />}
     </div>
   )
 }

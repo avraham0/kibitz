@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react'
 import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import type { Arrow } from '../ThemedBoard.js'
-import type { BlunderRef, MistakeType } from '../api-types.js'
+import type { BlunderRef, GameSummary, MistakeType } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 import { PuzzleBoard } from './PuzzleBoard.js'
@@ -18,7 +18,12 @@ function statusTag(store: SrsStore, b: BlunderRef, now: number): { text: string;
   return isDue(store, key, now) ? { text: 'due', color: 'rgb(224,121,107)' } : { text: 'scheduled', color: '#7bc47f' }
 }
 
-export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
+export function BlunderList({ blunders, games, onOpenGame }: {
+  blunders: BlunderRef[]
+  games?: GameSummary[]
+  onOpenGame?: (id: string, ply?: number) => void
+}) {
+  const [scope, setScope] = useState<'all' | 'critical'>('critical')
   const [filter, setFilter] = useState<'all' | MistakeType>('all')
   const [mode, setMode] = useState<'review' | 'solve'>('review')
   const [solved, setSolved] = useState(0)
@@ -28,8 +33,47 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
   // Used to order the solve queue without re-sorting it every time a result lands.
   const srsRef = useRef(srs)
   srsRef.current = srs
-  const types = Array.from(new Set(blunders.map((b) => b.type)))
-  const shown = filter === 'all' ? blunders : blunders.filter((b) => b.type === filter)
+
+  // url → gameId map for the "review" button
+  const gameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const g of games ?? []) m.set(g.url, g.gameId)
+    return m
+  }, [games])
+
+  // All blunders derived from games (uncapped, matches backend logic)
+  const allBlundersFromGames = useMemo((): BlunderRef[] => {
+    if (!games) return blunders
+    const result: BlunderRef[] = []
+    for (const g of games) {
+      for (let mi = 0; mi < g.moves.length; mi++) {
+        const m = g.moves[mi]
+        if (!m.isPlayerMove || m.severity !== 'blunder' || m.type === 'lost_position') continue
+        result.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
+      }
+    }
+    return result.sort((a, b) => b.cpLoss - a.cpLoss)
+  }, [games, blunders])
+
+  // Critical positions: blunders from won positions (playerPov ≥ +200, cpLoss ≥ 300)
+  const criticalPositions = useMemo((): BlunderRef[] => {
+    if (!games) return []
+    const positions: BlunderRef[] = []
+    for (const g of games) {
+      for (let mi = 0; mi < g.moves.length; mi++) {
+        const m = g.moves[mi]
+        if (!m.isPlayerMove || m.severity !== 'blunder' || m.type === 'lost_position') continue
+        const playerPov = g.color === 'white' ? m.evalCp : -m.evalCp
+        if (playerPov < 200) continue
+        positions.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
+      }
+    }
+    return positions.sort((a, b) => b.cpLoss - a.cpLoss)
+  }, [games])
+
+  const activeBlunders = scope === 'critical' ? criticalPositions : allBlundersFromGames
+  const types = Array.from(new Set(activeBlunders.map((b) => b.type)))
+  const shown = filter === 'all' ? activeBlunders : activeBlunders.filter((b) => b.type === filter)
 
   // Order the solve queue most-overdue-first, frozen per filter so recording a
   // result doesn't reshuffle the puzzle under you mid-session.
@@ -51,13 +95,21 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
 
   return (
     <section>
-      <h2>Top blunders</h2>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+      <h2>Blunders</h2>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginLeft: -18, marginRight: -18, paddingLeft: 18, paddingRight: 18, paddingBottom: 12, marginBottom: 12, borderBottom: '1px solid var(--border)' }}>
+        {games && games.length > 0 && (
+          <label>scope:{' '}
+            <select value={scope} onChange={(e) => { setScope(e.target.value as 'all' | 'critical'); setFilter('all'); reset() }}>
+              <option value="all">all blunders ({allBlundersFromGames.length})</option>
+              <option value="critical">critical — won positions ({criticalPositions.length})</option>
+            </select>
+          </label>
+        )}
         <label>filter by type:{' '}
           <select value={filter} onChange={(e) => { setFilter(e.target.value as 'all' | MistakeType); reset() }}>
-            <option value="all">all ({blunders.length})</option>
+            <option value="all">all ({activeBlunders.length})</option>
             {types.map((t) => (
-              <option key={t} value={t}>{t} ({blunders.filter((b) => b.type === t).length})</option>
+              <option key={t} value={t}>{t} ({activeBlunders.filter((b) => b.type === t).length})</option>
             ))}
           </select>
         </label>
@@ -91,7 +143,7 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           )
         })()
       ) : (
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginTop: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, marginTop: 8, paddingTop: 12 }}>
         {shown.slice(0, visible).map((b, i) => {
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)
@@ -99,11 +151,12 @@ export function BlunderList({ blunders }: { blunders: BlunderRef[] }) {
           if (played) arrows.push([played.from as Arrow[0], played.to as Arrow[1], 'rgb(200,80,80)'])
           if (best) arrows.push([best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'])
           return (
-            <div key={i} style={{ width: 240 }}>
-              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={240} />
+            <div key={i}>
+              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={320} />
               <div style={{ fontSize: 13 }}>
                 Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp{' '}
                 <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
+                {(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? <>{' '}<button type="button" onClick={() => onOpenGame(gid, b.ply - 1)} style={{ fontSize: 12, padding: '0 4px', background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', textDecoration: 'underline' }}>review</button></> : null })()}
                 <div style={{ color: 'var(--muted)', marginTop: 2 }}>{explainBlunder(b)}</div>
               </div>
             </div>

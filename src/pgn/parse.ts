@@ -123,6 +123,7 @@ export function parseGame(raw: any, user: string): RawGame | null {
     })(),
     playerRating: color === 'white' ? whiteElo : blackElo,
     opponentRating: color === 'white' ? blackElo : whiteElo,
+    timeControl: typeof raw.time_class === 'string' ? raw.time_class : undefined,
     moves,
   }
 }

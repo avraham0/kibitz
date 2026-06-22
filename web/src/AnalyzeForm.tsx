@@ -75,7 +75,7 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
       <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
         <input type="checkbox" checked={variations} onChange={(e) => setVariations(e.target.checked)} /> split variations
       </label>
-      <button type="submit" disabled={disabled || !user.trim()}>Analyze</button>
+      <button type="submit" disabled={disabled || !user.trim()} style={{ marginLeft: 'auto' }}>Analyze</button>
       <button type="button" onClick={quickScan} disabled={disabled || !user.trim()} title="depth 8 · last 50 games — a fast pass">Quick scan</button>
       <div style={{ flexBasis: '100%', fontSize: 12, color: 'var(--muted)' }}>
         Both apply: range sets the window, then <em>last N</em> keeps the most recent N within it. Clear <em>last N</em> to use date only.

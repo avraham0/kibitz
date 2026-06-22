@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import type { BlunderRef, CoachableType } from '../api-types.js'
+import type { BlunderRef, CoachableType, GameSummary } from '../api-types.js'
 import { PuzzleBoard, PuzzleFeedback, type PuzzleState } from './PuzzleBoard.js'
 import {
   loadSrs, saveSrs, recordResult, orderByDue, puzzleKey, type SrsStore,
@@ -30,7 +30,18 @@ function PatternBreakdown({ blunders }: { blunders: BlunderRef[] }) {
   )
 }
 
-export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
+export function TrainingTab({ games }: { games: GameSummary[] }) {
+  const blunders = useMemo((): BlunderRef[] => {
+    const result: BlunderRef[] = []
+    for (const g of games) {
+      for (let mi = 0; mi < g.moves.length; mi++) {
+        const m = g.moves[mi]
+        if (!m.isPlayerMove || m.severity !== 'blunder' || m.type === 'lost_position') continue
+        result.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
+      }
+    }
+    return result.sort((a, b) => b.cpLoss - a.cpLoss)
+  }, [games])
   const [srs, setSrs] = useState<SrsStore>(() => loadSrs())
   const srsRef = useRef(srs)
   srsRef.current = srs
@@ -42,6 +53,14 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
   const [puzzleState, setPuzzleState] = useState<PuzzleState>({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
   const [forceReveal, setForceReveal] = useState(false)
   const [openingFilter, setOpeningFilter] = useState<string>('all')
+
+  useEffect(() => {
+    setOpeningFilter('all')
+    setCur(0)
+    setPuzzleAnswered(false)
+    setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
+    setForceReveal(false)
+  }, [games])
 
   const openings = useMemo(() => {
     const seen = new Set<string>()
@@ -166,7 +185,7 @@ export function TrainingTab({ blunders }: { blunders: BlunderRef[] }) {
         </div>
         <div style={{ minWidth: 200 }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 4 }}>
-            {idx + 1} / {queue.length}
+            {idx + 1} / {queue.length} blunders
           </div>
           {wrongCount > 0 && (
             <div style={{ fontSize: 12, color: 'rgb(224,121,107)', marginBottom: 12 }}>
