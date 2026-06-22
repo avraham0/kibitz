@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js'
 import type { GameSummary } from './api-types.js'
 
-export type MoveStats = { count: number; wins: number; fenAfter: string }
+export type MoveStats = { count: number; wins: number; fenAfter: string; evalCpSum: number }
 export type OpeningTree = Record<string, Record<string, MoveStats>>
 
 function computeFenAfter(fenBefore: string, san: string): string {
@@ -14,12 +14,13 @@ export function buildTree(games: GameSummary[]): OpeningTree {
     for (const m of g.moves) {
       if (m.phase !== 'opening') continue
       if (!tree[m.fenBefore]) tree[m.fenBefore] = {}
-      const prev = tree[m.fenBefore][m.san] ?? { count: 0, wins: 0, fenAfter: '' }
+      const prev = tree[m.fenBefore][m.san] ?? { count: 0, wins: 0, fenAfter: '', evalCpSum: 0 }
       const fenAfter = prev.fenAfter || computeFenAfter(m.fenBefore, m.san)
       tree[m.fenBefore][m.san] = {
         count: prev.count + 1,
         wins: prev.wins + (g.result === 'win' ? 1 : 0),
         fenAfter,
+        evalCpSum: prev.evalCpSum + (m.evalCp ?? 0),
       }
     }
   }

@@ -2,20 +2,45 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { Chess } from 'chess.js'
 import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import type { GameSummary, OpeningStat } from '../api-types.js'
-import { buildTree, topMove } from '../openingTree.js'
+import { buildTree } from '../openingTree.js'
+import { useStockfishEval, getBestMove } from '../useStockfish.js'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+const BOARD_SIZE = 360
+
+type Step = { fen: string; pgn: string; halfMove: number }
+
+function EvalBar({ cp, height }: { cp: number | null; height: number }) {
+  const v = cp ?? 0
+  const whitePct = 50 + 50 * Math.tanh(v / 300)
+  const label = cp == null ? '?' : v > 0 ? `+${(v / 100).toFixed(1)}` : (v / 100).toFixed(1)
+  return (
+    <div style={{ width: 16, height, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden', flexShrink: 0, position: 'relative' }} title={label}>
+      <div style={{ position: 'absolute', bottom: 0, width: '100%', height: `${whitePct}%`, background: '#d8d8d8', transition: 'height 0.3s ease' }} />
+    </div>
+  )
+}
+
+function appendPgn(currentPgn: string, san: string, currentHalfMove: number): string {
+  const moveNum = Math.floor(currentHalfMove / 2) + 1
+  const isWhite = currentHalfMove % 2 === 0
+  if (isWhite) return currentPgn ? `${currentPgn} ${moveNum}. ${san}` : `${moveNum}. ${san}`
+  return `${currentPgn} ${san}`
+}
 
 export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; games: GameSummary[] }) {
   const [eco, setEco] = useState(openings[0]?.eco ?? '')
-  const [fen, setFen] = useState(START)
-  const [pgn, setPgn] = useState('')
-  const [halfMove, setHalfMove] = useState(0)
+  const [steps, setSteps] = useState<Step[]>([{ fen: START, pgn: '', halfMove: 0 }])
+  const [viewIdx, setViewIdx] = useState(0)
   const [feedback, setFeedback] = useState<{ text: string; good: boolean } | null>(null)
   const [outOfBook, setOutOfBook] = useState(false)
   const [waiting, setWaiting] = useState(false)
   const [selectedSq, setSelectedSq] = useState<string | null>(null)
   const opponentTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const viewIdxRef = useRef(viewIdx)
+  viewIdxRef.current = viewIdx
+  const stepsRef = useRef(steps)
+  stepsRef.current = steps
 
   const ecoGames = useMemo(() => games.filter((g) => g.eco === eco), [games, eco])
   const tree = useMemo(() => buildTree(ecoGames), [ecoGames])
@@ -25,38 +50,84 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
     return whites >= ecoGames.length / 2 ? 'white' : 'black'
   }, [ecoGames])
 
+  const atEnd = viewIdx === steps.length - 1
+  const { fen, pgn, halfMove } = steps[viewIdx]
+  const evalCp = useStockfishEval(fen)
+
   const chess = new Chess(fen)
   const sideToMove = chess.turn() === 'w' ? 'white' : 'black'
-  const isPlayerTurn = sideToMove === playerColor && !outOfBook && !waiting
+  const isPlayerTurn = sideToMove === playerColor && !waiting
 
-  function appendPgn(currentPgn: string, san: string, currentHalfMove: number): string {
-    const moveNum = Math.floor(currentHalfMove / 2) + 1
-    const isWhite = currentHalfMove % 2 === 0
-    if (isWhite) return currentPgn ? `${currentPgn} ${moveNum}. ${san}` : `${moveNum}. ${san}`
-    return `${currentPgn} ${san}`
+  // Clear selection when navigating to a non-end position
+  useEffect(() => {
+    if (!atEnd) { setSelectedSq(null); setWaiting(false) }
+  }, [atEnd])
+
+  function pushStep(newFen: string, newPgn: string, newHalfMove: number) {
+    const idx = viewIdxRef.current
+    setSteps((prev) => [...prev.slice(0, idx + 1), { fen: newFen, pgn: newPgn, halfMove: newHalfMove }])
+    setViewIdx(idx + 1)
   }
 
   function reset() {
     if (opponentTimer.current) clearTimeout(opponentTimer.current)
-    setFen(START); setPgn(''); setHalfMove(0); setFeedback(null); setOutOfBook(false); setWaiting(false); setSelectedSq(null)
+    setSteps([{ fen: START, pgn: '', halfMove: 0 }])
+    setViewIdx(0)
+    setFeedback(null)
+    setOutOfBook(false)
+    setWaiting(false)
+    setSelectedSq(null)
   }
 
-  // Reset when ECO changes
   useEffect(() => { reset() }, [eco]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function playOpponent(currentFen: string, currentHalfMove: number, currentPgn: string) {
     setWaiting(true)
-    opponentTimer.current = setTimeout(() => {
-      const best = topMove(tree, currentFen)
-      if (!best || !best.stats.fenAfter) {
-        setOutOfBook(true); setWaiting(false); return
+    opponentTimer.current = setTimeout(async () => {
+      const moves = tree[currentFen]
+      if (moves) {
+        const best = Object.entries(moves).sort((a, b) => b[1].count - a[1].count)[0]
+        if (best && best[1].fenAfter) {
+          pushStep(best[1].fenAfter, appendPgn(currentPgn, best[0], currentHalfMove), currentHalfMove + 1)
+          setWaiting(false)
+          return
+        }
       }
-      const newPgn = appendPgn(currentPgn, best.san, currentHalfMove)
-      setFen(best.stats.fenAfter)
-      setPgn(newPgn)
-      setHalfMove((h) => h + 1)
+      // Out of book — fall back to Stockfish
+      setOutOfBook(true)
+      const uciMove = await getBestMove(currentFen)
+      if (!uciMove) { setWaiting(false); return }
+      try {
+        const c = new Chess(currentFen)
+        const mv = c.move({ from: uciMove.slice(0, 2), to: uciMove.slice(2, 4), promotion: (uciMove[4] as 'q' | 'r' | 'b' | 'n') || 'q' })
+        if (!mv) { setWaiting(false); return }
+        pushStep(c.fen(), appendPgn(currentPgn, mv.san, currentHalfMove), currentHalfMove + 1)
+      } catch { /* ignore */ }
       setWaiting(false)
     }, 800)
+  }
+
+  function onDrop(from: string, to: string): boolean {
+    if (!isPlayerTurn) return false
+    try {
+      const c = new Chess(fen)
+      const mv = c.move({ from, to, promotion: 'q' })
+      if (!mv) return false
+      const newFen = c.fen()
+      const newHalfMove = halfMove + 1
+      const newPgn = appendPgn(pgn, mv.san, halfMove)
+      setOutOfBook(false)
+      pushStep(newFen, newPgn, newHalfMove)
+      const inBook = tree[fen]?.[mv.san]
+      if (inBook) {
+        const pct = Math.round((inBook.wins / inBook.count) * 100)
+        setFeedback({ text: `Book ✓ — played ${inBook.count}× (${pct}% win)`, good: true })
+      } else {
+        setFeedback({ text: 'New move — not in your history', good: false })
+      }
+      playOpponent(newFen, newHalfMove, newPgn)
+      return true
+    } catch { return false }
   }
 
   function onSquareClick(square: string) {
@@ -77,33 +148,21 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
     }
   }
 
-  function onDrop(from: string, to: string): boolean {
-    if (!isPlayerTurn) return false
-    try {
-      const c = new Chess(fen)
-      const mv = c.move({ from, to, promotion: 'q' })
-      if (!mv) return false
-      const newFen = c.fen()
-      const newHalfMove = halfMove + 1
-      const newPgn = appendPgn(pgn, mv.san, halfMove)
-      setFen(newFen); setHalfMove(newHalfMove); setPgn(newPgn)
-      const inBook = tree[fen]?.[mv.san]
-      if (inBook) {
-        const pct = Math.round((inBook.wins / inBook.count) * 100)
-        setFeedback({ text: `Book ✓ — played ${inBook.count}× (${pct}% win)`, good: true })
-      } else {
-        setFeedback({ text: 'New move — not in your history', good: false })
-      }
-      playOpponent(newFen, newHalfMove, newPgn)
-      return true
-    } catch { return false }
-  }
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return
+      if (e.key === 'ArrowLeft') { e.preventDefault(); setViewIdx((i) => Math.max(0, i - 1)) }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setViewIdx((i) => Math.min(stepsRef.current.length - 1, i + 1)) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => () => { if (opponentTimer.current) clearTimeout(opponentTimer.current) }, [])
 
   if (openings.length === 0) return null
 
-  // If playing black, auto-play white's first move on mount / reset
   useEffect(() => {
     if (playerColor === 'black' && fen === START && !waiting && !outOfBook) {
       playOpponent(START, 0, '')
@@ -125,28 +184,36 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
         <button type="button" onClick={reset}>Start over</button>
       </div>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ fontSize: 13, marginBottom: 8, minHeight: 22 }}>
-            {outOfBook
-              ? <span style={{ color: 'rgb(224,121,107)' }}>Out of book — position not in your history</span>
-              : waiting
-              ? <span style={{ color: 'var(--muted)' }}>Opponent thinking…</span>
-              : isPlayerTurn
-              ? <span style={{ fontWeight: 600 }}>Your move ({playerColor})</span>
-              : null}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+          <EvalBar cp={evalCp} height={BOARD_SIZE} />
+          <div>
+            <div style={{ fontSize: 13, marginBottom: 8, minHeight: 22 }}>
+              {!atEnd
+                ? <span style={{ color: 'var(--muted)' }}>Reviewing — ← → to navigate · move to continue from here</span>
+                : outOfBook
+                ? <span style={{ color: 'rgb(224,121,107)' }}>Out of your game history for this opening</span>
+                : waiting
+                ? <span style={{ color: 'var(--muted)' }}>Opponent thinking…</span>
+                : <span style={{ fontWeight: 600 }}>Your move ({playerColor})</span>}
+            </div>
+            <Chessboard
+              position={fen}
+              boardOrientation={playerColor}
+              arePiecesDraggable={isPlayerTurn}
+              onPieceDrop={(s, t) => { setSelectedSq(null); return onDrop(s, t) }}
+              onSquareClick={onSquareClick}
+              customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
+              boardWidth={BOARD_SIZE}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+              <button type="button" onClick={() => setViewIdx((i) => Math.max(0, i - 1))} disabled={viewIdx === 0}>‹</button>
+              <button type="button" onClick={() => setViewIdx((i) => Math.min(steps.length - 1, i + 1))} disabled={atEnd}>›</button>
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{viewIdx} / {steps.length - 1}</span>
+            </div>
           </div>
-          <Chessboard
-            position={fen}
-            boardOrientation={playerColor}
-            arePiecesDraggable={isPlayerTurn}
-            onPieceDrop={(s, t) => { setSelectedSq(null); return onDrop(s, t) }}
-            onSquareClick={onSquareClick}
-            customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
-            boardWidth={360}
-          />
         </div>
         <div style={{ minWidth: 200 }}>
-          {feedback && (
+          {feedback && atEnd && (
             <div style={{ marginBottom: 16, fontSize: 13, color: feedback.good ? '#7bc47f' : '#e0b15a', fontWeight: 600 }}>
               {feedback.text}
             </div>
@@ -157,7 +224,7 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
             </div>
           )}
           <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-            <div>Drag to make your move.</div>
+            <div>Drag or click to make your move.</div>
             <div>Kibitz replies with the most</div>
             <div>common response from your games.</div>
           </div>
