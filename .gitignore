@@ -5,3 +5,8 @@ chess-coach-report.md
 *-report.md
 web/public/book.bin
 web/public/*.wasm
+
+kibitz-mac
+kibitz-*
+src/server/embedded-assets.gen.ts
+kibitz.tar.gz

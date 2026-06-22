@@ -9,7 +9,7 @@ type AnalyzeFn = (
   onProgress: (done: number, total: number) => void,
 ) => Promise<AnalyzeResult>
 
-type Deps = { analyze: AnalyzeFn; staticDir: string; nowISO: () => string }
+type Deps = { analyze: AnalyzeFn; staticDir: string; nowISO: () => string; virtualFS?: Map<string, Buffer> }
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -36,7 +36,7 @@ export function createHandler(deps: Deps) {
       void handleAnalyze(deps, url, res)
       return
     }
-    void handleStatic(deps.staticDir, url.pathname, res)
+    void handleStatic(deps.staticDir, url.pathname, res, deps.virtualFS)
   }
 }
 
@@ -85,8 +85,21 @@ async function handleAnalyze(deps: Deps, url: URL, res: ServerResponse): Promise
   }
 }
 
-async function handleStatic(staticDir: string, pathname: string, res: ServerResponse): Promise<void> {
+async function handleStatic(staticDir: string, pathname: string, res: ServerResponse, virtualFS?: Map<string, Buffer>): Promise<void> {
   const rel = pathname === '/' ? 'index.html' : normalize(pathname).replace(/^(\.\.[/\\])+/, '').replace(/^\//, '')
+
+  if (virtualFS) {
+    const buf = virtualFS.get(rel) ?? virtualFS.get('index.html')
+    if (buf) {
+      const mime = CONTENT_TYPES[extname(rel)] ?? (rel === 'index.html' ? 'text/html; charset=utf-8' : 'application/octet-stream')
+      res.writeHead(200, { 'Content-Type': mime })
+      res.end(buf)
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' })
+      res.end('Not found')
+    }
+    return
+  }
   const requested = resolve(staticDir, rel)
   const root = resolve(staticDir)
   const safeRequested = (requested === root || requested.startsWith(root + sep)) ? requested : null

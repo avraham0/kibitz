@@ -1,0 +1,10 @@
+node_modules
+dist
+web/node_modules
+web/dist
+web/public/book.bin
+web/public/*.wasm
+*.log
+kibitz-mac
+.sea-build
+src/server/embedded-assets.gen.ts

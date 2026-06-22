@@ -8,7 +8,8 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "serve": "tsx src/server/serve.ts"
+    "serve": "tsx src/server/serve.ts",
+    "build:mac": "bash scripts/build-mac-binary.sh"
   },
   "dependencies": {
     "chess.js": "^1.0.0",
