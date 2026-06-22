@@ -4,16 +4,23 @@ import { PolyglotBook } from './reader.js'
 
 export type BookLookup = (fen: string) => { from: string; to: string; promotion?: string }[]
 
-// Load a Polyglot .bin book from disk. Returns null silently if the file doesn't exist
-// (analysis continues without book skipping). Caches the book in memory after first load.
-export async function loadBook(binPath: string): Promise<BookLookup | null> {
+// Promise-level cache: the 170MB book file is read once per path; concurrent
+// requests during first load all await the same promise instead of each
+// spawning their own disk read.
+const _cache = new Map<string, Promise<BookLookup | null>>()
+
+export function loadBook(binPath: string): Promise<BookLookup | null> {
+  if (!_cache.has(binPath)) {
+    _cache.set(binPath, _load(binPath))
+  }
+  return _cache.get(binPath)!
+}
+
+async function _load(binPath: string): Promise<BookLookup | null> {
   try {
     const buf = await readFile(binPath)
     const book = new PolyglotBook(buf.buffer as ArrayBuffer)
-    return (fen: string) => {
-      const key = polyglotHash(fen)
-      return book.lookup(key)
-    }
+    return (fen: string) => book.lookup(polyglotHash(fen))
   } catch {
     return null
   }
