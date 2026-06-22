@@ -41,7 +41,7 @@ export function CriticalPositions({ games, onOpenGame }: { games: GameSummary[];
               <div style={{ fontSize: 12, marginTop: 4 }}>
                 −{p.cpLoss}cp · {p.san}{' '}
                 <a href={analysisLink(p.fenBefore)} target="_blank" rel="noreferrer">analyze ↗</a>
-                {onOpenGame && <>{' '}<button type="button" onClick={() => onOpenGame(p.gameId, p.ply)} style={{ fontSize: 12, padding: '0 4px', background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', textDecoration: 'underline' }}>review</button></>}
+                {onOpenGame && <>{' '}<button type="button" onClick={() => onOpenGame(p.gameId, p.ply - 1)} style={{ fontSize: 12, padding: '0 4px', background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', textDecoration: 'underline' }}>review</button></>}
                 <div style={{ color: 'var(--muted)', marginTop: 2 }}>{explainBlunder(p)}</div>
               </div>
             </div>

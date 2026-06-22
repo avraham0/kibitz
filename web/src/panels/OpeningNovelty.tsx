@@ -132,7 +132,7 @@ export function OpeningNovelty({ games, onOpenGame }: { games: GameSummary[]; on
                 </span>
               )}
               {onOpenGame && (
-                <button type="button" onClick={() => onOpenGame(d.gameId, d.ply)}
+                <button type="button" onClick={() => onOpenGame(d.gameId, d.ply - 1)}
                   style={{ fontSize: 12, padding: '0 6px', marginLeft: 'auto' }}>
                   review
                 </button>

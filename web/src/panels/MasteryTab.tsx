@@ -233,7 +233,7 @@ function PropylaxisMisses({ games, onOpenGame }: { games: GameSummary[]; onOpenG
             <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{d.moves.join(' ')}</span>
             <span style={{ color: 'var(--muted)', fontSize: 12 }}>{d.phase}</span>
             {onOpenGame && (
-              <button type="button" onClick={() => onOpenGame(d.gameId, d.startPly)}
+              <button type="button" onClick={() => onOpenGame(d.gameId, d.startPly - 1)}
                 style={{ fontSize: 12, padding: '0 6px', marginLeft: 'auto' }}>
                 review
               </button>
