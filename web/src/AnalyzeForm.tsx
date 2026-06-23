@@ -21,13 +21,6 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p
     onSubmit({ user: user.trim(), last: last || undefined, timeControl: timeControl || undefined, result, opening: opening || undefined })
   }
 
-  // Quick scan: shallow depth + a cap on games, for a fast pass.
-  function quickScan() {
-    if (!user.trim()) return
-    setLast('50')
-    onSubmit({ user: user.trim(), last: '50', depth: '8', timeControl: timeControl || undefined, result, opening: opening || undefined })
-  }
-
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', alignItems: hero ? 'flex-start' : 'stretch' }}>
       <div style={{ display: 'flex', gap: 8, width: hero ? 'min(520px, 100%)' : '100%' }}>
@@ -43,7 +36,6 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p
       </div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-        <button type="button" style={linkBtn} onClick={quickScan} disabled={disabled || !user.trim()} title="last 50 games — a fast, shallow pass">Quick scan</button>
         <button type="button" style={linkBtn} onClick={() => setShowOptions((v) => !v)} aria-expanded={showOptions}>Options {showOptions ? '▴' : '▾'}</button>
       </div>
 

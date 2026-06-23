@@ -18,11 +18,4 @@ describe('AnalyzeForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ user: 'bob', result: 'all' }))
   })
-
-  it('Quick scan submits depth 8 and last 50', () => {
-    const onSubmit = vi.fn()
-    render(<AnalyzeForm onSubmit={onSubmit} disabled={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /quick scan/i }))
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ depth: '8', last: '50' }))
-  })
 })
