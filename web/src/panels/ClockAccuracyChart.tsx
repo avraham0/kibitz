@@ -1,6 +1,6 @@
 import type { GameSummary } from '../api-types.js'
 import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { AXIS, GRID } from './chartTheme.js'
+import { AXIS, GRID, TOOLTIP } from './chartTheme.js'
 
 export function ClockAccuracyChart({ games }: { games: GameSummary[] }) {
   const buckets: Record<number, { total: number; bad: number }> = {}
@@ -27,7 +27,7 @@ export function ClockAccuracyChart({ games }: { games: GameSummary[] }) {
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis dataKey="clock" name="Clock (s)" tick={AXIS.tick} stroke={AXIS.stroke} label={{ value: 'clock (s)', position: 'insideBottom', offset: -2, style: { fontSize: 11, fill: '#6b7280' } }} />
         <YAxis dataKey="mistakePct" name="Mistake %" tick={AXIS.tick} stroke={AXIS.stroke} unit="%" />
-        <Tooltip cursor={{ strokeDasharray: '3 3' }} formatter={((v: number, n: string) => [n === 'mistakePct' ? `${v}%` : v, n === 'mistakePct' ? 'mistake rate' : 'moves']) as any} />
+        <Tooltip {...TOOLTIP} formatter={((v: number, n: string) => [n === 'mistakePct' ? `${v}%` : v, n === 'mistakePct' ? 'mistake rate' : 'moves']) as any} />
         <Scatter data={data} fill="#e0b15a" isAnimationActive={false} />
       </ScatterChart>
     </section>

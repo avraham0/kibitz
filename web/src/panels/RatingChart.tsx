@@ -16,7 +16,6 @@ export function RatingChart({ games }: { games: GameSummary[] }) {
   return (
     <section>
       <h2>Rating progress</h2>
-      <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Rating per game, oldest to newest. Dashed = trend.</p>
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={pts}>

@@ -65,7 +65,6 @@ export function OpeningsTable({ openings, games = [], onOpenGame, onPractice }: 
   return (
     <section>
       <h2>Openings</h2>
-      <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Click a row to see its games and recurring mistakes.</p>
       <table>
         <thead><tr><th></th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Trend</th><th></th></tr></thead>
         <tbody>
