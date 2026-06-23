@@ -2,6 +2,7 @@ import type { GameAnalysis, MistakeType, Phase, Color } from '../types.js'
 import { cpFromMoverPov, LOST_POSITION_CP } from '../analyze/game.js'
 import type { MoveAnalysis } from '../types.js'
 import { accuracyOf, accuracyStrictOf, turningPointIdx, reachedWinning } from './accuracy.js'
+import { openingFamily } from './openingFamily.js'
 
 export type OpponentBand = 'stronger' | 'similar' | 'weaker'
 
@@ -18,10 +19,10 @@ function isLostPosition(m: MoveAnalysis): boolean {
 export type BlunderRef = {
   url: string; ply: number; san: string; bestSan: string
   fenBefore: string; cpLoss: number; type: MistakeType; missed: boolean
-  openingName: string; movesAfter: string[]
+  openingName: string; family: string; movesAfter: string[]
 }
 export type OpeningStat = {
-  eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number
+  name: string; games: number; wins: number; winPct: number; avgMistakes: number
 }
 
 export type TimeBucket = '<10s' | '10-30s' | '30-60s' | '60s+'
@@ -77,7 +78,7 @@ export type GameMove = {
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
-  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
+  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; family: string
   accuracy: number; accuracyStrict: number
   chesscomAccuracy?: number
   timeControl?: string
@@ -109,7 +110,7 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
     ) as Record<Phase, number>
     return {
       gameId: g.gameId, url: g.url, playedAt: g.playedAt, color: g.color, result: g.result,
-      eco: g.eco, openingName: g.openingName,
+      eco: g.eco, openingName: g.openingName, family: openingFamily(g.openingName),
       accuracy: accuracyOf(playerMoves),
       accuracyStrict: accuracyStrictOf(playerMoves),
       chesscomAccuracy: g.chesscomAccuracy,
@@ -123,15 +124,14 @@ export function perGameSummaries(games: GameAnalysis[]): GameSummary[] {
 }
 
 export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }): Stats {
-  // By default, group openings by ECO code (all C50 lines together), labelling each
-  // row with the shortest opening name in the group. With `variations: true`, keep
-  // each specific line (eco + full name) separate.
+  // By default, group openings by family (all Italian lines together regardless of
+  // ECO or sub-variation). With `variations: true`, keep each specific line separate.
   const byVariation = opts?.variations === true
   const record = { wins: 0, losses: 0, draws: 0 }
   const byPhase: Record<Phase, number> = { opening: 0, middlegame: 0, endgame: 0 }
   const typeAcc: Record<string, { count: number; sum: number; missed: number; allowed: number }> =
     Object.fromEntries(TYPES.map((t) => [t, { count: 0, sum: 0, missed: 0, allowed: 0 }]))
-  const openingMap = new Map<string, { eco: string; name: string; games: number; wins: number; mistakes: number }>()
+  const openingMap = new Map<string, { name: string; games: number; wins: number; mistakes: number }>()
   const blunders: BlunderRef[] = []
   let mistakeCount = 0
   let lostPositionMoves = 0
@@ -173,12 +173,10 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
       if (g.result === 'win') oppAgg[band].wins++
     }
 
-    const key = byVariation ? g.eco + '|' + g.openingName : (g.eco || 'Unknown')
-    const o = openingMap.get(key) ?? { eco: g.eco, name: g.openingName, games: 0, wins: 0, mistakes: 0 }
+    const key = byVariation ? g.openingName : openingFamily(g.openingName)
+    const o = openingMap.get(key) ?? { name: key, games: 0, wins: 0, mistakes: 0 }
     o.games++
     if (g.result === 'win') o.wins++
-    // ECO grouping: label the group with its shortest member name (most "base").
-    if (!byVariation && g.openingName.length < o.name.length) o.name = g.openingName
 
     let gameHadClock = false
     let gamePeak = -Infinity
@@ -223,7 +221,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
         blunders.push({
           url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan,
           fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed,
-          openingName: g.openingName,
+          openingName: g.openingName, family: openingFamily(g.openingName),
           movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san),
         })
       }
@@ -262,7 +260,7 @@ export function aggregate(games: GameAnalysis[], opts?: { variations?: boolean }
 
   const openings: OpeningStat[] = [...openingMap.values()]
     .map((o) => ({
-      eco: o.eco, name: o.name, games: o.games, wins: o.wins,
+      name: o.name, games: o.games, wins: o.wins,
       winPct: o.games ? Math.round((o.wins / o.games) * 100) : 0,
       avgMistakes: o.games ? Math.round((o.mistakes / o.games) * 10) / 10 : 0,
     }))

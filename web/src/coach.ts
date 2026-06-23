@@ -49,6 +49,7 @@ export function coach(stats: Stats): Suggestion[] {
         drill: TYPE_DRILL[t],
         impact: count * avgCpLoss,
         examples: examplesFor(stats.topBlunders, t),
+        action: { practice: 'tactics', type: t },
       })
     }
   }
@@ -76,6 +77,7 @@ export function coach(stats: Stats): Suggestion[] {
         drill: `Study the main lines and typical plans of the ${o.name}, or switch to a repertoire you score better with.`,
         impact: o.games * (40 - o.winPct),
         examples: examplesFor(stats.topBlunders),
+        action: { practice: 'opening', family: o.name },
       })
     }
   }

@@ -25,7 +25,13 @@ function trend(gs: GameSummary[]): string {
   return '—'
 }
 
-// Recurring mistakes + game list for the games in one opening (grouped by ECO).
+// Games belonging to one opening row. In family mode `o.name` is the family
+// (matches g.family); in variations mode it's the full line (matches g.openingName).
+function gamesIn(games: GameSummary[], name: string): GameSummary[] {
+  return games.filter((g) => g.family === name || g.openingName === name)
+}
+
+// Recurring mistakes + game list for the games in one opening.
 function OpeningDetail({ games, onOpenGame }: { games: GameSummary[]; onOpenGame?: (id: string) => void }) {
   const tally: Record<string, number> = {}
   for (const g of games) {
@@ -69,7 +75,7 @@ export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: 
       <h2>Openings</h2>
       <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Click a row to see its games and recurring mistakes.</p>
       <table>
-        <thead><tr><th></th><th>ECO</th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Avg depth</th><th>Trend</th></tr></thead>
+        <thead><tr><th></th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Avg depth</th><th>Trend</th></tr></thead>
         <tbody>
           {openings.map((o, i) => {
             const expanded = open === i
@@ -77,13 +83,13 @@ export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: 
               <Fragment key={i}>
                 <tr style={{ cursor: 'pointer' }} onClick={() => setOpen(expanded ? null : i)}>
                   <td>{expanded ? '▾' : '▸'}</td>
-                  <td>{o.eco}</td><td>{o.name}</td><td>{o.games}</td><td>{o.winPct}</td><td>{o.avgMistakes}</td>
-                  <td>{avgDepth(games.filter((g) => g.eco === o.eco))}</td>
-                  <td>{trend(games.filter((g) => g.eco === o.eco))}</td>
+                  <td>{o.name}</td><td>{o.games}</td><td>{o.winPct}</td><td>{o.avgMistakes}</td>
+                  <td>{avgDepth(gamesIn(games, o.name))}</td>
+                  <td>{trend(gamesIn(games, o.name))}</td>
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={8}><OpeningDetail games={games.filter((g) => g.eco === o.eco)} onOpenGame={onOpenGame} /></td>
+                    <td colSpan={7}><OpeningDetail games={gamesIn(games, o.name)} onOpenGame={onOpenGame} /></td>
                   </tr>
                 )}
               </Fragment>

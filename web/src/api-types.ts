@@ -4,8 +4,8 @@ export type MistakeType =
 export type TimeBucket = '<10s' | '10-30s' | '30-60s' | '60s+'
 export type CoachableType = Exclude<MistakeType, 'lost_position'>
 
-export type BlunderRef = { url: string; ply: number; san: string; bestSan: string; fenBefore: string; cpLoss: number; type: MistakeType; missed: boolean; openingName: string; movesAfter: string[] }
-export type OpeningStat = { eco: string; name: string; games: number; wins: number; winPct: number; avgMistakes: number }
+export type BlunderRef = { url: string; ply: number; san: string; bestSan: string; fenBefore: string; cpLoss: number; type: MistakeType; missed: boolean; openingName: string; family: string; movesAfter: string[] }
+export type OpeningStat = { name: string; games: number; wins: number; winPct: number; avgMistakes: number }
 export type Phase = 'opening' | 'middlegame' | 'endgame'
 export type Color = 'white' | 'black'
 
@@ -28,7 +28,10 @@ export type Stats = {
   byOpponent: Record<OpponentBand, { games: number; wins: number; accuracy: number; mistakes: number }>
 }
 export type OpponentBand = 'stronger' | 'similar' | 'weaker'
-export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[] }
+export type SuggestionAction =
+  | { practice: 'tactics'; type: CoachableType }
+  | { practice: 'opening'; family: string }
+export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[]; action?: SuggestionAction }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'
 export type GameMove = {
   ply: number; san: string; bestSan: string; evalCp: number; cpLoss: number
@@ -37,7 +40,7 @@ export type GameMove = {
 }
 export type GameSummary = {
   gameId: string; url: string; playedAt: string; color: 'white' | 'black'
-  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string
+  result: 'win' | 'loss' | 'draw'; eco: string; openingName: string; family: string
   accuracy: number; accuracyStrict: number
   chesscomAccuracy?: number
   timeControl?: string

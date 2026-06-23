@@ -81,9 +81,9 @@ export function renderMarkdown(stats: Stats, suggestions: Suggestion[], meta: Me
   lines.push('')
 
   lines.push('## Openings')
-  lines.push('| ECO | Opening | Games | Win % | Avg mistakes |')
-  lines.push('|---|---|---|---|---|')
-  for (const o of stats.openings) lines.push(`| ${o.eco} | ${escapeCell(o.name)} | ${o.games} | ${o.winPct} | ${o.avgMistakes} |`)
+  lines.push('| Opening | Games | Win % | Avg mistakes |')
+  lines.push('|---|---|---|---|')
+  for (const o of stats.openings) lines.push(`| ${escapeCell(o.name)} | ${o.games} | ${o.winPct} | ${o.avgMistakes} |`)
   lines.push('')
 
   lines.push('## Coaching')

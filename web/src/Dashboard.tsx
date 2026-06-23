@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import type { AnalyzeResult } from './api-types.js'
+import type { AnalyzeResult, SuggestionAction } from './api-types.js'
 import { SummaryCard } from './panels/SummaryCard.js'
 import { TopLeaks } from './panels/TopLeaks.js'
 import { Splits } from './panels/Splits.js'
@@ -18,13 +18,12 @@ import { RatingChart } from './panels/RatingChart.js'
 import { BestGames } from './panels/BestGames.js'
 import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
 import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
-import { TrainingTab } from './panels/TrainingTab.js'
-import { OpeningDrill } from './panels/OpeningDrill.js'
+import { PracticeTab } from './panels/PracticeTab.js'
 import { MasteryTab } from './panels/MasteryTab.js'
 import { recomputeStats } from './recomputeStats.js'
 import { coach } from './coach.js'
 
-type Tab = 'overview' | 'blunders' | 'train' | 'openings' | 'review' | 'mastery'
+type Tab = 'overview' | 'blunders' | 'practice' | 'review' | 'mastery'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
@@ -40,11 +39,16 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
     setFocus((f) => ({ id, ply, seq: (f?.seq ?? 0) + 1 }))
     setTab('review')
   }
+  // Routed from a coaching card's "Practice" button — picks the practice mode + filter.
+  const [practiceFocus, setPracticeFocus] = useState<(SuggestionAction & { seq: number }) | null>(null)
+  function startPractice(action: SuggestionAction) {
+    setPracticeFocus((f) => ({ ...action, seq: (f?.seq ?? 0) + 1 }))
+    setTab('practice')
+  }
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'blunders', label: 'Blunders' },
-    { id: 'train', label: 'Train' },
-    { id: 'openings', label: 'Openings' },
+    { id: 'practice', label: 'Practice' },
     { id: 'review', label: 'Game review' },
     { id: 'mastery', label: 'Mastery' },
   ]
@@ -67,6 +71,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       {tab === 'overview' && (
         <>
           <SummaryCard stats={filteredStats} games={filteredGames} />
+          <CoachingCards suggestions={filteredSuggestions} onPractice={startPractice} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start' }}>
             <TopLeaks stats={filteredStats} />
             <HangFrequency blunders={filteredStats.topBlunders} />
@@ -77,6 +82,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           </div>
           <BestGames games={filteredGames} onOpenGame={openGame} />
           <OpeningRecommendations stats={filteredStats} />
+          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} />
           <MistakeTypesChart stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
             <PhaseChart stats={filteredStats} />
@@ -88,17 +94,10 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
           </div>
           <Splits stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
           <EndgameStats games={filteredGames} />
-          <CoachingCards suggestions={filteredSuggestions} />
         </>
       )}
       {tab === 'blunders' && <BlunderList blunders={filteredStats.topBlunders} games={filteredGames} onOpenGame={openGame} />}
-      {tab === 'train' && <TrainingTab games={filteredGames} />}
-      {tab === 'openings' && (
-        <>
-          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} />
-          <OpeningDrill openings={filteredStats.openings} games={filteredGames} />
-        </>
-      )}
+      {tab === 'practice' && <PracticeTab games={filteredGames} openings={filteredStats.openings} focus={practiceFocus} />}
       {tab === 'review' && <GameReview games={filteredGames} focus={focus} />}
       {tab === 'mastery' && <MasteryTab games={filteredGames} onOpenGame={openGame} />}
     </div>

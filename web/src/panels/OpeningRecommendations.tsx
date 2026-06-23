@@ -15,8 +15,8 @@ export function OpeningRecommendations({ stats }: { stats: Stats }) {
       <h2>Opening recommendations</h2>
       <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {flagged.map((o) => (
-          <li key={o.eco} style={{ fontSize: 13 }}>
-            <strong>{o.name}</strong> ({o.eco}) — {o.winPct}% win rate vs your {overallWinPct}% average
+          <li key={o.name} style={{ fontSize: 13 }}>
+            <strong>{o.name}</strong> — {o.winPct}% win rate vs your {overallWinPct}% average
             <div style={{ color: 'var(--muted)', fontSize: 13 }}>
               {o.games} games · {o.avgMistakes} mistakes/game avg · consider a repertoire change or focused study
             </div>

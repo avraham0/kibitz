@@ -28,27 +28,28 @@ function appendPgn(currentPgn: string, san: string, currentHalfMove: number): st
   return `${currentPgn} ${san}`
 }
 
-export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; games: GameSummary[] }) {
-  const [eco, setEco] = useState(openings[0]?.eco ?? '')
+export function OpeningDrill({ openings, games, initialFamily }: { openings: OpeningStat[]; games: GameSummary[]; initialFamily?: string }) {
+  const [eco, setEco] = useState(initialFamily ?? openings[0]?.name ?? '')
   const [steps, setSteps] = useState<Step[]>([{ fen: START, pgn: '', halfMove: 0 }])
   const [viewIdx, setViewIdx] = useState(0)
   const [feedback, setFeedback] = useState<{ text: string; good: boolean } | null>(null)
   const [outOfBook, setOutOfBook] = useState(false)
   const [waiting, setWaiting] = useState(false)
   const [selectedSq, setSelectedSq] = useState<string | null>(null)
+  const [hint, setHint] = useState<[string, string] | null>(null)
   const opponentTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const viewIdxRef = useRef(viewIdx)
   viewIdxRef.current = viewIdx
   const stepsRef = useRef(steps)
   stepsRef.current = steps
 
-  const ecoGames = useMemo(() => games.filter((g) => g.eco === eco), [games, eco])
-  const tree = useMemo(() => buildTree(ecoGames), [ecoGames])
+  const familyGames = useMemo(() => games.filter((g) => g.family === eco || g.openingName === eco), [games, eco])
+  const tree = useMemo(() => buildTree(familyGames), [familyGames])
 
   const playerColor = useMemo((): 'white' | 'black' => {
-    const whites = ecoGames.filter((g) => g.color === 'white').length
-    return whites >= ecoGames.length / 2 ? 'white' : 'black'
-  }, [ecoGames])
+    const whites = familyGames.filter((g) => g.color === 'white').length
+    return whites >= familyGames.length / 2 ? 'white' : 'black'
+  }, [familyGames])
 
   const atEnd = viewIdx === steps.length - 1
   const { fen, pgn, halfMove } = steps[viewIdx]
@@ -56,7 +57,9 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
 
   const chess = new Chess(fen)
   const sideToMove = chess.turn() === 'w' ? 'white' : 'black'
-  const isPlayerTurn = sideToMove === playerColor && !waiting
+  const isPlayerTurn = sideToMove === playerColor && !waiting && (!atEnd || !outOfBook)
+
+  useEffect(() => { setHint(null) }, [fen])
 
   // Clear selection when navigating to a non-end position
   useEffect(() => {
@@ -77,9 +80,12 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
     setOutOfBook(false)
     setWaiting(false)
     setSelectedSq(null)
+    setHint(null)
   }
 
   useEffect(() => { reset() }, [eco]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Re-select when routed in from a coaching card for a different family.
+  useEffect(() => { if (initialFamily) setEco(initialFamily) }, [initialFamily])
 
   function playOpponent(currentFen: string, currentHalfMove: number, currentPgn: string) {
     setWaiting(true)
@@ -93,16 +99,8 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
           return
         }
       }
-      // Out of book — fall back to Stockfish
+      // Opening book exhausted — drill ends here
       setOutOfBook(true)
-      const uciMove = await getBestMove(currentFen)
-      if (!uciMove) { setWaiting(false); return }
-      try {
-        const c = new Chess(currentFen)
-        const mv = c.move({ from: uciMove.slice(0, 2), to: uciMove.slice(2, 4), promotion: (uciMove[4] as 'q' | 'r' | 'b' | 'n') || 'q' })
-        if (!mv) { setWaiting(false); return }
-        pushStep(c.fen(), appendPgn(currentPgn, mv.san, currentHalfMove), currentHalfMove + 1)
-      } catch { /* ignore */ }
       setWaiting(false)
     }, 800)
   }
@@ -176,11 +174,11 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
         <label>Opening:{' '}
           <select value={eco} onChange={(e) => setEco(e.target.value)}>
             {openings.map((o) => (
-              <option key={o.eco} value={o.eco}>{o.name} ({o.eco}) — {o.games} games</option>
+              <option key={o.name} value={o.name}>{o.name} — {o.games} games</option>
             ))}
           </select>
         </label>
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>You play {playerColor} · {ecoGames.length} training games</span>
+        <span style={{ fontSize: 13, color: 'var(--muted)' }}>You play {playerColor} · {familyGames.length} training games</span>
         <button type="button" onClick={reset}>Start over</button>
       </div>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -191,7 +189,7 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
               {!atEnd
                 ? <span style={{ color: 'var(--muted)' }}>Reviewing — ← → to navigate · move to continue from here</span>
                 : outOfBook
-                ? <span style={{ color: 'rgb(224,121,107)' }}>Out of your game history for this opening</span>
+                ? <span style={{ color: '#7bc47f' }}>Opening complete — you've reached the middlegame</span>
                 : waiting
                 ? <span style={{ color: 'var(--muted)' }}>Opponent thinking…</span>
                 : <span style={{ fontWeight: 600 }}>Your move ({playerColor})</span>}
@@ -203,12 +201,19 @@ export function OpeningDrill({ openings, games }: { openings: OpeningStat[]; gam
               onPieceDrop={(s, t) => { setSelectedSq(null); return onDrop(s, t) }}
               onSquareClick={onSquareClick}
               customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
+              customArrows={hint ? [[hint[0], hint[1], 'rgb(0,120,255)']] as [string, string, string][] : []}
               boardWidth={BOARD_SIZE}
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
               <button type="button" onClick={() => setViewIdx((i) => Math.max(0, i - 1))} disabled={viewIdx === 0}>‹</button>
               <button type="button" onClick={() => setViewIdx((i) => Math.min(steps.length - 1, i + 1))} disabled={atEnd}>›</button>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>{viewIdx} / {steps.length - 1}</span>
+              {isPlayerTurn && (
+                <button type="button" style={{ marginLeft: 'auto', fontSize: 12 }} onClick={async () => {
+                  const uci = await getBestMove(fen, 14)
+                  if (uci) setHint([uci.slice(0, 2), uci.slice(2, 4)])
+                }}>Hint</button>
+              )}
             </div>
           </div>
         </div>

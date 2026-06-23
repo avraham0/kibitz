@@ -1,15 +1,23 @@
 import type { Stats, BlunderRef, TimeBucket } from './aggregate.js'
 import type { MistakeType, Phase } from '../types.js'
 
+type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
+
+// What "Practice this" does for a suggestion. Tactic → puzzle queue filtered to the
+// mistake type; opening → opening drill scoped to the family. Suggestions without an
+// action (phase, time pressure) are advice-only.
+export type SuggestionAction =
+  | { practice: 'tactics'; type: CoachableMistakeType }
+  | { practice: 'opening'; family: string }
+
 export type Suggestion = {
   title: string
   why: string
   drill: string
   impact: number
   examples: { url: string; fenBefore: string; san: string; bestSan: string }[]
+  action?: SuggestionAction
 }
-
-type CoachableMistakeType = Exclude<MistakeType, 'lost_position'>
 
 const TYPE_LABEL: Record<CoachableMistakeType, string> = {
   hung_piece: 'Hung pieces',
@@ -70,6 +78,7 @@ export function coach(stats: Stats): Suggestion[] {
         drill: TYPE_DRILL[t],
         impact: count * avgCpLoss,
         examples: examplesFor(stats.topBlunders, t),
+        action: { practice: 'tactics', type: t },
       })
     }
   }
@@ -99,6 +108,7 @@ export function coach(stats: Stats): Suggestion[] {
         drill: `Study the main lines and typical plans of the ${o.name}, or switch to a repertoire you score better with.`,
         impact: o.games * (40 - o.winPct),
         examples: examplesFor(stats.topBlunders),
+        action: { practice: 'opening', family: o.name },
       })
     }
   }

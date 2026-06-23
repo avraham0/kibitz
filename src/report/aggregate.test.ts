@@ -135,22 +135,21 @@ describe('aggregate — color split', () => {
   })
 })
 
-describe('aggregate — opening grouping (by ECO)', () => {
+describe('aggregate — opening grouping (by family)', () => {
   const og = (name: string, eco: string): GameAnalysis => ({
     gameId: name, url: name, playedAt: '2026-01-01T00:00:00.000Z',
     color: 'white', result: 'loss', eco, openingName: name, depth: 15, moves: [],
   })
   const games = [
     og('Italian Game', 'C50'),
-    og('Giuoco Piano Game Giuoco Pianissimo Variation', 'C50'),
-    og('Caro Kann Defense Exchange Variation', 'B13'),
+    og('Italian Game Giuoco Pianissimo Variation', 'C53'),
+    og('Caro-Kann Defense Exchange Variation', 'B13'),
   ]
-  it('merges all lines sharing an ECO code into one row, labelled by the shortest name', () => {
+  it('merges all lines of a family into one row, regardless of ECO, labelled by family', () => {
     const s = aggregate(games)
-    expect(s.openings).toHaveLength(2) // C50 (2 games) + B13 (1)
-    const c50 = s.openings.find((o) => o.eco === 'C50')!
-    expect(c50.games).toBe(2)
-    expect(c50.name).toBe('Italian Game') // shortest name in the C50 group
+    expect(s.openings).toHaveLength(2) // Italian Game (2 games, C50 + C53) + Caro-Kann (1)
+    const italian = s.openings.find((o) => o.name === 'Italian Game')!
+    expect(italian.games).toBe(2)
   })
   it('keeps every line separate with { variations: true }', () => {
     const s = aggregate(games, { variations: true })

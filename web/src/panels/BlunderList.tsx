@@ -49,7 +49,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
       for (let mi = 0; mi < g.moves.length; mi++) {
         const m = g.moves[mi]
         if (!m.isPlayerMove || m.severity !== 'blunder' || m.type === 'lost_position') continue
-        result.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
+        result.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, family: g.family, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
       }
     }
     return result.sort((a, b) => b.cpLoss - a.cpLoss)
@@ -65,7 +65,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
         if (!m.isPlayerMove || m.severity !== 'blunder' || m.type === 'lost_position') continue
         const playerPov = g.color === 'white' ? m.evalCp : -m.evalCp
         if (playerPov < 200) continue
-        positions.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
+        positions.push({ url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan, fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed, openingName: g.openingName, family: g.family, movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san) })
       }
     }
     return positions.sort((a, b) => b.cpLoss - a.cpLoss)

@@ -1,6 +1,6 @@
-import type { Suggestion } from '../api-types.js'
+import type { Suggestion, SuggestionAction } from '../api-types.js'
 
-export function CoachingCards({ suggestions }: { suggestions: Suggestion[] }) {
+export function CoachingCards({ suggestions, onPractice }: { suggestions: Suggestion[]; onPractice?: (action: SuggestionAction) => void }) {
   return (
     <section>
       <h2>Coaching</h2>
@@ -10,6 +10,11 @@ export function CoachingCards({ suggestions }: { suggestions: Suggestion[] }) {
           <h3 style={{ margin: '0 0 4px' }}>{s.title}</h3>
           <p style={{ margin: '0 0 4px' }}>{s.why}</p>
           <p style={{ margin: 0 }}><strong>Drill:</strong> {s.drill}</p>
+          {s.action && onPractice && (
+            <button type="button" style={{ marginTop: 10 }} onClick={() => onPractice(s.action!)}>
+              {s.action.practice === 'opening' ? `Practice the ${s.action.family} →` : 'Practice these positions →'}
+            </button>
+          )}
         </div>
       ))}
     </section>

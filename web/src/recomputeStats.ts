@@ -28,7 +28,7 @@ export function recomputeStats(games: GameSummary[]): Stats {
   const byPhase: Record<Phase, number> = { opening: 0, middlegame: 0, endgame: 0 }
   const typeAcc: Record<string, { count: number; sum: number; missed: number; allowed: number }> =
     Object.fromEntries(COACHABLE_TYPES.map((t) => [t, { count: 0, sum: 0, missed: 0, allowed: 0 }]))
-  const openingMap = new Map<string, { eco: string; name: string; games: number; wins: number; mistakes: number }>()
+  const openingMap = new Map<string, { name: string; games: number; wins: number; mistakes: number }>()
   const blunders: BlunderRef[] = []
   let mistakeCount = 0
   let lostPositionMoves = 0
@@ -64,11 +64,10 @@ export function recomputeStats(games: GameSummary[]): Stats {
       if (g.result === 'win') oppAgg[band].wins++
     }
 
-    const key = g.eco || 'Unknown'
-    const o = openingMap.get(key) ?? { eco: g.eco, name: g.openingName, games: 0, wins: 0, mistakes: 0 }
+    const key = g.family || 'Unknown'
+    const o = openingMap.get(key) ?? { name: key, games: 0, wins: 0, mistakes: 0 }
     o.games++
     if (g.result === 'win') o.wins++
-    if (g.openingName.length < o.name.length) o.name = g.openingName
 
     let gameHadClock = false
     let gameDecisions = 0
@@ -108,7 +107,7 @@ export function recomputeStats(games: GameSummary[]): Stats {
         blunders.push({
           url: g.url, ply: m.ply, san: m.san, bestSan: m.bestSan,
           fenBefore: m.fenBefore, cpLoss: m.cpLoss, type: m.type, missed: m.missed,
-          openingName: g.openingName,
+          openingName: g.openingName, family: g.family,
           movesAfter: g.moves.slice(mi + 1, mi + 5).map((m2) => m2.san),
         })
       }
@@ -158,7 +157,7 @@ export function recomputeStats(games: GameSummary[]): Stats {
 
   const openings: OpeningStat[] = [...openingMap.values()]
     .map((o) => ({
-      eco: o.eco, name: o.name, games: o.games, wins: o.wins,
+      name: o.name, games: o.games, wins: o.wins,
       winPct: o.games ? Math.round((o.wins / o.games) * 100) : 0,
       avgMistakes: o.games ? Math.round((o.mistakes / o.games) * 10) / 10 : 0,
     }))
