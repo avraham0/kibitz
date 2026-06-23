@@ -209,10 +209,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
             Find the best move for {colorLabel}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10, width: 380, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            Move {Math.ceil(b.ply / 2)} · {b.type.replace(/_/g, ' ')} · −{b.cpLoss}cp
-            {b.openingName && <> · {b.openingName}</>}
-          </div>
           <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} reviewIdx={reviewIdx} />
         </div>
         <div style={{ minWidth: 200 }}>

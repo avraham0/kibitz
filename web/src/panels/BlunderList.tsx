@@ -154,7 +154,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
             <div key={i}>
               <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={320} />
               <div style={{ fontSize: 13 }}>
-                Played {b.san} · Best {b.bestSan} · −{b.cpLoss}cp{' '}
+                Played {b.san} · Best {b.bestSan}{' '}
                 <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
                 {(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? <>{' '}<button type="button" onClick={() => onOpenGame(gid, b.ply - 1)} style={{ fontSize: 12, padding: '0 4px', background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', textDecoration: 'underline' }}>review</button></> : null })()}
                 <div style={{ color: 'var(--muted)', marginTop: 2 }}>{explainBlunder(b)}</div>

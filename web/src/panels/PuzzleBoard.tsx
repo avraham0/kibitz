@@ -37,9 +37,7 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
         </>
       ) : (
         <>
-          <div style={{ color: 'var(--muted)' }}>
-            Find the best move{wrong > 0 ? ` · ${wrong} wrong` : ''}
-          </div>
+          {wrong > 0 && <div style={{ color: 'var(--muted)' }}>{wrong} wrong</div>}
           {lastWrongSan && (
             <div style={{ color: 'rgb(224,121,107)', marginTop: 3 }}>
               {explainWrongMove(blunder.fenBefore, lastWrongSan, blunder)}
@@ -48,7 +46,6 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
         </>
       )}
       <div style={{ marginTop: 4, color: 'var(--muted)' }}>
-        {blunder.type}{' · '}
         <a href={analysisLink(blunder.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
       </div>
     </div>
