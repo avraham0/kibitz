@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import type { AnalyzeResult, SuggestionAction } from './api-types.js'
 import { SummaryCard } from './panels/SummaryCard.js'
-import { TopLeaks } from './panels/TopLeaks.js'
 import { Splits } from './panels/Splits.js'
 import { OpeningsTable } from './panels/OpeningsTable.js'
 import { BlunderList } from './panels/BlunderList.js'
@@ -13,7 +12,6 @@ import { GameReview } from './panels/GameReview.js'
 import { ProgressChart } from './panels/ProgressChart.js'
 import { HangFrequency } from './panels/HangFrequency.js'
 import { MoveQualityChart } from './panels/MoveQualityChart.js'
-import { EndgameStats } from './panels/EndgameStats.js'
 import { RatingChart } from './panels/RatingChart.js'
 import { BestGames } from './panels/BestGames.js'
 import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
@@ -70,19 +68,18 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
 
       {tab === 'overview' && (
         <>
-          <SummaryCard stats={filteredStats} games={filteredGames} />
-          <CoachingCards suggestions={filteredSuggestions} onPractice={startPractice} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start' }}>
-            <TopLeaks stats={filteredStats} />
-            <HangFrequency blunders={filteredStats.topBlunders} />
+          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 0 700px', minWidth: 0 }}><SummaryCard stats={filteredStats} games={filteredGames} /></div>
+            <HangFrequency games={filteredGames} onPractice={startPractice} />
           </div>
+          <CoachingCards suggestions={filteredSuggestions} onPractice={startPractice} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, alignItems: 'start' }}>
             <ProgressChart games={filteredGames} />
             <RatingChart games={filteredGames} />
           </div>
           <BestGames games={filteredGames} onOpenGame={openGame} />
           <OpeningRecommendations stats={filteredStats} />
-          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} />
+          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} onPractice={(family) => startPractice({ practice: 'opening', family })} />
           <MistakeTypesChart stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
             <PhaseChart stats={filteredStats} />
@@ -93,7 +90,6 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
             {stats.gamesWithClock > 0 && <ClockAccuracyChart games={filteredGames} />}
           </div>
           <Splits stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
-          <EndgameStats games={filteredGames} />
         </>
       )}
       {tab === 'blunders' && <BlunderList blunders={filteredStats.topBlunders} games={filteredGames} onOpenGame={openGame} />}

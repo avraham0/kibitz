@@ -8,14 +8,14 @@ import { orientationFromFen } from '../orientationFromFen.js'
 import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 import { explainBlunder, explainWrongMove } from '../explainBlunder.js'
 
-export type PuzzleState = { solved: boolean; revealed: boolean; wrong: number; lastWrongSan: string | null }
+export type PuzzleState = { solved: boolean; revealed: boolean; wrong: number; lastWrongSan: string | null; committed?: boolean }
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
 }
 
 export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder: BlunderRef }) {
-  const { solved, revealed, wrong, lastWrongSan } = state
+  const { solved, revealed, wrong, lastWrongSan, committed } = state
   return (
     <div style={{ fontSize: 13 }}>
       {solved ? (
@@ -37,6 +37,14 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
               Game continued: {blunder.movesAfter.join(' ')}
             </div>
           )}
+        </>
+      ) : committed && lastWrongSan ? (
+        <>
+          <div style={{ color: 'rgb(224,121,107)', fontWeight: 600 }}>✗ {lastWrongSan} is a mistake</div>
+          <div style={{ color: 'rgb(224,121,107)', marginTop: 3 }}>
+            {explainWrongMove(blunder.fenBefore, lastWrongSan, blunder)}
+          </div>
+          <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 12 }}>Try again to find the best move.</div>
         </>
       ) : (
         <>
@@ -79,12 +87,16 @@ export function PuzzleBoard({
   const [revealed, setRevealed] = useState(false)
   const [wrong, setWrong] = useState(0)
   const [lastWrongSan, setLastWrongSan] = useState<string | null>(null)
+  // A legal-but-wrong move stays on the board (not snapped back) and locks it until
+  // the player resets — they see the consequence of their mistake.
+  const [committed, setCommitted] = useState(false)
 
-  const state: PuzzleState = { solved, revealed, wrong, lastWrongSan }
-  useEffect(() => { onStateChange?.(state) }, [solved, revealed, wrong, lastWrongSan]) // eslint-disable-line react-hooks/exhaustive-deps
+  const state: PuzzleState = { solved, revealed, wrong, lastWrongSan, committed }
+  useEffect(() => { onStateChange?.(state) }, [solved, revealed, wrong, lastWrongSan, committed]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (forceReveal) reveal() }, [forceReveal]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function onDrop(from: string, to: string): boolean {
+    if (solved || revealed || committed) return false
     if (best && from === best.from && to === best.to) {
       const c = new Chess(blunder.fenBefore)
       try { c.move(blunder.bestSan) } catch { /* keep fenBefore */ }
@@ -95,31 +107,49 @@ export function PuzzleBoard({
       setLastWrongSan(null)
       return true
     }
+    // Legal but wrong: play it so the piece stays where dropped, then lock the board.
     try {
       const c = new Chess(blunder.fenBefore)
       const mv = c.move({ from, to, promotion: 'q' })
-      if (mv) setLastWrongSan(mv.san)
-    } catch { /* ignore */ }
+      if (mv) {
+        setPosition(c.fen())
+        if (soundEnabled()) playMoveSound(soundForSan(mv.san))
+        setLastWrongSan(mv.san)
+        setWrong((w) => w + 1)
+        setCommitted(true)
+        return true
+      }
+    } catch { /* not a legal move (or opponent's piece) — counted, snapped back below */ }
     setWrong((w) => w + 1)
     return false
   }
 
   function reveal() {
     if (!solved && !revealed) onResult?.(false)
+    setPosition(blunder.fenBefore) // reset to the original position before showing the answer
+    setCommitted(false)
     setRevealed(true)
   }
 
-  const arrows: Arrow[] = [
+  function tryAgain() {
+    setPosition(blunder.fenBefore)
+    setCommitted(false)
+    setLastWrongSan(null)
+  }
+
+  // Don't reveal the played blunder upfront — only show it (and the best move) as
+  // context once the puzzle is solved or revealed.
+  const arrows: Arrow[] = (solved || revealed) ? [
     ...(bad ? [[bad.from as Arrow[0], bad.to as Arrow[1], 'rgb(200,60,60)'] as Arrow] : []),
-    ...(revealed && !solved && best ? [[best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'] as Arrow] : []),
-  ]
+    ...(best ? [[best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'] as Arrow] : []),
+  ] : []
 
   return (
     <div style={{ width: boardWidth }}>
       <Chessboard
         position={position}
         boardOrientation={orientationFromFen(blunder.fenBefore)}
-        arePiecesDraggable={!solved && !revealed}
+        arePiecesDraggable={!solved && !revealed && !committed}
         onPieceDrop={(s, t) => onDrop(s, t)}
         customArrows={arrows}
         boardWidth={boardWidth}
@@ -128,7 +158,10 @@ export function PuzzleBoard({
         <div style={{ marginTop: 8 }}>
           <PuzzleFeedback state={state} blunder={blunder} />
           {!solved && !revealed && (
-            <button type="button" style={{ marginTop: 6, fontSize: 13 }} onClick={reveal}>reveal</button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              {committed && <button type="button" style={{ fontSize: 13 }} onClick={tryAgain}>try again</button>}
+              <button type="button" style={{ fontSize: 13 }} onClick={reveal}>reveal</button>
+            </div>
           )}
         </div>
       )}

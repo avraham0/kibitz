@@ -4,6 +4,9 @@ import { PuzzleBoard, PuzzleFeedback, type PuzzleState } from './PuzzleBoard.js'
 import {
   loadSrs, saveSrs, recordResult, orderByDue, puzzleKey, type SrsStore,
 } from '../puzzleSrs.js'
+import { hangingAfter } from '../explainBlunder.js'
+
+const PIECE_LABEL: Record<string, string> = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
 
 const TYPE_LABEL: Record<CoachableType, string> = {
   hung_piece: 'hung piece', missed_tactic: 'missed tactic', bad_trade: 'bad trade',
@@ -30,7 +33,7 @@ function PatternBreakdown({ blunders }: { blunders: BlunderRef[] }) {
   )
 }
 
-export function TrainingTab({ games, initialTypeFilter }: { games: GameSummary[]; initialTypeFilter?: CoachableType }) {
+export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { games: GameSummary[]; initialTypeFilter?: CoachableType; initialHungPiece?: string }) {
   const blunders = useMemo((): BlunderRef[] => {
     const result: BlunderRef[] = []
     for (const g of games) {
@@ -54,18 +57,21 @@ export function TrainingTab({ games, initialTypeFilter }: { games: GameSummary[]
   const [forceReveal, setForceReveal] = useState(false)
   const [openingFilter, setOpeningFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>(initialTypeFilter ?? 'all')
+  const [hungPieceFilter, setHungPieceFilter] = useState<string | undefined>(initialHungPiece)
 
   useEffect(() => {
     setOpeningFilter('all')
     setTypeFilter('all')
+    setHungPieceFilter(undefined)
     setCur(0)
     setPuzzleAnswered(false)
     setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
     setForceReveal(false)
   }, [games])
 
-  // Sync when routed in from a coaching card for a specific mistake type.
+  // Sync when routed in from a coaching card / hung-piece tile.
   useEffect(() => { if (initialTypeFilter) { setTypeFilter(initialTypeFilter); setCur(0) } }, [initialTypeFilter])
+  useEffect(() => { setHungPieceFilter(initialHungPiece); if (initialHungPiece) setCur(0) }, [initialHungPiece])
 
   const openings = useMemo(() => {
     const seen = new Set<string>()
@@ -82,9 +88,10 @@ export function TrainingTab({ games, initialTypeFilter }: { games: GameSummary[]
   const filtered = useMemo(
     () => blunders.filter((b) =>
       (openingFilter === 'all' || b.family === openingFilter) &&
-      (typeFilter === 'all' || b.type === typeFilter),
+      (typeFilter === 'all' || b.type === typeFilter) &&
+      (!hungPieceFilter || hangingAfter(b.fenBefore, b.san)?.piece === hungPieceFilter),
     ),
-    [blunders, openingFilter, typeFilter],
+    [blunders, openingFilter, typeFilter, hungPieceFilter],
   )
 
   const now = Date.now()
@@ -178,8 +185,13 @@ export function TrainingTab({ games, initialTypeFilter }: { games: GameSummary[]
     <section>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
         <h2 style={{ margin: 0 }}>Training</h2>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {hungPieceFilter && (
+            <button type="button" onClick={() => { setHungPieceFilter(undefined); setCur(0); setEpoch((ep) => ep + 1) }} style={{ fontSize: 13 }} title="Clear piece filter">
+              {PIECE_LABEL[hungPieceFilter] ?? hungPieceFilter} hangs ✕
+            </button>
+          )}
+          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setHungPieceFilter(undefined); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13 }}>
             <option value="all">all patterns ({blunders.length})</option>
             {types.map((t) => (
               <option key={t} value={t}>{TYPE_LABEL[t as CoachableType] ?? t} ({blunders.filter((b) => b.type === t).length})</option>
@@ -193,7 +205,7 @@ export function TrainingTab({ games, initialTypeFilter }: { games: GameSummary[]
           </select>
         </div>
       </div>
-      <PatternBreakdown blunders={blunders} />
+      {typeFilter === 'all' && !hungPieceFilter && <PatternBreakdown blunders={blunders} />}
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
@@ -224,7 +236,12 @@ export function TrainingTab({ games, initialTypeFilter }: { games: GameSummary[]
               <button type="button" style={{ marginTop: 8, fontSize: 13 }} onClick={() => { setEpoch((e) => e + 1); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }}>reset</button>
             )}
             {!puzzleState.solved && !puzzleState.revealed && (
-              <button type="button" style={{ marginTop: 6, fontSize: 13 }} onClick={() => setForceReveal(true)}>reveal</button>
+              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                {puzzleState.committed && (
+                  <button type="button" style={{ fontSize: 13 }} onClick={() => { setEpoch((e) => e + 1); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }}>try again</button>
+                )}
+                <button type="button" style={{ fontSize: 13 }} onClick={() => setForceReveal(true)}>reveal</button>
+              </div>
             )}
           </div>
           {b.url && <div style={{ marginBottom: 12 }}><a href={b.url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>game ↗</a></div>}

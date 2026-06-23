@@ -14,13 +14,16 @@ export function PracticeTab({ games, openings, focus }: {
   focus: SuggestionAction | null
 }) {
   const [mode, setMode] = useState<Mode>(focus?.practice === 'opening' ? 'openings' : 'puzzles')
-  const [typeFilter, setTypeFilter] = useState<CoachableType | undefined>(focus?.practice === 'tactics' ? focus.type : undefined)
+  // A hung-piece tile filters by piece only (the pattern stays "all") — hanging a
+  // bishop is detected geometrically, independent of how the blunder was classified.
+  const [typeFilter, setTypeFilter] = useState<CoachableType | undefined>(focus?.practice === 'tactics' && !focus.hungPiece ? focus.type : undefined)
+  const [hungPiece, setHungPiece] = useState<string | undefined>(focus?.practice === 'tactics' ? focus.hungPiece : undefined)
   const [family, setFamily] = useState<string | undefined>(focus?.practice === 'opening' ? focus.family : undefined)
 
-  // Re-target whenever a new coaching card routes in.
+  // Re-target whenever a new coaching card / hung-piece tile routes in.
   useEffect(() => {
     if (!focus) return
-    if (focus.practice === 'tactics') { setMode('puzzles'); setTypeFilter(focus.type) }
+    if (focus.practice === 'tactics') { setMode('puzzles'); setHungPiece(focus.hungPiece); setTypeFilter(focus.hungPiece ? undefined : focus.type) }
     else { setMode('openings'); setFamily(focus.family) }
   }, [focus])
 
@@ -39,7 +42,7 @@ export function PracticeTab({ games, openings, focus }: {
         <button type="button" style={tabStyle(mode === 'openings')} onClick={() => setMode('openings')}>Openings</button>
       </div>
       {mode === 'puzzles'
-        ? <TrainingTab games={games} initialTypeFilter={typeFilter} />
+        ? <TrainingTab games={games} initialTypeFilter={typeFilter} initialHungPiece={hungPiece} />
         : <OpeningDrill openings={openings} games={games} initialFamily={family} />}
     </section>
   )

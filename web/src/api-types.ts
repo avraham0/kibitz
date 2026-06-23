@@ -29,7 +29,7 @@ export type Stats = {
 }
 export type OpponentBand = 'stronger' | 'similar' | 'weaker'
 export type SuggestionAction =
-  | { practice: 'tactics'; type: CoachableType }
+  | { practice: 'tactics'; type: CoachableType; hungPiece?: string }
   | { practice: 'opening'; family: string }
 export type Suggestion = { title: string; why: string; drill: string; impact: number; examples: { url: string; fenBefore: string; san: string; bestSan: string }[]; action?: SuggestionAction }
 export type Severity = 'ok' | 'inaccuracy' | 'mistake' | 'blunder'

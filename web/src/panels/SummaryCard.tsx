@@ -22,12 +22,14 @@ function blunderRecovery(games: GameSummary[]): { afterPct: number; basePct: num
   }
 }
 
-function ratingTrend(games: GameSummary[]): { delta: number; first: number; last: number } | null {
-  const rated = games.filter((g) => g.playerRating != null).sort((a, b) => a.playedAt.localeCompare(b.playedAt))
-  if (rated.length < 2) return null
-  const first = rated[0].playerRating!
-  const last = rated[rated.length - 1].playerRating!
-  return { delta: last - first, first, last }
+// Median rating across the analyzed games — robust to outliers and to mixing rating
+// pools (bullet vs rapid). The time trend lives in the Rating/Progress charts; this
+// tile is just a representative snapshot.
+function medianRating(games: GameSummary[]): number | null {
+  const r = games.map((g) => g.playerRating).filter((x): x is number => x != null).sort((a, b) => a - b)
+  if (r.length === 0) return null
+  const mid = Math.floor(r.length / 2)
+  return r.length % 2 ? r[mid] : Math.round((r[mid - 1] + r[mid]) / 2)
 }
 
 export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameSummary[] }) {
@@ -35,21 +37,19 @@ export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameS
   const { winningGames, converted } = stats.conversion
   const missedWins = winningGames - converted
   const rec = blunderRecovery(games)
-  const trend = ratingTrend(games)
+  const medRating = medianRating(games)
   const tiltDelta = rec ? rec.afterPct - rec.basePct : 0
   const tiles: { label: string; value: string; color?: string; sub?: string; badge?: string; badgeColor?: string; title?: string }[] = [
     { label: 'Accuracy', value: `${stats.accuracy}%`, color: accuracyColor(stats.accuracy) },
     { label: 'Record', value: `${r.wins}W-${r.losses}L-${r.draws}D` },
-    { label: 'Games', value: String(stats.gamesAnalyzed) },
-    ...(trend ? [{ label: 'Rating', value: String(trend.last), badge: `${trend.delta >= 0 ? '+' : ''}${trend.delta}`, badgeColor: trend.delta >= 0 ? '#7bc47f' : '#e0796b', sub: `from ${trend.first}` }] : []),
+    ...(medRating != null ? [{ label: 'Median rating', value: String(medRating), title: 'Median of your rating across the analyzed games. The trend over time is in the Rating chart below.' }] : []),
     { label: 'Mistakes', value: String(stats.mistakeCount) },
-    { label: 'Missed wins', value: winningGames ? `${missedWins} / ${winningGames}` : '—', color: missedWins > 0 ? 'rgb(224,121,107)' : undefined, sub: winningGames ? `converted ${converted}` : undefined },
+    { label: 'Missed wins', value: winningGames ? `${missedWins} / ${winningGames}` : '—', color: missedWins > 0 ? 'rgb(224,121,107)' : undefined },
     ...(rec ? [{
       label: 'Tilt',
       value: `${tiltDelta >= 0 ? '+' : ''}${tiltDelta}%`,
       color: tiltDelta > 10 ? 'rgb(224,121,107)' : tiltDelta <= 0 ? '#7bc47f' : undefined,
-      sub: `${rec.afterPct}% vs ${rec.basePct}% normal`,
-      title: 'How much more you blunder right after a blunder. Compares your mistake rate in the 3 moves following a blunder against your normal rate. Positive = you play worse after blundering (tilt); 0 or negative = you steady yourself.',
+      title: `How much more you blunder right after a blunder: ${rec.afterPct}% mistake rate in the 3 moves following a blunder vs ${rec.basePct}% normally. Positive = you tilt; 0 or negative = you steady yourself.`,
     }] : []),
   ]
   return (
@@ -62,7 +62,7 @@ export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameS
               <div className="stat-value" style={t.color ? { color: t.color } : undefined}>{t.value}</div>
               {t.badge && <span style={{ fontSize: 13, fontWeight: 700, color: t.badgeColor }}>{t.badge}</span>}
             </div>
-            {t.sub && <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t.sub}</div>}
+            {t.sub && <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{t.sub}</div>}
             <div className="stat-label">{t.label}</div>
           </div>
         ))}

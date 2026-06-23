@@ -109,13 +109,13 @@ button:disabled { opacity: 0.45; cursor: default; }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* Summary stat tiles */
-.stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.stats { display: flex; gap: 10px; flex-wrap: wrap; }
 .stat {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 12px 16px;
-  min-width: 96px;
+  padding: 10px 12px;
+  min-width: 78px;
 }
 .stat-value { font-size: 26px; font-weight: 700; color: var(--accent); line-height: 1.1; }
 .stat-label { font-size: 12px; color: var(--muted); margin-top: 2px; }

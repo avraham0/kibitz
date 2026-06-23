@@ -68,16 +68,18 @@ function OpeningDetail({ games, onOpenGame }: { games: GameSummary[]; onOpenGame
   )
 }
 
-export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: OpeningStat[]; games?: GameSummary[]; onOpenGame?: (id: string) => void }) {
+export function OpeningsTable({ openings, games = [], onOpenGame, onPractice }: { openings: OpeningStat[]; games?: GameSummary[]; onOpenGame?: (id: string) => void; onPractice?: (family: string) => void }) {
   const [open, setOpen] = useState<number | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  const visible = showAll ? openings : openings.slice(0, 5)
   return (
     <section>
       <h2>Openings</h2>
       <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Click a row to see its games and recurring mistakes.</p>
       <table>
-        <thead><tr><th></th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Avg depth</th><th>Trend</th></tr></thead>
+        <thead><tr><th></th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Avg depth</th><th>Trend</th><th></th></tr></thead>
         <tbody>
-          {openings.map((o, i) => {
+          {visible.map((o, i) => {
             const expanded = open === i
             return (
               <Fragment key={i}>
@@ -86,10 +88,21 @@ export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: 
                   <td>{o.name}</td><td>{o.games}</td><td>{o.winPct}</td><td>{o.avgMistakes}</td>
                   <td>{avgDepth(gamesIn(games, o.name))}</td>
                   <td>{trend(gamesIn(games, o.name))}</td>
+                  <td>
+                    {onPractice && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onPractice(o.name) }}
+                        style={{ fontSize: 12, fontWeight: 700, color: '#fff', background: 'var(--accent, #4a7)', border: 'none', borderRadius: 5, padding: '4px 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        Practice →
+                      </button>
+                    )}
+                  </td>
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={7}><OpeningDetail games={gamesIn(games, o.name)} onOpenGame={onOpenGame} /></td>
+                    <td colSpan={8}><OpeningDetail games={gamesIn(games, o.name)} onOpenGame={onOpenGame} /></td>
                   </tr>
                 )}
               </Fragment>
@@ -97,6 +110,11 @@ export function OpeningsTable({ openings, games = [], onOpenGame }: { openings: 
           })}
         </tbody>
       </table>
+      {openings.length > 5 && (
+        <button type="button" onClick={() => setShowAll((v) => !v)} style={{ marginTop: 8, fontSize: 13 }}>
+          {showAll ? 'Show less' : `Show all ${openings.length}`}
+        </button>
+      )}
     </section>
   )
 }

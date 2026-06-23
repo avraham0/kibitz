@@ -11,7 +11,22 @@ export function CoachingCards({ suggestions, onPractice }: { suggestions: Sugges
           <p style={{ margin: '0 0 4px' }}>{s.why}</p>
           <p style={{ margin: 0 }}><strong>Drill:</strong> {s.drill}</p>
           {s.action && onPractice && (
-            <button type="button" style={{ marginTop: 10 }} onClick={() => onPractice(s.action!)}>
+            <button
+              type="button"
+              onClick={() => onPractice(s.action!)}
+              style={{
+                marginTop: 12,
+                padding: '8px 16px',
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#fff',
+                background: 'var(--accent, #4a7)',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+              }}
+            >
               {s.action.practice === 'opening' ? `Practice the ${s.action.family} →` : 'Practice these positions →'}
             </button>
           )}
