@@ -1,8 +1,14 @@
 import { useRef, useState, useCallback } from 'react'
 import type { AnalyzeResult } from './api-types.js'
+import { clientAnalyze, defaultSince } from './clientAnalyze.js'
+import type { AnalyzeEngine } from './settings.js'
 
 type Status = 'idle' | 'running' | 'done' | 'error'
-type StartParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string }
+type StartParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string; engine?: AnalyzeEngine }
+
+// Default browser-engine depth — lower than the server's 18 for a fast in-browser pass
+// while still deep enough to surface blunders. Quick scan overrides this to 8.
+const BROWSER_DEPTH = 12
 
 // Persist the last result so a browser refresh doesn't lose the analysis.
 // The payload is versioned so a result saved by an older build (different shape) is
@@ -31,11 +37,48 @@ export function useAnalyzeStream() {
   const [result, setResult] = useState<AnalyzeResult | null>(stored)
   const [error, setError] = useState<string | null>(null)
   const esRef = useRef<EventSource | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const resultRef = useRef<AnalyzeResult | null>(stored)
+  resultRef.current = result
 
   const start = useCallback((params: StartParams) => {
     esRef.current?.close()
+    abortRef.current?.abort()
     // Keep any previous result on screen while re-running (don't blank the dashboard).
     setStatus('running'); setProgress(null); setError(null)
+
+    // In-browser engine: run the whole pipeline client-side (no server).
+    if (params.engine === 'browser') {
+      const ac = new AbortController()
+      abortRef.current = ac
+      const nowISO = new Date().toISOString()
+      clientAnalyze(
+        {
+          user: params.user,
+          since: params.since || defaultSince(nowISO),
+          depth: params.depth ? Number(params.depth) : BROWSER_DEPTH,
+          last: params.last ? Number(params.last) : undefined,
+          nowISO,
+          variations: params.variations,
+          timeControl: params.timeControl,
+          result: (params.result as 'all' | 'win' | 'loss' | 'draw') || 'all',
+          opening: params.opening,
+        },
+        (done, total) => setProgress({ done, total }),
+        ac.signal,
+      )
+        .then((r) => {
+          if (ac.signal.aborted) return
+          setResult(r); setStatus('done'); saveStored(r)
+        })
+        .catch((err) => {
+          if (ac.signal.aborted) return // cancel() already settled the status
+          setError(String((err as Error)?.message ?? err)); setStatus('error')
+        })
+      return
+    }
+
+    // Server engine: stream from the backend over SSE.
     const q = new URLSearchParams({ user: params.user })
     if (params.last) q.set('last', params.last)
     if (params.depth) q.set('depth', params.depth)
@@ -64,9 +107,11 @@ export function useAnalyzeStream() {
   const cancel = useCallback(() => {
     esRef.current?.close() // closing the stream makes the server abort the run
     esRef.current = null
-    setStatus(result ? 'done' : 'idle')
+    abortRef.current?.abort() // stops the in-browser pipeline
+    abortRef.current = null
+    setStatus(resultRef.current ? 'done' : 'idle')
     setProgress(null)
-  }, [result])
+  }, [])
 
   return { status, progress, result, error, start, cancel }
 }

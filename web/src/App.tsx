@@ -9,8 +9,6 @@ import { SettingsContext, loadSettings, saveSettings, type Settings } from './se
 
 export default function App() {
   const { status, progress, result, error, start, cancel } = useAnalyzeStream()
-  const lastOptsRef = useRef<Parameters<typeof start>[0] | null>(null)
-  function startAndSave(opts: Parameters<typeof start>[0]) { lastOptsRef.current = opts; start(opts) }
 
   const [settings, setSettingsState] = useState(() => {
     const s = loadSettings()
@@ -20,6 +18,13 @@ export default function App() {
   function setSettings(s: Settings) {
     setSettingsState(s)
     saveSettings(s)
+  }
+
+  const lastOptsRef = useRef<Parameters<typeof start>[0] | null>(null)
+  function startAndSave(opts: Parameters<typeof start>[0]) {
+    const withEngine = { ...opts, engine: settings.analyzeEngine }
+    lastOptsRef.current = withEngine
+    start(withEngine)
   }
 
   return (

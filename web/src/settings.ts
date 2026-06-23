@@ -14,9 +14,11 @@ export const BOARD_THEMES: Record<BoardTheme, { name: string } & BoardColors> = 
   purple:  { name: 'Purple',   light: { background: '#e8d8f0' }, dark: { background: '#8860a8' } },
 }
 
-export type Settings = { colorTheme: ColorTheme; boardTheme: BoardTheme }
+export type AnalyzeEngine = 'browser' | 'server'
 
-export const DEFAULT_SETTINGS: Settings = { colorTheme: 'dark', boardTheme: 'classic' }
+export type Settings = { colorTheme: ColorTheme; boardTheme: BoardTheme; analyzeEngine: AnalyzeEngine }
+
+export const DEFAULT_SETTINGS: Settings = { colorTheme: 'dark', boardTheme: 'classic', analyzeEngine: 'browser' }
 
 export function loadSettings(): Settings {
   try {
