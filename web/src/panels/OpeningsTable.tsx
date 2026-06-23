@@ -2,16 +2,6 @@ import { useState, Fragment } from 'react'
 import type { OpeningStat, GameSummary } from '../api-types.js'
 import { accuracyColor } from '../accuracyColor.js'
 
-function avgDepth(gs: GameSummary[]): string {
-  const depths: number[] = []
-  for (const g of gs) {
-    const m = g.moves.find((mv) => mv.isPlayerMove && mv.phase === 'middlegame')
-    if (m) depths.push(Math.ceil(m.ply / 2))
-  }
-  if (depths.length === 0) return '—'
-  return `move ${Math.round(depths.reduce((a, b) => a + b, 0) / depths.length)}`
-}
-
 function trend(gs: GameSummary[]): string {
   if (gs.length < 4) return '—'
   const sorted = [...gs].sort((a, b) => a.playedAt.localeCompare(b.playedAt))
@@ -77,7 +67,7 @@ export function OpeningsTable({ openings, games = [], onOpenGame, onPractice }: 
       <h2>Openings</h2>
       <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Click a row to see its games and recurring mistakes.</p>
       <table>
-        <thead><tr><th></th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Avg depth</th><th>Trend</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Opening</th><th>Games</th><th>Win %</th><th>Avg mistakes</th><th>Trend</th><th></th></tr></thead>
         <tbody>
           {visible.map((o, i) => {
             const expanded = open === i
@@ -86,7 +76,6 @@ export function OpeningsTable({ openings, games = [], onOpenGame, onPractice }: 
                 <tr style={{ cursor: 'pointer' }} onClick={() => setOpen(expanded ? null : i)}>
                   <td>{expanded ? '▾' : '▸'}</td>
                   <td>{o.name}</td><td>{o.games}</td><td>{o.winPct}</td><td>{o.avgMistakes}</td>
-                  <td>{avgDepth(gamesIn(games, o.name))}</td>
                   <td>{trend(gamesIn(games, o.name))}</td>
                   <td>
                     {onPractice && (
@@ -102,7 +91,7 @@ export function OpeningsTable({ openings, games = [], onOpenGame, onPractice }: 
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={8}><OpeningDetail games={gamesIn(games, o.name)} onOpenGame={onOpenGame} /></td>
+                    <td colSpan={7}><OpeningDetail games={gamesIn(games, o.name)} onOpenGame={onOpenGame} /></td>
                   </tr>
                 )}
               </Fragment>

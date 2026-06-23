@@ -16,11 +16,12 @@ import { RatingChart } from './panels/RatingChart.js'
 import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
 import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
 import { PracticeTab } from './panels/PracticeTab.js'
-import { MasteryTab } from './panels/MasteryTab.js'
+// Mastery tab hidden for now — keep the import/code for easy re-enable.
+// import { MasteryTab } from './panels/MasteryTab.js'
 import { recomputeStats } from './recomputeStats.js'
 import { coach } from './coach.js'
 
-type Tab = 'overview' | 'blunders' | 'practice' | 'review' | 'mastery'
+type Tab = 'overview' | 'blunders' | 'practice' | 'stats' | 'review' | 'mastery'
 
 export function Dashboard({ result }: { result: AnalyzeResult }) {
   const { stats, suggestions, games } = result
@@ -46,8 +47,9 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
     { id: 'overview', label: 'Overview' },
     { id: 'blunders', label: 'Blunders' },
     { id: 'practice', label: 'Practice' },
+    { id: 'stats', label: 'Stats' },
     { id: 'review', label: 'Game review' },
-    { id: 'mastery', label: 'Mastery' },
+    // { id: 'mastery', label: 'Mastery' },
   ]
   return (
     <div>
@@ -72,12 +74,16 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
             <HangFrequency games={filteredGames} onPractice={startPractice} />
           </div>
           <CoachingCards suggestions={filteredSuggestions} onPractice={startPractice} />
+          <OpeningRecommendations stats={filteredStats} />
+          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} onPractice={(family) => startPractice({ practice: 'opening', family })} />
+        </>
+      )}
+      {tab === 'stats' && (
+        <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, alignItems: 'start' }}>
             <ProgressChart games={filteredGames} />
             <RatingChart games={filteredGames} />
           </div>
-          <OpeningRecommendations stats={filteredStats} />
-          <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} onPractice={(family) => startPractice({ practice: 'opening', family })} />
           <MistakeTypesChart stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
             <PhaseChart stats={filteredStats} />
@@ -93,7 +99,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       {tab === 'blunders' && <BlunderList blunders={filteredStats.topBlunders} games={filteredGames} onOpenGame={openGame} />}
       {tab === 'practice' && <PracticeTab games={filteredGames} openings={filteredStats.openings} focus={practiceFocus} />}
       {tab === 'review' && <GameReview games={filteredGames} focus={focus} />}
-      {tab === 'mastery' && <MasteryTab games={filteredGames} onOpenGame={openGame} />}
+      {/* {tab === 'mastery' && <MasteryTab games={filteredGames} onOpenGame={openGame} />} */}
     </div>
   )
 }

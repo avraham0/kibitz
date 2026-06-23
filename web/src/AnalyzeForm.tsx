@@ -54,9 +54,6 @@ export function AnalyzeForm({ onSubmit, disabled }: { onSubmit: (p: FormParams) 
       /></label>
       <button type="submit" disabled={disabled || !user.trim()} style={{ marginLeft: 'auto' }}>Analyze</button>
       <button type="button" onClick={quickScan} disabled={disabled || !user.trim()} title="last 50 games — a fast, shallow pass">Quick scan</button>
-      <div style={{ flexBasis: '100%', fontSize: 12, color: 'var(--muted)' }}>
-        <em>last N</em> keeps the most recent N games. <strong>Quick scan</strong> = last 50, a fast shallow pass.
-      </div>
     </form>
   )
 }
