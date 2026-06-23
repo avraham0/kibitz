@@ -36,21 +36,28 @@ export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameS
   const missedWins = winningGames - converted
   const rec = blunderRecovery(games)
   const trend = ratingTrend(games)
-  const tiles: { label: string; value: string; color?: string; sub?: string; badge?: string; badgeColor?: string }[] = [
+  const tiltDelta = rec ? rec.afterPct - rec.basePct : 0
+  const tiles: { label: string; value: string; color?: string; sub?: string; badge?: string; badgeColor?: string; title?: string }[] = [
     { label: 'Accuracy', value: `${stats.accuracy}%`, color: accuracyColor(stats.accuracy) },
     { label: 'Record', value: `${r.wins}W-${r.losses}L-${r.draws}D` },
     { label: 'Games', value: String(stats.gamesAnalyzed) },
     ...(trend ? [{ label: 'Rating', value: String(trend.last), badge: `${trend.delta >= 0 ? '+' : ''}${trend.delta}`, badgeColor: trend.delta >= 0 ? '#7bc47f' : '#e0796b', sub: `from ${trend.first}` }] : []),
     { label: 'Mistakes', value: String(stats.mistakeCount) },
     { label: 'Missed wins', value: winningGames ? `${missedWins} / ${winningGames}` : '—', color: missedWins > 0 ? 'rgb(224,121,107)' : undefined, sub: winningGames ? `converted ${converted}` : undefined },
-    ...(rec ? [{ label: 'After blunder', value: `${rec.afterPct}%`, color: rec.afterPct > rec.basePct + 10 ? 'rgb(224,121,107)' : undefined, sub: `baseline ${rec.basePct}%` }] : []),
+    ...(rec ? [{
+      label: 'Tilt',
+      value: `${tiltDelta >= 0 ? '+' : ''}${tiltDelta}%`,
+      color: tiltDelta > 10 ? 'rgb(224,121,107)' : tiltDelta <= 0 ? '#7bc47f' : undefined,
+      sub: `${rec.afterPct}% vs ${rec.basePct}% normal`,
+      title: 'How much more you blunder right after a blunder. Compares your mistake rate in the 3 moves following a blunder against your normal rate. Positive = you play worse after blundering (tilt); 0 or negative = you steady yourself.',
+    }] : []),
   ]
   return (
     <section>
       <h2>Summary</h2>
       <div className="stats">
         {tiles.map((t) => (
-          <div className="stat" key={t.label}>
+          <div className="stat" key={t.label} title={t.title} style={t.title ? { cursor: 'help' } : undefined}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <div className="stat-value" style={t.color ? { color: t.color } : undefined}>{t.value}</div>
               {t.badge && <span style={{ fontSize: 13, fontWeight: 700, color: t.badgeColor }}>{t.badge}</span>}
