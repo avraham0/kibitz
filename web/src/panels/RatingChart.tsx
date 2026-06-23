@@ -11,7 +11,7 @@ export function RatingChart({ games }: { games: GameSummary[] }) {
   if (sorted.length < 3) return null
 
   const trend = linearTrend(sorted.map((g) => g.playerRating as number))
-  const pts = sorted.map((g, i) => ({ date: g.playedAt.slice(0, 10), rating: g.playerRating as number, trend: Math.round(trend[i]) }))
+  const pts = sorted.map((g, i) => ({ i, date: g.playedAt.slice(0, 10), rating: g.playerRating as number, trend: Math.round(trend[i]) }))
 
   return (
     <section>
@@ -20,11 +20,15 @@ export function RatingChart({ games }: { games: GameSummary[] }) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={pts}>
             <CartesianGrid stroke={GRID} vertical={false} />
-            <XAxis dataKey="date" tick={AXIS.tick} stroke={AXIS.stroke} interval="preserveStartEnd" />
+            <XAxis dataKey="i" type="number" domain={[0, pts.length - 1]} tick={false} stroke={AXIS.stroke} height={8} />
             <YAxis tick={AXIS.tick} stroke={AXIS.stroke} domain={['auto', 'auto']} />
-            <Tooltip {...TOOLTIP} formatter={((v: number, name: string) => [v, name === 'trend' ? 'trend' : 'rating']) as any} />
-            <Line type="monotone" dataKey="rating" stroke="#7bc47f" strokeWidth={2} dot={false} isAnimationActive={false} name="rating" />
-            <Line type="monotone" dataKey="trend" stroke="#7bc47f" strokeWidth={1.5} strokeDasharray="5 3" dot={false} isAnimationActive={false} name="trend" />
+            <Tooltip
+              {...TOOLTIP}
+              labelFormatter={((i: number) => pts[i]?.date ?? '') as any}
+              formatter={((v: number, name: string) => [v, name === 'trend' ? 'trend' : 'rating']) as any}
+            />
+            <Line type="monotone" dataKey="rating" stroke="#7bc47f" strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} name="rating" />
+            <Line type="monotone" dataKey="trend" stroke="#7bc47f" strokeWidth={1.5} strokeDasharray="5 3" dot={false} activeDot={false} isAnimationActive={false} name="trend" />
           </LineChart>
         </ResponsiveContainer>
       </div>
