@@ -37,7 +37,7 @@ export default function App() {
         <main style={{ maxWidth: 640, margin: '0 auto', padding: '72px 16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, textAlign: 'left' }}>
           <KibitzLogo />
           <p style={{ color: 'var(--muted)', fontSize: 15, margin: 0, maxWidth: 460 }}>
-            Review your chess.com games — find your biggest mistakes and turn them into drills.
+            Find your biggest mistakes and turn them into drills.
           </p>
           <AnalyzeForm hero onSubmit={startAndSave} disabled={running} />
           {running && (

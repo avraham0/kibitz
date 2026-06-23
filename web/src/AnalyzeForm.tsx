@@ -9,7 +9,7 @@ const linkBtn: CSSProperties = {
 
 export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p: FormParams) => void; disabled: boolean; hero?: boolean }) {
   const [user, setUser] = useState('avraham00')
-  const [last, setLast] = useState('50')
+  const [last, setLast] = useState('100')
   const [timeControl, setTimeControl] = useState('')
   const [result, setResult] = useState('all')
   const [opening, setOpening] = useState('')
