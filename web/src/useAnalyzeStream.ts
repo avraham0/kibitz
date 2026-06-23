@@ -113,5 +113,13 @@ export function useAnalyzeStream() {
     setProgress(null)
   }, [])
 
-  return { status, progress, result, error, start, cancel }
+  // Clear the result (and its cached copy) and return to the landing/hero state.
+  const reset = useCallback(() => {
+    esRef.current?.close(); esRef.current = null
+    abortRef.current?.abort(); abortRef.current = null
+    try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
+    setResult(null); setStatus('idle'); setProgress(null); setError(null)
+  }, [])
+
+  return { status, progress, result, error, start, cancel, reset }
 }

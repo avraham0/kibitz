@@ -8,7 +8,7 @@ import { SettingsPanel } from './SettingsPanel.js'
 import { SettingsContext, loadSettings, saveSettings, type Settings } from './settings.js'
 
 export default function App() {
-  const { status, progress, result, error, start, cancel } = useAnalyzeStream()
+  const { status, progress, result, error, start, cancel, reset } = useAnalyzeStream()
 
   const [settings, setSettingsState] = useState(() => {
     const s = loadSettings()
@@ -27,15 +27,56 @@ export default function App() {
     start(withEngine)
   }
 
+  const running = status === 'running'
+
+  // Landing: before there's any result, show only the hero — brand, one-line value
+  // prop, and the single action (username + Analyze). Nothing else.
+  if (!result) {
+    return (
+      <SettingsContext.Provider value={{ settings, setSettings }}>
+        <main style={{ maxWidth: 640, margin: '0 auto', padding: '72px 16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 18, textAlign: 'left' }}>
+          <KibitzLogo />
+          <p style={{ color: 'var(--muted)', fontSize: 15, margin: 0, maxWidth: 460 }}>
+            Review your chess.com games — find your biggest mistakes and turn them into drills.
+          </p>
+          <AnalyzeForm hero onSubmit={startAndSave} disabled={running} />
+          {running && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', width: 'min(520px, 100%)' }}>
+              {progress ? <ProgressBar done={progress.done} total={progress.total} /> : <span>Starting analysis…</span>}
+              <button type="button" onClick={cancel}>Cancel</button>
+            </div>
+          )}
+          {status === 'error' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <p style={{ color: '#e0796b', margin: 0 }}>Error: {error}</p>
+              {lastOptsRef.current && <button type="button" onClick={() => start(lastOptsRef.current!)}>Try again</button>}
+            </div>
+          )}
+        </main>
+      </SettingsContext.Provider>
+    )
+  }
+
+  // Results view: compact header + form, then the dashboard.
   return (
     <SettingsContext.Provider value={{ settings, setSettings }}>
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
         <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 18px' }}>
           <KibitzLogo />
-          <SettingsPanel />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <SettingsPanel />
+            <button
+              type="button"
+              onClick={reset}
+              title="New analysis"
+              style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '4px 6px', borderRadius: 7 }}
+            >
+              ×
+            </button>
+          </div>
         </header>
-        <AnalyzeForm onSubmit={startAndSave} disabled={status === 'running'} />
-        {status === 'running' && (
+        <AnalyzeForm onSubmit={startAndSave} disabled={running} />
+        {running && (
           <>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '12px 0' }}>
               <div style={{ flex: 1 }}>
@@ -56,12 +97,10 @@ export default function App() {
             {lastOptsRef.current && <button type="button" onClick={() => start(lastOptsRef.current!)}>Try again</button>}
           </div>
         )}
-        {result && (
-          <div className={status === 'running' ? 'loading-content' : undefined}>
-            <Dashboard result={result} />
-          </div>
-        )}
-        {status === 'running' && (
+        <div className={running ? 'loading-content' : undefined}>
+          <Dashboard result={result} />
+        </div>
+        {running && (
           <div className="loading-overlay">
             <div className="loading-spinner" />
             <span className="loading-label">

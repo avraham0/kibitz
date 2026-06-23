@@ -5,16 +5,16 @@ import { AnalyzeForm } from './AnalyzeForm.js'
 describe('AnalyzeForm', () => {
   it('prefills the default username', () => {
     render(<AnalyzeForm onSubmit={vi.fn()} disabled={false} />)
-    expect((screen.getByPlaceholderText('username') as HTMLInputElement).value).toBe('avraham00')
+    expect((screen.getByPlaceholderText(/username/i) as HTMLInputElement).value).toBe('avraham00')
   })
 
   it('submits trimmed params and blocks empty username', () => {
     const onSubmit = vi.fn()
     render(<AnalyzeForm onSubmit={onSubmit} disabled={false} />)
-    fireEvent.change(screen.getByPlaceholderText('username'), { target: { value: '' } })
+    fireEvent.change(screen.getByPlaceholderText(/username/i), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
     expect(onSubmit).not.toHaveBeenCalled() // empty username
-    fireEvent.change(screen.getByPlaceholderText('username'), { target: { value: ' bob ' } })
+    fireEvent.change(screen.getByPlaceholderText(/username/i), { target: { value: ' bob ' } })
     fireEvent.click(screen.getByRole('button', { name: /analyze/i }))
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ user: 'bob', result: 'all' }))
   })
