@@ -15,24 +15,6 @@ const TYPE_LABEL: Record<CoachableType, string> = {
   discovered_attack: 'discovered attack', trapped_piece: 'trapped piece', back_rank: 'back rank',
 }
 
-function PatternBreakdown({ blunders }: { blunders: BlunderRef[] }) {
-  const counts: Partial<Record<CoachableType, number>> = {}
-  for (const b of blunders) {
-    if (b.type !== 'lost_position') counts[b.type as CoachableType] = (counts[b.type as CoachableType] ?? 0) + 1
-  }
-  const sorted = (Object.entries(counts) as [CoachableType, number][]).sort((a, b) => b[1] - a[1]).slice(0, 5)
-  if (sorted.length === 0) return null
-  return (
-    <div style={{ display: 'flex', gap: '6px 14px', flexWrap: 'wrap', fontSize: 12, marginBottom: 18 }}>
-      {sorted.map(([type, count]) => (
-        <span key={type} style={{ color: 'var(--muted)' }}>
-          <span style={{ fontWeight: 600, color: 'rgb(224,121,107)' }}>{count}×</span> {TYPE_LABEL[type] ?? type}
-        </span>
-      ))}
-    </div>
-  )
-}
-
 export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { games: GameSummary[]; initialTypeFilter?: CoachableType; initialHungPiece?: string }) {
   const blunders = useMemo((): BlunderRef[] => {
     const result: BlunderRef[] = []
@@ -55,6 +37,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
   const [epoch, setEpoch] = useState(0)
   const [puzzleState, setPuzzleState] = useState<PuzzleState>({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
   const [forceReveal, setForceReveal] = useState(false)
+  const [reviewIdx, setReviewIdx] = useState<number | null>(null)
   const [openingFilter, setOpeningFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>(initialTypeFilter ?? 'all')
   const [hungPieceFilter, setHungPieceFilter] = useState<string | undefined>(initialHungPiece)
@@ -105,10 +88,22 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
   const key = b ? puzzleKey(b) : ''
 
   function advance() {
-    const next = Math.min(queue.length - 1, idx + 1)
-    setCur(next)
+    setCur(Math.min(queue.length - 1, idx + 1))
     setEpoch((e) => e + 1)
     setPuzzleAnswered(false)
+    setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
+    setForceReveal(false)
+  }
+  function goPrev() {
+    setCur((c) => Math.max(0, c - 1))
+    setEpoch((e) => e + 1)
+    setPuzzleAnswered(false)
+    setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
+    setForceReveal(false)
+  }
+  // Reset the current puzzle in place (clears solved/revealed/committed via remount).
+  function resetPuzzle() {
+    setEpoch((e) => e + 1)
     setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
     setForceReveal(false)
   }
@@ -134,20 +129,25 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleState.revealed])
 
-  // Enter / → to advance after puzzle is answered
+  // Reset the step cursor when the shown puzzle changes.
+  useEffect(() => { setReviewIdx(null) }, [key, epoch])
+
+  // Once answered, ← / → step the pieces through the game line on the board.
+  // Enter advances to the next puzzle.
   useEffect(() => {
+    const reviewing = puzzleState.solved || puzzleState.revealed
+    const reviewLen = puzzleState.reviewLen ?? 1
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement
       if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return
-      if ((e.key === 'Enter' || e.key === 'ArrowRight') && puzzleAnswered && idx < queue.length - 1) {
-        e.preventDefault()
-        advance()
-      }
+      if (e.key === 'ArrowLeft' && reviewing) { e.preventDefault(); setReviewIdx((i) => Math.max(0, (i ?? 0) - 1)) }
+      else if (e.key === 'ArrowRight' && reviewing) { e.preventDefault(); setReviewIdx((i) => Math.min(reviewLen - 1, (i ?? 0) + 1)) }
+      else if (e.key === 'Enter' && puzzleAnswered && idx < queue.length - 1) { e.preventDefault(); advance() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [puzzleAnswered, idx, queue.length])
+  }, [puzzleState.solved, puzzleState.revealed, puzzleState.reviewLen, puzzleAnswered, idx, queue.length])
 
   if (blunders.length === 0) {
     return (
@@ -177,7 +177,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
     )
   }
 
-  const wrongCount = srs[key]?.wrongCount ?? 0
   const sideToMove = b.fenBefore.split(' ')[1]
   const colorLabel = sideToMove === 'w' ? '♙ White' : '♟ Black'
 
@@ -205,7 +204,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
           </select>
         </div>
       </div>
-      {typeFilter === 'all' && !hungPieceFilter && <PatternBreakdown blunders={blunders} />}
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
@@ -215,37 +213,30 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
             Move {Math.ceil(b.ply / 2)} · {b.type.replace(/_/g, ' ')} · −{b.cpLoss}cp
             {b.openingName && <> · {b.openingName}</>}
           </div>
-          <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} />
+          <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} reviewIdx={reviewIdx} />
         </div>
         <div style={{ minWidth: 200 }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 4 }}>
             {idx + 1} / {queue.length} blunders
           </div>
-          {wrongCount > 0 && (
-            <div style={{ fontSize: 12, color: 'rgb(224,121,107)', marginBottom: 12 }}>
-              failed {wrongCount}× across sessions
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-            <button type="button" onClick={() => { setCur((c) => Math.max(0, c - 1)); setEpoch((e) => e + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} disabled={idx === 0}>‹ prev</button>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button type="button" onClick={goPrev} disabled={idx === 0}>‹ prev</button>
             <button type="button" onClick={advance} disabled={idx >= queue.length - 1}>next ›</button>
+            {(puzzleState.solved || puzzleState.revealed) && (
+              <button type="button" onClick={resetPuzzle}>reset</button>
+            )}
+            {!puzzleState.solved && !puzzleState.revealed && puzzleState.committed && (
+              <button type="button" onClick={resetPuzzle}>try again</button>
+            )}
+            {!puzzleState.solved && !puzzleState.revealed && (
+              <button type="button" onClick={() => setForceReveal(true)}>reveal</button>
+            )}
           </div>
           <div style={{ marginBottom: 16 }}>
             <PuzzleFeedback state={puzzleState} blunder={b} />
-            {(puzzleState.solved || puzzleState.revealed) && (
-              <button type="button" style={{ marginTop: 8, fontSize: 13 }} onClick={() => { setEpoch((e) => e + 1); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }}>reset</button>
-            )}
-            {!puzzleState.solved && !puzzleState.revealed && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                {puzzleState.committed && (
-                  <button type="button" style={{ fontSize: 13 }} onClick={() => { setEpoch((e) => e + 1); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }}>try again</button>
-                )}
-                <button type="button" style={{ fontSize: 13 }} onClick={() => setForceReveal(true)}>reveal</button>
-              </div>
-            )}
           </div>
           {b.url && <div style={{ marginBottom: 12 }}><a href={b.url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>game ↗</a></div>}
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Enter / → to advance</div>
+          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Enter: next puzzle{(puzzleState.solved || puzzleState.revealed) && (puzzleState.reviewLen ?? 1) > 1 ? ' · ← → step the line' : ''}</div>
         </div>
       </div>
     </section>

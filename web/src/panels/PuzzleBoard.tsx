@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Chess } from 'chess.js'
 import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import type { Arrow } from '../ThemedBoard.js'
@@ -8,7 +8,7 @@ import { orientationFromFen } from '../orientationFromFen.js'
 import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 import { explainBlunder, explainWrongMove } from '../explainBlunder.js'
 
-export type PuzzleState = { solved: boolean; revealed: boolean; wrong: number; lastWrongSan: string | null; committed?: boolean }
+export type PuzzleState = { solved: boolean; revealed: boolean; wrong: number; lastWrongSan: string | null; committed?: boolean; reviewLen?: number }
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
@@ -22,21 +22,11 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
         <>
           <div style={{ color: '#6c6', fontWeight: 600 }}>✓ Solved — {blunder.bestSan}</div>
           <div style={{ color: 'var(--muted)', marginTop: 3 }}>{explainBlunder(blunder)}</div>
-          {blunder.movesAfter?.length > 0 && (
-            <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 12 }}>
-              Game continued: {blunder.movesAfter.join(' ')}
-            </div>
-          )}
         </>
       ) : revealed ? (
         <>
           <div>Best was <strong>{blunder.bestSan}</strong></div>
           <div style={{ color: 'var(--muted)', marginTop: 3 }}>{explainBlunder(blunder)}</div>
-          {blunder.movesAfter?.length > 0 && (
-            <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 12 }}>
-              Game continued: {blunder.movesAfter.join(' ')}
-            </div>
-          )}
         </>
       ) : committed && lastWrongSan ? (
         <>
@@ -44,7 +34,6 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
           <div style={{ color: 'rgb(224,121,107)', marginTop: 3 }}>
             {explainWrongMove(blunder.fenBefore, lastWrongSan, blunder)}
           </div>
-          <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 12 }}>Try again to find the best move.</div>
         </>
       ) : (
         <>
@@ -72,16 +61,27 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
 // onResult fires once per puzzle: true when solved, false when the answer is revealed
 // (i.e. given up). Used to drive the solved counter and spaced-repetition scheduling.
 export function PuzzleBoard({
-  blunder, onResult, boardWidth = 260, onStateChange, forceReveal,
+  blunder, onResult, boardWidth = 260, onStateChange, forceReveal, reviewIdx = null,
 }: {
   blunder: BlunderRef
   onResult?: (correct: boolean) => void
   boardWidth?: number
   onStateChange?: (state: PuzzleState) => void
   forceReveal?: boolean
+  reviewIdx?: number | null
 }) {
   const best = sanToSquares(blunder.fenBefore, blunder.bestSan)
   const bad = sanToSquares(blunder.fenBefore, blunder.san)
+  // The game line from the puzzle position: the move played, then what followed.
+  // ← / → step through it (driven by the parent) once the puzzle is answered.
+  const reviewLine = useMemo(() => {
+    const positions = [blunder.fenBefore]
+    const c = new Chess(blunder.fenBefore)
+    for (const san of [blunder.san, ...(blunder.movesAfter ?? [])]) {
+      try { c.move(san); positions.push(c.fen()) } catch { break }
+    }
+    return positions
+  }, [blunder])
   const [position, setPosition] = useState(blunder.fenBefore)
   const [solved, setSolved] = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -91,9 +91,17 @@ export function PuzzleBoard({
   // the player resets — they see the consequence of their mistake.
   const [committed, setCommitted] = useState(false)
 
-  const state: PuzzleState = { solved, revealed, wrong, lastWrongSan, committed }
-  useEffect(() => { onStateChange?.(state) }, [solved, revealed, wrong, lastWrongSan, committed]) // eslint-disable-line react-hooks/exhaustive-deps
+  const state: PuzzleState = { solved, revealed, wrong, lastWrongSan, committed, reviewLen: reviewLine.length }
+  useEffect(() => { onStateChange?.(state) }, [solved, revealed, wrong, lastWrongSan, committed, reviewLine.length]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (forceReveal) reveal() }, [forceReveal]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Only swap to the step view once answered AND the parent has engaged stepping
+  // (reviewIdx != null). Pre-answer the board stays exactly as before, so dragging
+  // is unaffected.
+  const reviewing = solved || revealed
+  const stepping = reviewing && reviewIdx != null
+  const ri = Math.min(Math.max(0, reviewIdx ?? 0), reviewLine.length - 1)
+  const boardPosition = stepping ? reviewLine[ri] : position
 
   function onDrop(from: string, to: string): boolean {
     if (solved || revealed || committed) return false
@@ -138,8 +146,8 @@ export function PuzzleBoard({
   }
 
   // Don't reveal the played blunder upfront — only show it (and the best move) as
-  // context once the puzzle is solved or revealed.
-  const arrows: Arrow[] = (solved || revealed) ? [
+  // context once answered. Clear the arrows once the player steps into the line.
+  const arrows: Arrow[] = (reviewing && (!stepping || ri === 0)) ? [
     ...(bad ? [[bad.from as Arrow[0], bad.to as Arrow[1], 'rgb(200,60,60)'] as Arrow] : []),
     ...(best ? [[best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'] as Arrow] : []),
   ] : []
@@ -147,7 +155,7 @@ export function PuzzleBoard({
   return (
     <div style={{ width: boardWidth }}>
       <Chessboard
-        position={position}
+        position={boardPosition}
         boardOrientation={orientationFromFen(blunder.fenBefore)}
         arePiecesDraggable={!solved && !revealed && !committed}
         onPieceDrop={(s, t) => onDrop(s, t)}
