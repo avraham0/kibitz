@@ -13,7 +13,6 @@ import { ProgressChart } from './panels/ProgressChart.js'
 import { HangFrequency } from './panels/HangFrequency.js'
 import { MoveQualityChart } from './panels/MoveQualityChart.js'
 import { RatingChart } from './panels/RatingChart.js'
-import { BestGames } from './panels/BestGames.js'
 import { OpeningRecommendations } from './panels/OpeningRecommendations.js'
 import { ClockAccuracyChart } from './panels/ClockAccuracyChart.js'
 import { PracticeTab } from './panels/PracticeTab.js'
@@ -77,7 +76,6 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
             <ProgressChart games={filteredGames} />
             <RatingChart games={filteredGames} />
           </div>
-          <BestGames games={filteredGames} onOpenGame={openGame} />
           <OpeningRecommendations stats={filteredStats} />
           <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} onPractice={(family) => startPractice({ practice: 'opening', family })} />
           <MistakeTypesChart stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
