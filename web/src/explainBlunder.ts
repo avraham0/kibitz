@@ -129,7 +129,7 @@ export function explainWrongMove(fenBefore: string, wrongSan: string, blunder: E
   const hung = hangingAfter(fenBefore, wrongSan)
   if (hung) return `${wrongSan} hangs your ${PIECE_NAME[hung.piece] ?? 'piece'}.`
   if (blunder.missed) return `${wrongSan} doesn't win material — there's a stronger shot.`
-  return `${wrongSan} doesn't stop the threat.`
+  return `${wrongSan} isn't the best move here.`
 }
 
 // Plain-language reason a move was a mistake, from the classified type + whether the
