@@ -21,7 +21,7 @@ export function HangFrequency({ games, onPractice }: {
   if (rows.length === 0) return null
 
   return (
-    <section>
+    <section style={{ flex: '1 1 280px', minWidth: 0 }}>
       <h2>Pieces hung</h2>
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 8 }}>
         {rows.map(([piece, count]) => {

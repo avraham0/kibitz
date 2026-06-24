@@ -69,7 +69,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
 
       {tab === 'overview' && (
         <>
-          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0 24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 700px', minWidth: 0 }}><SummaryCard stats={filteredStats} games={filteredGames} /></div>
             <HangFrequency games={filteredGames} onPractice={startPractice} />
           </div>
