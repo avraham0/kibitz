@@ -31,6 +31,12 @@ jobs:
       - name: Install web dependencies
         working-directory: web
         run: npm ci
+      # The engine .wasm is gitignored, so copy it (and its matching .js) from the
+      # installed stockfish package into public/ before building.
+      - name: Stage Stockfish engine into public/
+        run: |
+          cp web/node_modules/stockfish/bin/stockfish-18-lite-single.js web/public/stockfish.js
+          cp web/node_modules/stockfish/bin/stockfish-18-lite-single.wasm web/public/stockfish.wasm
       # vite build (esbuild) — skips full tsc typecheck, which needs @types/node from
       # the hoisted root install that isn't present in this web-only CI install.
       - name: Build (GitHub Pages base path)
