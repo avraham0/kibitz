@@ -7,7 +7,7 @@ import type { GameSummary, GameMove } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 import { accuracyColor } from '../accuracyColor.js'
-import { soundForSan, playMoveSound, SOUND_KEY } from '../sound.js'
+import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 import { explainBlunder } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 import { EvalBar } from './EvalBar.js'
@@ -76,11 +76,6 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   const prev = useCallback(() => setPly((p) => Math.max(0, p - 1)), [])
   const next = useCallback(() => setPly((p) => Math.min(maxPly, p + 1)), [maxPly])
 
-  const [soundOn, setSoundOn] = useState<boolean>(() => {
-    try { return localStorage.getItem(SOUND_KEY) !== '0' } catch { return true }
-  })
-  const soundOnRef = useRef(soundOn)
-  soundOnRef.current = soundOn
   const firstRef = useRef(true)
   const suppressSoundRef = useRef(false)
 
@@ -137,21 +132,12 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
     setPlaying((v) => !v)
   }
 
-  function toggleSound() {
-    setSoundOn((v) => {
-      const nv = !v
-      try { localStorage.setItem(SOUND_KEY, nv ? '1' : '0') } catch { /* unavailable */ }
-      if (nv) playMoveSound('move') // sample + unlocks audio on this gesture
-      return nv
-    })
-  }
-
   // Play a move sound whenever the position changes (step, jump, or game switch).
   // The board shows the current move as played, so sound that same move.
   useEffect(() => {
     if (firstRef.current) { firstRef.current = false; return }
     if (suppressSoundRef.current) { suppressSoundRef.current = false; return }
-    if (!soundOnRef.current) return
+    if (!soundEnabled()) return
     const m = moves[Math.min(ply, maxPly)]
     if (m) playMoveSound(soundForSan(m.san))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -202,7 +188,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
       const mv = c.move({ from, to, promotion: 'q' })
       if (!mv) return false
       setExplore((e) => ({ fen: c.fen(), n: (e?.n ?? 0) + 1 }))
-      if (soundOnRef.current) playMoveSound(soundForSan(mv.san))
+      if (soundEnabled()) playMoveSound(soundForSan(mv.san))
       return true
     } catch {
       return false
@@ -286,7 +272,6 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                 <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={togglePlay} title="autoplay">{playing ? '⏸' : '▶'}</button>
                 <button type="button" style={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={next} disabled={idx >= moves.length - 1}>next ›</button>
                 <button type="button" style={{ flexShrink: 0 }} onClick={() => setFlipped((f) => !f)} title="flip board" aria-label="flip board">⇅</button>
-                <button type="button" style={{ flexShrink: 0 }} onClick={toggleSound} title={soundOn ? 'mute move sounds' : 'enable move sounds'} aria-label="toggle move sounds">{soundOn ? '🔊' : '🔇'}</button>
               </div>
               <div style={{ fontSize: 13 }}>
                 {cur?.san} · {cur?.phase}

@@ -8,6 +8,9 @@ export const SOUND_KEY = 'kibitz:sound'
 export function soundEnabled(): boolean {
   try { return localStorage.getItem(SOUND_KEY) !== '0' } catch { return true }
 }
+export function setSoundEnabled(on: boolean): void {
+  try { localStorage.setItem(SOUND_KEY, on ? '1' : '0') } catch { /* unavailable */ }
+}
 
 export function soundForSan(san: string): MoveSound {
   return san.includes('x') ? 'capture' : 'move'

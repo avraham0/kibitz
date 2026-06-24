@@ -6,6 +6,7 @@ import { buildTree } from '../openingTree.js'
 import { useStockfishEval, getBestMove } from '../useStockfish.js'
 import { EvalBar } from './EvalBar.js'
 import { useBoardSize } from '../useBoardSize.js'
+import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const BOARD_SIZE = 380 // match the puzzles board
@@ -103,6 +104,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
         const best = Object.entries(moves).sort((a, b) => b[1].count - a[1].count)[0]
         if (best && best[1].fenAfter) {
           pushStep(best[1].fenAfter, appendPgn(currentPgn, best[0], currentHalfMove), currentHalfMove + 1)
+          if (soundEnabled()) playMoveSound(soundForSan(best[0]))
           setWaiting(false)
           return
         }
@@ -114,7 +116,10 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
         try {
           const c = new Chess(currentFen)
           const mv = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: (uci[4] as 'q' | 'r' | 'b' | 'n') || 'q' })
-          if (mv) pushStep(c.fen(), appendPgn(currentPgn, mv.san, currentHalfMove), currentHalfMove + 1)
+          if (mv) {
+            pushStep(c.fen(), appendPgn(currentPgn, mv.san, currentHalfMove), currentHalfMove + 1)
+            if (soundEnabled()) playMoveSound(soundForSan(mv.san))
+          }
         } catch { /* ignore illegal */ }
       }
       setWaiting(false)
@@ -132,6 +137,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
       const newPgn = appendPgn(pgn, mv.san, halfMove)
       setOutOfBook(false)
       pushStep(newFen, newPgn, newHalfMove)
+      if (soundEnabled()) playMoveSound(soundForSan(mv.san))
       const inBook = tree[fen]?.[mv.san]
       if (inBook) {
         const pct = Math.round((inBook.wins / inBook.count) * 100)
