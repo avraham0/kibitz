@@ -6,7 +6,7 @@ import { buildTree } from '../openingTree.js'
 import { useStockfishEval, getBestMove } from '../useStockfish.js'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-const BOARD_SIZE = 360
+const BOARD_SIZE = 380 // match the puzzles board
 
 type Step = { fen: string; pgn: string; halfMove: number }
 
@@ -26,6 +26,21 @@ function appendPgn(currentPgn: string, san: string, currentHalfMove: number): st
   const isWhite = currentHalfMove % 2 === 0
   if (isWhite) return currentPgn ? `${currentPgn} ${moveNum}. ${san}` : `${moveNum}. ${san}`
   return `${currentPgn} ${san}`
+}
+
+// Parse "1. e4 e5 2. Nf3 Nc6" into rows for a vertical move list.
+function pgnRows(pgn: string): { n: number; white: string; black: string }[] {
+  const tokens = pgn.trim().split(/\s+/).filter(Boolean)
+  const rows: { n: number; white: string; black: string }[] = []
+  for (let i = 0; i < tokens.length;) {
+    if (/^\d+\.$/.test(tokens[i])) {
+      const n = parseInt(tokens[i], 10); i++
+      const white = tokens[i] && !/^\d+\.$/.test(tokens[i]) ? tokens[i++] : ''
+      const black = tokens[i] && !/^\d+\.$/.test(tokens[i]) ? tokens[i++] : ''
+      rows.push({ n, white, black })
+    } else { i++ }
+  }
+  return rows
 }
 
 export function OpeningDrill({ openings, games, initialFamily }: { openings: OpeningStat[]; games: GameSummary[]; initialFamily?: string }) {
@@ -57,7 +72,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
 
   const chess = new Chess(fen)
   const sideToMove = chess.turn() === 'w' ? 'white' : 'black'
-  const isPlayerTurn = sideToMove === playerColor && !waiting && (!atEnd || !outOfBook)
+  const isPlayerTurn = sideToMove === playerColor && !waiting
 
   useEffect(() => { setHint(null) }, [fen])
 
@@ -99,8 +114,16 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
           return
         }
       }
-      // Opening book exhausted — drill ends here
+      // Past your recorded games — keep going with the engine as the opponent.
       setOutOfBook(true)
+      const uci = await getBestMove(currentFen, 12)
+      if (uci) {
+        try {
+          const c = new Chess(currentFen)
+          const mv = c.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: (uci[4] as 'q' | 'r' | 'b' | 'n') || 'q' })
+          if (mv) pushStep(c.fen(), appendPgn(currentPgn, mv.san, currentHalfMove), currentHalfMove + 1)
+        } catch { /* ignore illegal */ }
+      }
       setWaiting(false)
     }, 800)
   }
@@ -178,42 +201,45 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
             ))}
           </select>
         </label>
-        <span style={{ fontSize: 13, color: 'var(--muted)' }}>You play {playerColor} · {familyGames.length} training games</span>
         <button type="button" onClick={reset}>Start over</button>
       </div>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-          <EvalBar cp={evalCp} height={BOARD_SIZE} />
-          <div>
-            <div style={{ fontSize: 13, marginBottom: 8, minHeight: 22 }}>
-              {!atEnd
-                ? <span style={{ color: 'var(--muted)' }}>Reviewing — ← → to navigate · move to continue from here</span>
-                : outOfBook
-                ? <span style={{ color: '#7bc47f' }}>Opening complete — you've reached the middlegame</span>
-                : waiting
-                ? <span style={{ color: 'var(--muted)' }}>Opponent thinking…</span>
-                : <span style={{ fontWeight: 600 }}>Your move ({playerColor})</span>}
-            </div>
-            <Chessboard
-              position={fen}
-              boardOrientation={playerColor}
-              arePiecesDraggable={isPlayerTurn}
-              onPieceDrop={(s, t) => { setSelectedSq(null); return onDrop(s, t) }}
-              onSquareClick={onSquareClick}
-              customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
-              customArrows={hint ? [[hint[0], hint[1], 'rgb(0,120,255)']] as [string, string, string][] : []}
-              boardWidth={BOARD_SIZE}
-            />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-              <button type="button" onClick={() => setViewIdx((i) => Math.max(0, i - 1))} disabled={viewIdx === 0}>‹</button>
-              <button type="button" onClick={() => setViewIdx((i) => Math.min(steps.length - 1, i + 1))} disabled={atEnd}>›</button>
-              <span style={{ fontSize: 12, color: 'var(--muted)' }}>{viewIdx} / {steps.length - 1}</span>
-              {isPlayerTurn && (
-                <button type="button" style={{ marginLeft: 'auto', fontSize: 12 }} onClick={async () => {
-                  const uci = await getBestMove(fen, 14)
-                  if (uci) setHint([uci.slice(0, 2), uci.slice(2, 4)])
-                }}>Hint</button>
-              )}
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, height: 44, overflow: 'hidden' }}>
+            {!atEnd
+              ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>Reviewing — ← → to navigate · move to continue from here</span>
+              : waiting
+              ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>Opponent thinking…</span>
+              : outOfBook
+              ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>Past your game history — you're now playing the engine.</span>
+              : <span>Make a move. Kibitz replies with the most common response from your games.</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <EvalBar cp={evalCp} height={BOARD_SIZE} />
+            <div>
+              <Chessboard
+                position={fen}
+                boardOrientation={playerColor}
+                arePiecesDraggable={isPlayerTurn}
+                onPieceDrop={(s, t) => { setSelectedSq(null); return onDrop(s, t) }}
+                onSquareClick={onSquareClick}
+                customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
+                customArrows={hint ? [[hint[0], hint[1], 'rgb(0,120,255)']] as [string, string, string][] : []}
+                boardWidth={BOARD_SIZE}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                <button type="button" onClick={() => setViewIdx((i) => Math.max(0, i - 1))} disabled={viewIdx === 0}>‹</button>
+                <button type="button" onClick={() => setViewIdx((i) => Math.min(steps.length - 1, i + 1))} disabled={atEnd}>›</button>
+                <span style={{ fontSize: 12, color: 'var(--muted)' }}>{viewIdx} / {steps.length - 1}</span>
+                {isPlayerTurn && (
+                  <button type="button" style={{ marginLeft: 'auto', fontSize: 12 }} onClick={async () => {
+                    // First click shows the best move; click again to play it.
+                    if (hint) { const [from, to] = hint; setHint(null); onDrop(from, to); return }
+                    const uci = await getBestMove(fen, 14)
+                    if (uci) setHint([uci.slice(0, 2), uci.slice(2, 4)])
+                  }}>{hint ? 'Play hint' : 'Hint'}</button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -224,15 +250,16 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
             </div>
           )}
           {pgn && (
-            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16, fontFamily: 'monospace', lineHeight: 1.8 }}>
-              {pgn}
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16, fontFamily: 'monospace' }}>
+              {pgnRows(pgn).map((r) => (
+                <div key={r.n} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr', gap: 6, lineHeight: 1.7 }}>
+                  <span style={{ opacity: 0.6 }}>{r.n}.</span>
+                  <span>{r.white}</span>
+                  <span>{r.black}</span>
+                </div>
+              ))}
             </div>
           )}
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7 }}>
-            <div>Drag or click to make your move.</div>
-            <div>Kibitz replies with the most</div>
-            <div>common response from your games.</div>
-          </div>
         </div>
       </div>
     </section>
