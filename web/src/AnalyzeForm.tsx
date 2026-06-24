@@ -37,7 +37,16 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p
           data-1p-ignore="true" data-lpignore="true" data-form-type="other"
           style={{ flex: 1, fontSize: hero ? 16 : 14, padding: hero ? '10px 12px' : undefined }}
         />
-        <button type="submit" disabled={disabled || !user.trim()} style={hero ? { fontSize: 15, padding: '10px 18px', fontWeight: 600 } : undefined}>
+        <button
+          type="submit"
+          disabled={disabled || !user.trim()}
+          style={{
+            background: '#3fa66b', color: '#fff', border: 'none', borderRadius: 6,
+            fontWeight: 700, cursor: disabled || !user.trim() ? 'default' : 'pointer',
+            opacity: disabled || !user.trim() ? 0.55 : 1,
+            padding: hero ? '10px 18px' : '8px 14px', fontSize: hero ? 15 : 14, whiteSpace: 'nowrap',
+          }}
+        >
           {hero ? 'Analyze my games' : 'Analyze'}
         </button>
       </div>

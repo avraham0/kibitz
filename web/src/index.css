@@ -109,7 +109,9 @@ button:disabled { opacity: 0.45; cursor: default; }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
 /* Summary stat tiles */
-.stats { display: flex; gap: 10px; flex-wrap: wrap; }
+/* nowrap so tiles never reflow to a new row as values change during analysis;
+   scroll horizontally on the rare narrow case instead of jumping vertically. */
+.stats { display: flex; gap: 10px; flex-wrap: nowrap; overflow-x: auto; }
 .stat {
   background: var(--surface-2);
   border: 1px solid var(--border);
