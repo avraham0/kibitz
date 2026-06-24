@@ -43,12 +43,10 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
   const [puzzleState, setPuzzleState] = useState<PuzzleState>({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
   const [forceReveal, setForceReveal] = useState(false)
   const [reviewIdx, setReviewIdx] = useState<number | null>(null)
-  const [openingFilter, setOpeningFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>(initialTypeFilter ?? 'all')
   const [hungPieceFilter, setHungPieceFilter] = useState<string | undefined>(initialHungPiece)
 
   useEffect(() => {
-    setOpeningFilter('all')
     setTypeFilter('all')
     setHungPieceFilter(undefined)
     setCur(0)
@@ -61,12 +59,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
   useEffect(() => { if (initialTypeFilter) { setTypeFilter(initialTypeFilter); setCur(0) } }, [initialTypeFilter])
   useEffect(() => { setHungPieceFilter(initialHungPiece); if (initialHungPiece) setCur(0) }, [initialHungPiece])
 
-  const openings = useMemo(() => {
-    const seen = new Set<string>()
-    for (const b of blunders) if (b.family) seen.add(b.family)
-    return [...seen].sort()
-  }, [blunders])
-
   const types = useMemo(() => {
     const seen = new Set<string>()
     for (const b of blunders) seen.add(b.type)
@@ -75,11 +67,10 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
 
   const filtered = useMemo(
     () => blunders.filter((b) =>
-      (openingFilter === 'all' || b.family === openingFilter) &&
       (typeFilter === 'all' || b.type === typeFilter) &&
       (!hungPieceFilter || hangingAfter(b.fenBefore, b.san)?.piece === hungPieceFilter),
     ),
-    [blunders, openingFilter, typeFilter, hungPieceFilter],
+    [blunders, typeFilter, hungPieceFilter],
   )
 
   const now = Date.now()
@@ -199,12 +190,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
             <option value="all">all patterns ({blunders.length})</option>
             {types.map((t) => (
               <option key={t} value={t}>{TYPE_LABEL[t as CoachableType] ?? t} ({blunders.filter((b) => b.type === t).length})</option>
-            ))}
-          </select>
-          <select value={openingFilter} onChange={(e) => { setOpeningFilter(e.target.value); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13, maxWidth: 200 }}>
-            <option value="all">all openings</option>
-            {openings.map((o) => (
-              <option key={o} value={o}>{o} ({blunders.filter((b) => b.family === o).length})</option>
             ))}
           </select>
         </div>
