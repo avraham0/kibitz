@@ -8,10 +8,11 @@ type Mode = 'puzzles' | 'openings'
 // Merged practice surface. Two modes — blunder puzzles (every mistake type, not just
 // tactics) and opening drills — but the user normally arrives here via a coaching card,
 // which picks the mode and the filter. `focus` is the routed SuggestionAction.
-export function PracticeTab({ games, openings, focus }: {
+export function PracticeTab({ games, openings, focus, onOpenGame }: {
   games: GameSummary[]
   openings: OpeningStat[]
   focus: SuggestionAction | null
+  onOpenGame?: (id: string, ply?: number) => void
 }) {
   const [mode, setMode] = useState<Mode>(focus?.practice === 'opening' ? 'openings' : 'puzzles')
   // A hung-piece tile filters by piece only (the pattern stays "all") — hanging a
@@ -42,7 +43,7 @@ export function PracticeTab({ games, openings, focus }: {
         <button type="button" style={tabStyle(mode === 'openings')} onClick={() => setMode('openings')}>Openings</button>
       </div>
       {mode === 'puzzles'
-        ? <TrainingTab games={games} initialTypeFilter={typeFilter} initialHungPiece={hungPiece} />
+        ? <TrainingTab games={games} initialTypeFilter={typeFilter} initialHungPiece={hungPiece} onOpenGame={onOpenGame} />
         : <OpeningDrill openings={openings} games={games} initialFamily={family} />}
     </section>
   )

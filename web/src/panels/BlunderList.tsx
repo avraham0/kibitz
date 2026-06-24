@@ -7,6 +7,7 @@ import { orientationFromFen } from '../orientationFromFen.js'
 import { PuzzleBoard } from './PuzzleBoard.js'
 import { loadSrs, saveSrs, recordResult, orderByDue, dueCount, isDue, puzzleKey, type SrsStore } from '../puzzleSrs.js'
 import { explainBlunder } from '../explainBlunder.js'
+import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
@@ -154,9 +155,11 @@ export function BlunderList({ blunders, games, onOpenGame }: {
             <div key={i}>
               <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={320} />
               <div style={{ fontSize: 13 }}>
-                Played {b.san} · Best {b.bestSan}{' '}
-                <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
-                {(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? <>{' '}<button type="button" onClick={() => onOpenGame(gid, b.ply - 1)} style={{ fontSize: 12, padding: '0 4px', background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', textDecoration: 'underline' }}>review</button></> : null })()}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <span>Played {b.san} · Best {b.bestSan}</span>
+                  {(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? <button type="button" onClick={() => onOpenGame(gid, b.ply - 1)} style={{ fontSize: 13, padding: 0, background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', textDecoration: 'underline' }}>review</button> : null })()}
+                  <a href={analysisLink(b.fenBefore)} target="_blank" rel="noreferrer" title="Analyze on chess.com" aria-label="Analyze on chess.com" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--muted)' }}><ExternalLinkIcon /></a>
+                </div>
                 <div style={{ color: 'var(--muted)', marginTop: 2 }}>{explainBlunder(b)}</div>
               </div>
             </div>

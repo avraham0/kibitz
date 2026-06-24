@@ -9,6 +9,7 @@ import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 import { accuracyColor } from '../accuracyColor.js'
 import { soundForSan, playMoveSound, SOUND_KEY } from '../sound.js'
 import { explainBlunder } from '../explainBlunder.js'
+import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 
 const TIME_TROUBLE_SEC = 20
 
@@ -275,10 +276,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                 <button type="button" style={{ flexShrink: 0 }} onClick={toggleSound} title={soundOn ? 'mute move sounds' : 'enable move sounds'} aria-label="toggle move sounds">{soundOn ? '🔊' : '🔇'}</button>
               </div>
               <div style={{ fontSize: 13 }}>
-                move {Math.ceil((cur?.ply ?? 0) / 2)} · {cur?.san} · {cur?.phase}
+                {cur?.san} · {cur?.phase}
                 {clock && <> · ⏱ {clock}</>}
                 {timeTrouble && <span style={{ color: 'rgb(224,121,107)' }}> · time trouble</span>}
-                {cur && <> · <a href={`https://www.chess.com/analysis?fen=${encodeURIComponent(cur.fenBefore)}`} target="_blank" rel="noreferrer">analyze ↗</a></>}
               </div>
               {mistakeIdxs.length > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
@@ -288,7 +288,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                 </div>
               )}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                {g.url && <a href={g.url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>chess.com ↗</a>}
+                {g.url && <a href={g.url} target="_blank" rel="noreferrer" title="Open game on chess.com" aria-label="Open game on chess.com" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--muted)' }}><ExternalLinkIcon /></a>}
                 <button
                   type="button"
                   onClick={exportToLichess}

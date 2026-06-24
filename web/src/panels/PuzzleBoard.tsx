@@ -7,6 +7,7 @@ import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 import { explainBlunder, explainWrongMove } from '../explainBlunder.js'
+import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 
 export type PuzzleState = { solved: boolean; revealed: boolean; wrong: number; lastWrongSan: string | null; committed?: boolean; reviewLen?: number }
 
@@ -14,7 +15,7 @@ function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
 }
 
-export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder: BlunderRef }) {
+export function PuzzleFeedback({ state, blunder, onReview }: { state: PuzzleState; blunder: BlunderRef; onReview?: () => void }) {
   const { solved, revealed, wrong, lastWrongSan, committed } = state
   return (
     <div style={{ fontSize: 13 }}>
@@ -45,8 +46,13 @@ export function PuzzleFeedback({ state, blunder }: { state: PuzzleState; blunder
           )}
         </>
       )}
-      <div style={{ marginTop: 4, color: 'var(--muted)' }}>
-        <a href={analysisLink(blunder.fenBefore)} target="_blank" rel="noreferrer">analyze</a>
+      <div style={{ marginTop: 4, color: 'var(--muted)', display: 'flex', gap: 12, alignItems: 'center' }}>
+        {onReview && (
+          <button type="button" onClick={onReview} style={{ background: 'none', border: 'none', color: 'var(--accent, #7bc4ff)', cursor: 'pointer', padding: 0, fontSize: 13, textDecoration: 'underline' }}>review</button>
+        )}
+        <a href={analysisLink(blunder.fenBefore)} target="_blank" rel="noreferrer" title="Analyze on chess.com" aria-label="Analyze on chess.com" style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--muted)' }}>
+          <ExternalLinkIcon />
+        </a>
       </div>
     </div>
   )

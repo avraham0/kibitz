@@ -15,7 +15,12 @@ const TYPE_LABEL: Record<CoachableType, string> = {
   discovered_attack: 'discovered attack', trapped_piece: 'trapped piece', back_rank: 'back rank',
 }
 
-export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { games: GameSummary[]; initialTypeFilter?: CoachableType; initialHungPiece?: string }) {
+export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpenGame }: { games: GameSummary[]; initialTypeFilter?: CoachableType; initialHungPiece?: string; onOpenGame?: (id: string, ply?: number) => void }) {
+  const gameById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const g of games) m.set(g.url, g.gameId)
+    return m
+  }, [games])
   const blunders = useMemo((): BlunderRef[] => {
     const result: BlunderRef[] = []
     for (const g of games) {
@@ -229,9 +234,12 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece }: { ga
             )}
           </div>
           <div style={{ marginBottom: 16 }}>
-            <PuzzleFeedback state={puzzleState} blunder={b} />
+            <PuzzleFeedback
+              state={puzzleState}
+              blunder={b}
+              onReview={(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? () => onOpenGame(gid, b.ply - 1) : undefined })()}
+            />
           </div>
-          {b.url && <div style={{ marginBottom: 12 }}><a href={b.url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>game ↗</a></div>}
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Enter: next puzzle{(puzzleState.solved || puzzleState.revealed) && (puzzleState.reviewLen ?? 1) > 1 ? ' · ← → step the line' : ''}</div>
         </div>
       </div>
