@@ -1,7 +1,7 @@
 // Client-side analysis pipeline — the browser equivalent of the server's analyze().
 // Fetches games straight from chess.com (their pub API sends CORS *), parses and
 // analyzes them with a WASM engine pool, then aggregates + coaches. No server needed.
-import { fetchGamesSince } from '../../src/api/chesscom.js'
+import { monthsSince, fetchArchive } from '../../src/api/chesscom.js'
 import { parseGame } from '../../src/pgn/parse.js'
 import { analyzeGame } from '../../src/analyze/game.js'
 import { aggregate, perGameSummaries } from '../../src/report/aggregate.js'
@@ -44,7 +44,26 @@ export async function clientAnalyze(
   signal?: AbortSignal,
 ): Promise<AnalyzeResult> {
   const { onProgress, onPartial } = handlers ?? {}
-  const raw = await fetchGamesSince(params.user, params.since, params.nowISO, fetch)
+  // Fetch month archives newest-first and stop early once we have enough games for
+  // `last N` — your recent games are in the latest month or two, so this avoids
+  // pulling the whole window (the main reason the progress bar took so long to appear).
+  const months = monthsSince(params.since, params.nowISO) // oldest → newest
+  const tcLower = params.timeControl?.toLowerCase()
+  // Only early-stop when no result/opening filter could shrink the count below `last`.
+  const canEarlyStop = !!params.last && params.last > 0 && (!params.result || params.result === 'all') && !params.opening
+  const base = 'https://api.chess.com/pub/player'
+  const raw: unknown[] = []
+  for (let mi = months.length - 1; mi >= 0; mi--) {
+    if (signal?.aborted) throw new Error('analysis aborted')
+    const games = await fetchArchive(`${base}/${encodeURIComponent(params.user)}/games/${months[mi]}`, fetch, params.user)
+    raw.push(...games)
+    if (canEarlyStop) {
+      const have = tcLower
+        ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tcLower).length
+        : raw.length
+      if (have >= params.last!) break
+    }
+  }
   if (signal?.aborted) throw new Error('analysis aborted')
 
   const tc = params.timeControl?.toLowerCase()
