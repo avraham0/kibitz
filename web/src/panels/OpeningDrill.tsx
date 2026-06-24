@@ -204,7 +204,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
         <div>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, height: 44, overflow: 'hidden' }}>
             {!atEnd
-              ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>Reviewing — ← → to navigate · move to continue from here</span>
+              ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>Reviewing — <span className="kbd-hint">← → to navigate · </span>move to continue from here</span>
               : waiting
               ? <span style={{ color: 'var(--muted)', fontWeight: 400 }}>Opponent thinking…</span>
               : outOfBook

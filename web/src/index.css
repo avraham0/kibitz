@@ -66,6 +66,8 @@ section {
 @media (max-width: 640px) {
   section { padding: 12px; }
   section table { display: block; overflow-x: auto; white-space: nowrap; }
+  /* Keyboard-only hints (Enter / arrow keys) are useless without a keyboard. */
+  .kbd-hint { display: none !important; }
   /* On phones, horizontal tiles never fit — stack them vertically as full-width
      rows, value on the left and label on the right (compact, always readable). */
   .stats { flex-direction: column; flex-wrap: nowrap; overflow-x: visible; gap: 8px; }

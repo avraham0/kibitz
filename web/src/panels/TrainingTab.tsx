@@ -230,7 +230,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
               <button type="button" style={navBtn} onClick={() => setForceReveal(true)}>reveal</button>
             )}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)' }}>Enter: next puzzle{(puzzleState.solved || puzzleState.revealed) && (puzzleState.reviewLen ?? 1) > 1 ? ' · ← → step the line' : ''}</div>
+          <div className="kbd-hint" style={{ fontSize: 12, color: 'var(--muted)' }}>Enter: next puzzle{(puzzleState.solved || puzzleState.revealed) && (puzzleState.reviewLen ?? 1) > 1 ? ' · ← → step the line' : ''}</div>
         </div>
       </div>
     </section>
