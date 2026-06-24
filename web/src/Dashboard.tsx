@@ -47,8 +47,8 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
     { id: 'overview', label: 'Overview' },
     { id: 'blunders', label: 'Blunders' },
     { id: 'practice', label: 'Practice' },
-    { id: 'stats', label: 'Stats' },
     { id: 'review', label: 'Review' },
+    { id: 'stats', label: 'Stats' },
     // { id: 'mastery', label: 'Mastery' },
   ]
   return (
