@@ -10,7 +10,7 @@ import { coach } from '../../src/report/coach.js'
 import type { GameAnalysis, RawGame } from '../../src/types.js'
 import type { Evaluator } from '../../src/analyze/game.js'
 import type { AnalyzeResult } from './api-types.js'
-import { createBrowserPool } from './browserPool.js'
+import { getBrowserPool } from './browserPool.js'
 
 export type Source = 'chesscom' | 'lichess'
 
@@ -115,25 +115,22 @@ export async function clientAnalyze(
     if (analyses.some(Boolean)) onPartial(build())
   }
 
-  const pool = createBrowserPool()
+  // Reuse the warm pool — kept alive across analyses, not torn down here.
+  const pool = getBrowserPool()
   let cursor = 0
   let done = 0
-  try {
-    async function worker(evaluate: Evaluator): Promise<void> {
-      while (true) {
-        if (signal?.aborted) return
-        const i = cursor++
-        if (i >= total) return
-        analyses[i] = await analyzeGame(parsed[i], params.depth, evaluate)
-        done++
-        onProgress?.(done, total)
-        emitPartial(done === total)
-      }
+  async function worker(evaluate: Evaluator): Promise<void> {
+    while (true) {
+      if (signal?.aborted) return
+      const i = cursor++
+      if (i >= total) return
+      analyses[i] = await analyzeGame(parsed[i], params.depth, evaluate)
+      done++
+      onProgress?.(done, total)
+      emitPartial(done === total)
     }
-    await Promise.all(pool.evaluators.slice(0, Math.max(1, total)).map((e) => worker(e)))
-  } finally {
-    pool.quit()
   }
+  await Promise.all(pool.evaluators.slice(0, Math.max(1, total)).map((e) => worker(e)))
   if (signal?.aborted) throw new Error('analysis aborted')
 
   return build()

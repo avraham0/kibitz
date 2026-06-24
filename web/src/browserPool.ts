@@ -79,3 +79,11 @@ export function createBrowserPool(size?: number): BrowserPool {
   })
   return { evaluators, quit: () => engines.forEach((e) => e.quit()), size: n }
 }
+
+// Reuse one warm pool across analyses — spawning 8 workers and instantiating the 7 MB
+// WASM each costs ~1s, so we keep them alive between runs instead of tearing down.
+let shared: BrowserPool | null = null
+export function getBrowserPool(): BrowserPool {
+  if (!shared) shared = createBrowserPool()
+  return shared
+}
