@@ -1,5 +1,5 @@
 import type { GameSummary } from '../api-types.js'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { AXIS, GRID, TOOLTIP } from './chartTheme.js'
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -24,7 +24,7 @@ export function MoveQualityChart({ games }: { games: GameSummary[] }) {
   return (
     <section>
       <h2>Move quality</h2>
-      <BarChart width={420} height={200} data={data}>
+      <div style={{ width: '100%', maxWidth: 420, height: 200 }}><ResponsiveContainer><BarChart data={data}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis dataKey="name" tick={AXIS.tick} stroke={AXIS.stroke} />
         <YAxis tick={AXIS.tick} stroke={AXIS.stroke} />
@@ -37,7 +37,7 @@ export function MoveQualityChart({ games }: { games: GameSummary[] }) {
         <Bar dataKey="count" isAnimationActive={false} radius={[3, 3, 0, 0]}>
           {data.map((d) => <Cell key={d.name} fill={SEVERITY_COLOR[d.name]} />)}
         </Bar>
-      </BarChart>
+      </BarChart></ResponsiveContainer></div>
     </section>
   )
 }

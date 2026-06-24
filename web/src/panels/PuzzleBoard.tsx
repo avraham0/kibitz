@@ -8,6 +8,7 @@ import { orientationFromFen } from '../orientationFromFen.js'
 import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 import { explainBlunder, explainWrongMove } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
+import { useBoardSize } from '../useBoardSize.js'
 
 export type PuzzleState = { solved: boolean; revealed: boolean; wrong: number; lastWrongSan: string | null; committed?: boolean; reviewLen?: number }
 
@@ -155,15 +156,16 @@ export function PuzzleBoard({
     ...(best ? [[best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'] as Arrow] : []),
   ] : []
 
+  const size = useBoardSize(boardWidth)
   return (
-    <div style={{ width: boardWidth }}>
+    <div style={{ width: size }}>
       <Chessboard
         position={boardPosition}
         boardOrientation={orientationFromFen(blunder.fenBefore)}
         arePiecesDraggable={!solved && !revealed && !committed}
         onPieceDrop={(s, t) => onDrop(s, t)}
         customArrows={arrows}
-        boardWidth={boardWidth}
+        boardWidth={size}
       />
       {!onStateChange && (
         <div style={{ marginTop: 8 }}>

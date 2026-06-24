@@ -1,4 +1,4 @@
-import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts'
 import type { Stats } from '../api-types.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 
@@ -11,7 +11,7 @@ export function PhaseChart({ stats }: { stats: Stats }) {
   return (
     <section>
       <h2>By phase</h2>
-      <ComposedChart width={480} height={240} data={data}>
+      <div style={{ width: '100%', maxWidth: 480, height: 240 }}><ResponsiveContainer><ComposedChart data={data}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis dataKey="phase" tick={AXIS.tick} stroke={AXIS.stroke} />
         <YAxis yAxisId="left" allowDecimals={false} tick={AXIS.tick} stroke={AXIS.stroke} />
@@ -20,7 +20,7 @@ export function PhaseChart({ stats }: { stats: Stats }) {
         <Legend wrapperStyle={{ color: '#9aa3b2' }} />
         <Bar yAxisId="left" dataKey="mistakes" name="mistakes" fill={COLORS.bar} radius={[4, 4, 0, 0]} />
         <Line yAxisId="right" type="monotone" dataKey="accuracy" name="accuracy %" stroke={COLORS.line} strokeWidth={2} isAnimationActive={false} />
-      </ComposedChart>
+      </ComposedChart></ResponsiveContainer></div>
     </section>
   )
 }

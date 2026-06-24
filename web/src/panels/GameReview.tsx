@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Chess } from 'chess.js'
 import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid, ResponsiveContainer } from 'recharts'
 import type { Arrow } from '../ThemedBoard.js'
 import type { GameSummary, GameMove } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
@@ -12,6 +12,7 @@ import { explainBlunder } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 import { EvalBar } from './EvalBar.js'
 import { useStockfishEval } from '../useStockfish.js'
+import { useBoardSize } from '../useBoardSize.js'
 
 const TIME_TROUBLE_SEC = 20
 
@@ -59,6 +60,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   // While exploring an off-game line, compute the eval live with the engine
   // (no stored eval exists for those positions); null otherwise (use stored evals).
   const exploreEval = useStockfishEval(explore ? explore.fen : null)
+  const boardSize = useBoardSize(320, 24) // reserve for eval bar + gap
 
   // Jump to a game (and optionally a specific move) requested from elsewhere.
   useEffect(() => {
@@ -260,7 +262,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
           <div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              {cur && <EvalBar cp={explore ? exploreEval : shownEval} height={320} orientation={boardOrientation} />}
+              {cur && <EvalBar cp={explore ? exploreEval : shownEval} height={boardSize} orientation={boardOrientation} />}
               {cur && (
                 <Chessboard
                   position={explore?.fen ?? gamePos}
@@ -268,7 +270,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   customArrows={explore ? [] : arrows}
                   arePiecesDraggable
                   onPieceDrop={(s, t) => onDrop(s, t)}
-                  boardWidth={320}
+                  boardWidth={boardSize}
                 />
               )}
             </div>
@@ -311,9 +313,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
               </div>
             </div>
           </div>
+          <div style={{ flex: '1 1 300px', minWidth: 0, maxWidth: 420, height: 240 }}>
+          <ResponsiveContainer>
           <LineChart
-            width={420}
-            height={240}
             data={data}
             style={{ cursor: 'pointer' }}
             onClick={(s: any) => {
@@ -336,6 +338,8 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
               )) as any}
             />
           </LineChart>
+          </ResponsiveContainer>
+          </div>
           {/* Stretch to the row's full height (board/graph bottom) and scroll inside.
               The inner div is absolutely positioned so the list's length doesn't drive
               the row taller — it fills whatever height the board column sets. */}

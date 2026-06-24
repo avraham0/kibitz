@@ -8,6 +8,7 @@ import { PuzzleBoard } from './PuzzleBoard.js'
 import { loadSrs, saveSrs, recordResult, orderByDue, dueCount, isDue, puzzleKey, type SrsStore } from '../puzzleSrs.js'
 import { explainBlunder } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
+import { useBoardSize } from '../useBoardSize.js'
 
 function analysisLink(fen: string): string {
   return `https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}`
@@ -30,6 +31,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
   const [solved, setSolved] = useState(0)
   const [cur, setCur] = useState(0)
   const [visible, setVisible] = useState(10) // review grid shows 10 at a time
+  const cardSize = useBoardSize(320)
   const [srs, setSrs] = useState<SrsStore>(() => loadSrs())
   // Used to order the solve queue without re-sorting it every time a result lands.
   const srsRef = useRef(srs)
@@ -144,7 +146,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
           )
         })()
       ) : (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16, marginTop: 8, paddingTop: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16, marginTop: 8, paddingTop: 12 }}>
         {shown.slice(0, visible).map((b, i) => {
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)
@@ -153,7 +155,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
           if (best) arrows.push([best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'])
           return (
             <div key={i}>
-              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={320} />
+              <Chessboard position={b.fenBefore} boardOrientation={orientationFromFen(b.fenBefore)} customArrows={arrows} arePiecesDraggable={false} boardWidth={cardSize} />
               <div style={{ fontSize: 13 }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <span>Played {b.san} · Best {b.bestSan}</span>

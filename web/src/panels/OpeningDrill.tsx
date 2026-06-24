@@ -5,6 +5,7 @@ import type { GameSummary, OpeningStat } from '../api-types.js'
 import { buildTree } from '../openingTree.js'
 import { useStockfishEval, getBestMove } from '../useStockfish.js'
 import { EvalBar } from './EvalBar.js'
+import { useBoardSize } from '../useBoardSize.js'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const BOARD_SIZE = 380 // match the puzzles board
@@ -60,6 +61,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
   const atEnd = viewIdx === steps.length - 1
   const { fen, pgn, halfMove } = steps[viewIdx]
   const evalCp = useStockfishEval(fen)
+  const boardSize = useBoardSize(BOARD_SIZE, 24) // reserve for eval bar + gap
 
   const chess = new Chess(fen)
   const sideToMove = chess.turn() === 'w' ? 'white' : 'black'
@@ -206,7 +208,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
               : <span>Make a move. Kibitz replies with the most common response from your games.</span>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <EvalBar cp={evalCp} height={BOARD_SIZE} orientation={playerColor} />
+            <EvalBar cp={evalCp} height={boardSize} orientation={playerColor} />
             <div>
               <Chessboard
                 position={fen}
@@ -216,7 +218,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
                 onSquareClick={onSquareClick}
                 customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : {}}
                 customArrows={hint ? [[hint[0], hint[1], 'rgb(0,120,255)']] as [string, string, string][] : []}
-                boardWidth={BOARD_SIZE}
+                boardWidth={boardSize}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
                 <button type="button" onClick={() => setViewIdx((i) => Math.max(0, i - 1))} disabled={viewIdx === 0}>‹</button>

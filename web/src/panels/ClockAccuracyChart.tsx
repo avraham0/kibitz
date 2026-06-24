@@ -1,5 +1,5 @@
 import type { GameSummary } from '../api-types.js'
-import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { ScatterChart, Scatter, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { AXIS, GRID, TOOLTIP } from './chartTheme.js'
 
 export function ClockAccuracyChart({ games }: { games: GameSummary[] }) {
@@ -23,13 +23,13 @@ export function ClockAccuracyChart({ games }: { games: GameSummary[] }) {
     <section>
       <h2>Clock vs mistake rate</h2>
       <p style={{ marginTop: 0, fontSize: 12, color: 'var(--muted)' }}>Mistake % by time remaining on clock (5-second buckets, ≥3 moves each)</p>
-      <ScatterChart width={460} height={200} data={data}>
+      <div style={{ width: '100%', maxWidth: 460, height: 200 }}><ResponsiveContainer><ScatterChart data={data}>
         <CartesianGrid stroke={GRID} vertical={false} />
         <XAxis dataKey="clock" name="Clock (s)" tick={AXIS.tick} stroke={AXIS.stroke} label={{ value: 'clock (s)', position: 'insideBottom', offset: -2, style: { fontSize: 11, fill: '#6b7280' } }} />
         <YAxis dataKey="mistakePct" name="Mistake %" tick={AXIS.tick} stroke={AXIS.stroke} unit="%" />
         <Tooltip {...TOOLTIP} formatter={((v: number, n: string) => [n === 'mistakePct' ? `${v}%` : v, n === 'mistakePct' ? 'mistake rate' : 'moves']) as any} />
         <Scatter data={data} fill="#e0b15a" isAnimationActive={false} />
-      </ScatterChart>
+      </ScatterChart></ResponsiveContainer></div>
     </section>
   )
 }
