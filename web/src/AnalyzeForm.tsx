@@ -1,21 +1,24 @@
 import { useState, type FormEvent, type CSSProperties } from 'react'
 import { sinceFromRange, RANGE_LABELS, type RangeKey } from './sinceFromRange.js'
 
-export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string }
+export type FormParams = { user: string; source?: 'chesscom' | 'lichess'; last?: string; depth?: string; since?: string; range?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string }
 
 const linkBtn: CSSProperties = {
   background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer',
   fontSize: 13, padding: 0, textDecoration: 'underline', textUnderlineOffset: 2,
 }
 
-export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p: FormParams) => void; disabled: boolean; hero?: boolean }) {
-  const [user, setUser] = useState('avraham00')
-  const [last, setLast] = useState('100')
-  const [timeControl, setTimeControl] = useState('')
-  const [result, setResult] = useState('all')
-  const [opening, setOpening] = useState('')
-  const [range, setRange] = useState<RangeKey>('1year')
-  const [customSince, setCustomSince] = useState('')
+export function AnalyzeForm({ onSubmit, disabled, hero = false, initial }: { onSubmit: (p: FormParams) => void; disabled: boolean; hero?: boolean; initial?: FormParams }) {
+  // Seed from the last-used values so the form keeps your source/username/etc. after
+  // results load (the hero and results-view forms are separate instances).
+  const [user, setUser] = useState(initial?.user ?? 'avraham00')
+  const [source, setSource] = useState<'chesscom' | 'lichess'>(initial?.source ?? 'chesscom')
+  const [last, setLast] = useState(initial?.last ?? '100')
+  const [timeControl, setTimeControl] = useState(initial?.timeControl ?? '')
+  const [result, setResult] = useState(initial?.result ?? 'all')
+  const [opening, setOpening] = useState(initial?.opening ?? '')
+  const [range, setRange] = useState<RangeKey>((initial?.range as RangeKey) ?? '1year')
+  const [customSince, setCustomSince] = useState(initial?.range === 'custom' ? (initial?.since ?? '') : '')
   const [showOptions, setShowOptions] = useState(false)
 
   function sinceValue(): string | undefined {
@@ -25,14 +28,18 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    onSubmit({ user: user.trim(), last: last || undefined, since: sinceValue(), timeControl: timeControl || undefined, result, opening: opening || undefined })
+    onSubmit({ user: user.trim(), source, last: last || undefined, since: sinceValue(), range, timeControl: timeControl || undefined, result, opening: opening || undefined })
   }
 
   return (
     <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', alignItems: hero ? 'flex-start' : 'stretch' }}>
-      <div style={{ display: 'flex', gap: 8, width: hero ? 'min(520px, 100%)' : '100%' }}>
+      <div style={{ display: 'flex', gap: 8, width: hero ? 'min(560px, 100%)' : '100%', flexWrap: 'wrap' }}>
+        <select value={source} onChange={(e) => setSource(e.target.value as 'chesscom' | 'lichess')} style={{ fontSize: hero ? 15 : 14 }} title="Game source" aria-label="Game source">
+          <option value="chesscom">chess.com</option>
+          <option value="lichess">lichess</option>
+        </select>
         <input
-          value={user} onChange={(e) => setUser(e.target.value)} placeholder="chess.com username" required
+          value={user} onChange={(e) => setUser(e.target.value)} placeholder={source === 'lichess' ? 'lichess username' : 'chess.com username'} required
           name="chesscomHandle" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           data-1p-ignore="true" data-lpignore="true" data-form-type="other"
           style={{ flex: 1, fontSize: hero ? 16 : 14, padding: hero ? '10px 12px' : undefined }}

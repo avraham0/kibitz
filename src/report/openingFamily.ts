@@ -16,7 +16,7 @@ const FAMILIES: string[] = [
   'Philidor Defense', 'Russian Game', 'Bishop\'s Opening', 'Ponziani Opening',
   // 1.e4 other
   'Sicilian Defense', 'French Defense', 'Caro-Kann Defense', 'Pirc Defense',
-  'Modern Defense', 'Scandinavian Defense', "Alekhine's Defense", 'Nimzowitsch Defense',
+  'Modern Defense', 'Scandinavian Defense', 'Alekhine Defense', 'Nimzowitsch Defense',
   // 1.d4 d5
   "Queen's Gambit Declined", "Queen's Gambit Accepted", "Queen's Gambit",
   'Slav Defense', 'Semi-Slav Defense', 'Catalan Opening', 'London System',

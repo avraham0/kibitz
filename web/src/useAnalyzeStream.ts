@@ -1,10 +1,10 @@
 import { useRef, useState, useCallback } from 'react'
 import type { AnalyzeResult } from './api-types.js'
-import { clientAnalyze, defaultSince } from './clientAnalyze.js'
+import { clientAnalyze, defaultSince, type Source } from './clientAnalyze.js'
 import type { AnalyzeEngine } from './settings.js'
 
 type Status = 'idle' | 'running' | 'done' | 'error'
-type StartParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string; engine?: AnalyzeEngine }
+type StartParams = { user: string; source?: Source; last?: string; depth?: string; since?: string; range?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string; engine?: AnalyzeEngine }
 
 // Default browser-engine depth — lower than the server's 18 for a fast in-browser pass
 // while still deep enough to surface blunders. Quick scan overrides this to 8.
@@ -56,6 +56,7 @@ export function useAnalyzeStream() {
       clientAnalyze(
         {
           user: params.user,
+          source: params.source ?? 'chesscom',
           since: params.since || defaultSince(nowISO),
           depth: params.depth ? Number(params.depth) : BROWSER_DEPTH,
           last: params.last ? Number(params.last) : undefined,
@@ -85,6 +86,7 @@ export function useAnalyzeStream() {
 
     // Server engine: stream from the backend over SSE.
     const q = new URLSearchParams({ user: params.user })
+    if (params.source) q.set('source', params.source)
     if (params.last) q.set('last', params.last)
     if (params.depth) q.set('depth', params.depth)
     if (params.since) q.set('since', params.since)

@@ -1,15 +1,18 @@
 // Client-side analysis pipeline — the browser equivalent of the server's analyze().
-// Fetches games straight from chess.com (their pub API sends CORS *), parses and
+// Fetches games straight from chess.com / lichess (both send CORS *), parses and
 // analyzes them with a WASM engine pool, then aggregates + coaches. No server needed.
 import { monthsSince, fetchArchive } from '../../src/api/chesscom.js'
+import { fetchLichessGames } from '../../src/api/lichess.js'
 import { parseGame } from '../../src/pgn/parse.js'
 import { analyzeGame } from '../../src/analyze/game.js'
 import { aggregate, perGameSummaries } from '../../src/report/aggregate.js'
 import { coach } from '../../src/report/coach.js'
-import type { GameAnalysis } from '../../src/types.js'
+import type { GameAnalysis, RawGame } from '../../src/types.js'
 import type { Evaluator } from '../../src/analyze/game.js'
 import type { AnalyzeResult } from './api-types.js'
 import { createBrowserPool } from './browserPool.js'
+
+export type Source = 'chesscom' | 'lichess'
 
 // Default since-window: last 12 months (mirrors the server's defaultSince, kept local
 // so we don't import orchestrate.ts, which pulls in node: modules).
@@ -21,6 +24,7 @@ export function defaultSince(nowISO: string): string {
 
 export type ClientParams = {
   user: string
+  source: Source
   since: string
   depth: number
   last?: number
@@ -44,35 +48,41 @@ export async function clientAnalyze(
   signal?: AbortSignal,
 ): Promise<AnalyzeResult> {
   const { onProgress, onPartial } = handlers ?? {}
-  // Fetch month archives newest-first and stop early once we have enough games for
-  // `last N` — your recent games are in the latest month or two, so this avoids
-  // pulling the whole window (the main reason the progress bar took so long to appear).
-  const months = monthsSince(params.since, params.nowISO) // oldest → newest
-  const tcLower = params.timeControl?.toLowerCase()
-  // Only early-stop when no result/opening filter could shrink the count below `last`.
-  const canEarlyStop = !!params.last && params.last > 0 && (!params.result || params.result === 'all') && !params.opening
-  const base = 'https://api.chess.com/pub/player'
-  const raw: unknown[] = []
-  for (let mi = months.length - 1; mi >= 0; mi--) {
-    if (signal?.aborted) throw new Error('analysis aborted')
-    const games = await fetchArchive(`${base}/${encodeURIComponent(params.user)}/games/${months[mi]}`, fetch, params.user)
-    raw.push(...games)
-    if (canEarlyStop) {
-      const have = tcLower
-        ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tcLower).length
-        : raw.length
-      if (have >= params.last!) break
+  const tc = params.timeControl?.toLowerCase()
+  const wantResult = params.result && params.result !== 'all' ? params.result : null
+  // result/opening can't be filtered at fetch time, so they could shrink the count
+  // below `last` — when active we over-fetch and slice afterwards.
+  const filtersActive = !!(wantResult || params.opening)
+
+  let parsed: RawGame[]
+  if (params.source === 'lichess') {
+    // lichess returns ndjson newest-first and honors max + since, so one request gets
+    // the recent games we want.
+    const fetchMax = params.last && params.last > 0
+      ? (filtersActive ? Math.max(params.last * 8, 500) : params.last)
+      : (filtersActive ? 500 : 200)
+    parsed = await fetchLichessGames(params.user, params.since, fetch, fetchMax)
+  } else {
+    // chess.com: fetch month archives newest-first, stopping early once we have enough.
+    const months = monthsSince(params.since, params.nowISO) // oldest → newest
+    const canEarlyStop = !!params.last && params.last > 0 && !filtersActive
+    const base = 'https://api.chess.com/pub/player'
+    const raw: unknown[] = []
+    for (let mi = months.length - 1; mi >= 0; mi--) {
+      if (signal?.aborted) throw new Error('analysis aborted')
+      const games = await fetchArchive(`${base}/${encodeURIComponent(params.user)}/games/${months[mi]}`, fetch, params.user)
+      raw.push(...games)
+      if (canEarlyStop) {
+        const have = tc ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tc).length : raw.length
+        if (have >= params.last!) break
+      }
     }
+    parsed = raw.map((r) => parseGame(r, params.user)).filter((g): g is RawGame => g !== null)
   }
   if (signal?.aborted) throw new Error('analysis aborted')
 
-  const tc = params.timeControl?.toLowerCase()
-  const rawFiltered = tc
-    ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tc)
-    : raw
-  let parsed = rawFiltered.map((r) => parseGame(r, params.user)).filter((g): g is NonNullable<typeof g> => g !== null)
-
-  const wantResult = params.result && params.result !== 'all' ? params.result : null
+  // Common filters (apply to both sources' parsed games).
+  if (tc) parsed = parsed.filter((g) => (g.timeControl ?? '').toLowerCase() === tc)
   if (wantResult) parsed = parsed.filter((g) => g.result === wantResult)
   if (params.opening) {
     const q = params.opening.toLowerCase()

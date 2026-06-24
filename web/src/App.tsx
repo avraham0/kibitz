@@ -39,7 +39,7 @@ export default function App() {
           <p style={{ color: 'var(--muted)', fontSize: 15, margin: 0, maxWidth: 460 }}>
             Find your biggest mistakes and turn them into drills.
           </p>
-          <AnalyzeForm hero onSubmit={startAndSave} disabled={running} />
+          <AnalyzeForm hero onSubmit={startAndSave} disabled={running} initial={lastOptsRef.current ?? undefined} />
           {running && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start', width: 'min(520px, 100%)' }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', width: '100%' }}>
@@ -84,7 +84,7 @@ export default function App() {
             </button>
           </div>
         </header>
-        <AnalyzeForm onSubmit={startAndSave} disabled={running} />
+        <AnalyzeForm onSubmit={startAndSave} disabled={running} initial={lastOptsRef.current ?? undefined} />
         {running && (
           <>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', margin: '12px 0' }}>

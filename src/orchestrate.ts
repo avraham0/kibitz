@@ -1,4 +1,5 @@
 import { fetchGamesSince } from './api/chesscom.js'
+import { fetchLichessGames } from './api/lichess.js'
 import { parseGame } from './pgn/parse.js'
 import { analyzeGame, type Evaluator } from './analyze/game.js'
 import { readCached, writeCached } from './cache/store.js'
@@ -18,6 +19,8 @@ export function defaultSince(nowISO: string): string {
 
 type AnalyzeOpts = {
   user: string; since: string; depth: number; last?: number
+  // Game source: chess.com (default) or lichess.
+  source?: 'chesscom' | 'lichess'
   root?: string; nowISO: string; evaluate: Evaluator; fetchFn?: typeof fetch
   // Optional pool of evaluators (one per engine) for parallel game analysis.
   // Defaults to [evaluate] → concurrency 1, preserving single-engine behavior.
@@ -50,11 +53,14 @@ export async function analyze(
   opts: AnalyzeOpts,
   onProgress?: (done: number, total: number) => void,
 ): Promise<AnalyzeResult> {
-  const raw = await fetchGamesSince(opts.user, opts.since, opts.nowISO, opts.fetchFn ?? fetch)
-  // chess.com tags each game with a time_class (bullet/blitz/rapid/daily).
+  const fetchFn = opts.fetchFn ?? fetch
+  let parsed = opts.source === 'lichess'
+    ? await fetchLichessGames(opts.user, opts.since, fetchFn)
+    : (await fetchGamesSince(opts.user, opts.since, opts.nowISO, fetchFn))
+        .map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
+  // Time control (bullet/blitz/rapid/daily) — chess.com time_class / mapped lichess speed.
   const tc = opts.timeControl?.toLowerCase()
-  const rawFiltered = tc ? raw.filter((r) => String((r as { time_class?: string }).time_class ?? '').toLowerCase() === tc) : raw
-  let parsed = rawFiltered.map((r) => parseGame(r, opts.user)).filter((g): g is NonNullable<typeof g> => g !== null)
+  if (tc) parsed = parsed.filter((g) => (g.timeControl ?? '').toLowerCase() === tc)
   // Result filter (default: losses — the games with the most to learn from).
   const wantResult = opts.result && opts.result !== 'all' ? opts.result : null
   if (wantResult) parsed = parsed.filter((g) => g.result === wantResult)

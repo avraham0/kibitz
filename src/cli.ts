@@ -17,11 +17,12 @@ async function main() {
       concurrency: { type: 'string' },
       variations: { type: 'boolean' },
       'time-control': { type: 'string' },
+      source: { type: 'string' },
     },
   })
 
   if (!values.user) {
-    console.error('Usage: kibitz --user <name> [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--time-control blitz] [--out report.md]')
+    console.error('Usage: kibitz --user <name> [--source chesscom|lichess] [--since YYYY-MM] [--last N] [--depth 15] [--concurrency N] [--variations] [--time-control blitz] [--out report.md]')
     process.exit(2)
   }
 
@@ -41,6 +42,7 @@ async function main() {
       evaluators: pool.evaluators,
       variations: values.variations === true,
       timeControl: values['time-control'],
+      source: values.source === 'lichess' ? 'lichess' : 'chesscom',
       fetchFn: realFetch,
     })
     console.log(out.terminal)
