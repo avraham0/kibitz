@@ -94,6 +94,9 @@ export function PuzzleBoard({
   // A legal-but-wrong move stays on the board (not snapped back) and locks it until
   // the player resets — they see the consequence of their mistake.
   const [committed, setCommitted] = useState(false)
+  // Tap-to-move (works alongside drag, important on touch): first tap selects a
+  // piece, second tap is the destination.
+  const [selectedSq, setSelectedSq] = useState<string | null>(null)
 
   const state: PuzzleState = { solved, revealed, wrong, lastWrongSan, committed, reviewLen: reviewLine.length }
   useEffect(() => { onStateChange?.(state) }, [solved, revealed, wrong, lastWrongSan, committed, reviewLine.length]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -136,16 +139,35 @@ export function PuzzleBoard({
     return false
   }
 
+  function onSquareClick(square: string) {
+    if (solved || revealed || committed) return
+    const c = new Chess(blunder.fenBefore)
+    const mover = c.turn()
+    if (selectedSq) {
+      const moved = onDrop(selectedSq, square)
+      setSelectedSq(null)
+      if (!moved) {
+        const p = c.get(square as Parameters<typeof c.get>[0])
+        if (p && p.color === mover) setSelectedSq(square)
+      }
+    } else {
+      const p = c.get(square as Parameters<typeof c.get>[0])
+      if (p && p.color === mover) setSelectedSq(square)
+    }
+  }
+
   function reveal() {
     if (!solved && !revealed) onResult?.(false)
     setPosition(blunder.fenBefore) // reset to the original position before showing the answer
     setCommitted(false)
+    setSelectedSq(null)
     setRevealed(true)
   }
 
   function tryAgain() {
     setPosition(blunder.fenBefore)
     setCommitted(false)
+    setSelectedSq(null)
     setLastWrongSan(null)
   }
 
@@ -164,6 +186,8 @@ export function PuzzleBoard({
         boardOrientation={orientationFromFen(blunder.fenBefore)}
         arePiecesDraggable={!solved && !revealed && !committed}
         onPieceDrop={(s, t) => onDrop(s, t)}
+        onSquareClick={onSquareClick}
+        customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : undefined}
         customArrows={arrows}
         boardWidth={size}
       />

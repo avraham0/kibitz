@@ -16,9 +16,12 @@ export function soundForSan(san: string): MoveSound {
   return san.includes('x') ? 'capture' : 'move'
 }
 
+// Prefix with the Vite base so paths resolve under a project subpath (e.g.
+// GitHub Pages /kibitz/) instead of the domain root.
+const BASE = import.meta.env.BASE_URL
 const SRC: Record<MoveSound, string> = {
-  move: '/sounds/Move.mp3',
-  capture: '/sounds/Capture.mp3',
+  move: `${BASE}sounds/Move.mp3`,
+  capture: `${BASE}sounds/Capture.mp3`,
 }
 
 // One preloaded element per sound. Guarded so it no-ops in non-browser (test) envs.

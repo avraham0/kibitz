@@ -55,8 +55,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   const [ply, setPly] = useState(0)
   // Free-play exploration forked from the current position; null = following the game.
   const [explore, setExplore] = useState<{ fen: string; n: number } | null>(null)
+  const [selectedSq, setSelectedSq] = useState<string | null>(null)
   // Any navigation returns to the game line.
-  useEffect(() => { setExplore(null) }, [ply, gi])
+  useEffect(() => { setExplore(null); setSelectedSq(null) }, [ply, gi])
   // While exploring an off-game line, compute the eval live with the engine
   // (no stored eval exists for those positions); null otherwise (use stored evals).
   const exploreEval = useStockfishEval(explore ? explore.fen : null)
@@ -195,6 +196,23 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
     }
   }
 
+  // Tap-to-move alongside drag (essential on touch): first tap selects, second moves.
+  function onSquareClick(square: string) {
+    const c = new Chess(explore?.fen ?? gamePos)
+    const mover = c.turn()
+    if (selectedSq) {
+      const moved = onDrop(selectedSq, square)
+      setSelectedSq(null)
+      if (!moved) {
+        const p = c.get(square as Parameters<typeof c.get>[0])
+        if (p && p.color === mover) setSelectedSq(square)
+      }
+    } else {
+      const p = c.get(square as Parameters<typeof c.get>[0])
+      if (p && p.color === mover) setSelectedSq(square)
+    }
+  }
+
   return (
     <section>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
@@ -256,6 +274,8 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
                   customArrows={explore ? [] : arrows}
                   arePiecesDraggable
                   onPieceDrop={(s, t) => onDrop(s, t)}
+                  onSquareClick={onSquareClick}
+                  customSquareStyles={selectedSq ? { [selectedSq]: { background: 'rgba(123,196,127,0.5)' } } : undefined}
                   boardWidth={boardSize}
                 />
               )}
