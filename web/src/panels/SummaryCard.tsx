@@ -39,18 +39,22 @@ export function SummaryCard({ stats, games = [] }: { stats: Stats; games?: GameS
   const rec = blunderRecovery(games)
   const medRating = medianRating(games)
   const tiltDelta = rec ? rec.afterPct - rec.basePct : 0
+  // All tiles render every time (placeholder '—' until their data is ready) so the
+  // Summary row doesn't reflow / jump as partial results stream in during analysis.
   const tiles: { label: string; value: string; color?: string; sub?: string; badge?: string; badgeColor?: string; title?: string }[] = [
     { label: 'Accuracy', value: `${stats.accuracy}%`, color: accuracyColor(stats.accuracy) },
     { label: 'Record', value: `${r.wins}W-${r.losses}L-${r.draws}D` },
-    ...(medRating != null ? [{ label: 'Median rating', value: String(medRating), title: 'Median of your rating across the analyzed games. The trend over time is in the Rating chart below.' }] : []),
+    { label: 'Median rating', value: medRating != null ? String(medRating) : '—', title: 'Median of your rating across the analyzed games. The trend over time is in the Rating chart below.' },
     { label: 'Mistakes', value: String(stats.mistakeCount) },
     { label: 'Missed wins', value: winningGames ? `${missedWins} / ${winningGames}` : '—', color: missedWins > 0 ? 'rgb(224,121,107)' : undefined },
-    ...(rec ? [{
+    {
       label: 'Tilt',
-      value: `${tiltDelta >= 0 ? '+' : ''}${tiltDelta}%`,
-      color: tiltDelta > 10 ? 'rgb(224,121,107)' : tiltDelta <= 0 ? '#7bc47f' : undefined,
-      title: `How much more you blunder right after a blunder: ${rec.afterPct}% mistake rate in the 3 moves following a blunder vs ${rec.basePct}% normally. Positive = you tilt; 0 or negative = you steady yourself.`,
-    }] : []),
+      value: rec ? `${tiltDelta >= 0 ? '+' : ''}${tiltDelta}%` : '—',
+      color: rec ? (tiltDelta > 10 ? 'rgb(224,121,107)' : tiltDelta <= 0 ? '#7bc47f' : undefined) : undefined,
+      title: rec
+        ? `How much more you blunder right after a blunder: ${rec.afterPct}% mistake rate in the 3 moves following a blunder vs ${rec.basePct}% normally. Positive = you tilt; 0 or negative = you steady yourself.`
+        : 'How much more you blunder right after a blunder (needs a few blunders to compute).',
+    },
   ]
   return (
     <section>
