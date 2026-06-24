@@ -70,7 +70,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       {tab === 'overview' && (
         <>
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 0 700px', minWidth: 0 }}><SummaryCard stats={filteredStats} games={filteredGames} /></div>
+            <div style={{ flex: '1 1 700px', minWidth: 0 }}><SummaryCard stats={filteredStats} games={filteredGames} /></div>
             <HangFrequency games={filteredGames} onPractice={startPractice} />
           </div>
           <CoachingCards suggestions={filteredSuggestions} onPractice={startPractice} />
@@ -80,16 +80,16 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
       )}
       {tab === 'stats' && (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 24, alignItems: 'start' }}>
             <ProgressChart games={filteredGames} />
             <RatingChart games={filteredGames} />
           </div>
           <MistakeTypesChart stats={filteredStats} games={filteredGames} onOpenGame={openGame} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 24 }}>
             <PhaseChart stats={filteredStats} />
             <MoveQualityChart games={filteredGames} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(340px, 100%), 1fr))', gap: 24 }}>
             <TimePressureChart stats={filteredStats} />
             {stats.gamesWithClock > 0 && <ClockAccuracyChart games={filteredGames} />}
           </div>

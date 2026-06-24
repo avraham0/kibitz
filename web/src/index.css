@@ -61,6 +61,13 @@ section {
   margin: 0 0 16px;
 }
 
+/* Mobile: keep wide tables inside their card (scroll, don't push the page wide),
+   and use the cramped width better. */
+@media (max-width: 640px) {
+  section { padding: 12px; }
+  section table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
 /* Tables */
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); }
