@@ -3,9 +3,12 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { AnalyzeForm } from './AnalyzeForm.js'
 
 describe('AnalyzeForm', () => {
-  it('prefills the default username', () => {
-    render(<AnalyzeForm onSubmit={vi.fn()} disabled={false} />)
-    expect((screen.getByPlaceholderText(/username/i) as HTMLInputElement).value).toBe('avraham00')
+  it('starts with an empty username and seeds from initial', () => {
+    const { unmount } = render(<AnalyzeForm onSubmit={vi.fn()} disabled={false} />)
+    expect((screen.getByPlaceholderText(/username/i) as HTMLInputElement).value).toBe('')
+    unmount()
+    render(<AnalyzeForm onSubmit={vi.fn()} disabled={false} initial={{ user: 'bob' }} />)
+    expect((screen.getByPlaceholderText(/username/i) as HTMLInputElement).value).toBe('bob')
   })
 
   it('submits trimmed params and blocks empty username', () => {

@@ -11,7 +11,7 @@ const linkBtn: CSSProperties = {
 export function AnalyzeForm({ onSubmit, disabled, hero = false, initial }: { onSubmit: (p: FormParams) => void; disabled: boolean; hero?: boolean; initial?: FormParams }) {
   // Seed from the last-used values so the form keeps your source/username/etc. after
   // results load (the hero and results-view forms are separate instances).
-  const [user, setUser] = useState(initial?.user ?? 'avraham00')
+  const [user, setUser] = useState(initial?.user ?? '')
   const [source, setSource] = useState<'chesscom' | 'lichess'>(initial?.source ?? 'chesscom')
   const [last, setLast] = useState(initial?.last ?? '100')
   const [timeControl, setTimeControl] = useState(initial?.timeControl ?? '')
