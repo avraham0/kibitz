@@ -68,6 +68,9 @@ section {
   section table { display: block; overflow-x: auto; white-space: nowrap; }
   /* Keyboard-only hints (Enter / arrow keys) are useless without a keyboard. */
   .kbd-hint { display: none !important; }
+  /* Hero Analyze button: a full-width CTA on its own line on phones, instead of
+     awkwardly wrapping next to the username field. */
+  .hero-analyze { flex-basis: 100%; }
   /* On phones, horizontal tiles never fit — stack them vertically as full-width
      rows, value on the left and label on the right (compact, always readable). */
   .stats { flex-direction: column; flex-wrap: nowrap; overflow-x: visible; gap: 8px; }

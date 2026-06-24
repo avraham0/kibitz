@@ -46,6 +46,7 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false, initial }: { onS
         />
         <button
           type="submit"
+          className={hero ? 'hero-analyze' : undefined}
           disabled={disabled || !user.trim()}
           style={{
             background: '#3fa66b', color: '#fff', border: 'none', borderRadius: 6,
