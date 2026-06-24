@@ -66,6 +66,9 @@ section {
 @media (max-width: 640px) {
   section { padding: 12px; }
   section table { display: block; overflow-x: auto; white-space: nowrap; }
+  /* On phones, let stat tiles wrap to multiple rows instead of a cramped
+     horizontal scroll strip (the desktop no-reflow concern doesn't apply here). */
+  .stats { flex-wrap: wrap; overflow-x: visible; }
 }
 
 /* Tables */

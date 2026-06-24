@@ -1,19 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
-// Responsive board size: the desired max on wide screens, shrunk to fit the viewport
-// on phones. `reserve` accounts for adjacent chrome (e.g. the eval bar + gap) and the
-// page's horizontal padding. Clamped to a usable minimum.
-export function useBoardSize(max: number, reserve = 0): number {
-  const calc = () => {
-    const vw = typeof window !== 'undefined' ? window.innerWidth : max
-    return Math.max(180, Math.min(max, vw - 32 - reserve))
-  }
-  const [size, setSize] = useState(calc)
-  useEffect(() => {
-    const onResize = () => setSize(calc())
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+// Responsive board size based on the *actual* container width (not the viewport), so
+// boards never spill past their panel — accounting for padding, nesting, and any
+// adjacent chrome via `reserve` (e.g. an eval bar + gap). Capped at `max`.
+// Returns a callback ref to attach to a full-width wrapper, plus the computed size.
+export function useBoardSize(max: number, reserve = 0): readonly [(el: HTMLElement | null) => void, number] {
+  const [size, setSize] = useState(max)
+  const roRef = useRef<ResizeObserver | null>(null)
+
+  const setRef = useCallback((el: HTMLElement | null) => {
+    roRef.current?.disconnect()
+    roRef.current = null
+    if (!el) return
+    const measure = () => {
+      const w = el.clientWidth
+      if (w > 0) setSize(Math.max(160, Math.min(max, Math.floor(w - reserve))))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    roRef.current = ro
   }, [max, reserve])
-  return size
+
+  return [setRef, size] as const
 }

@@ -31,7 +31,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
   const [solved, setSolved] = useState(0)
   const [cur, setCur] = useState(0)
   const [visible, setVisible] = useState(10) // review grid shows 10 at a time
-  const cardSize = useBoardSize(320)
+  const [gridRef, cardSize] = useBoardSize(320)
   const [srs, setSrs] = useState<SrsStore>(() => loadSrs())
   // Used to order the solve queue without re-sorting it every time a result lands.
   const srsRef = useRef(srs)
@@ -146,7 +146,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
           )
         })()
       ) : (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16, marginTop: 8, paddingTop: 12 }}>
+      <div ref={gridRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: 16, marginTop: 8, paddingTop: 12 }}>
         {shown.slice(0, visible).map((b, i) => {
           const played = sanToSquares(b.fenBefore, b.san)
           const best = sanToSquares(b.fenBefore, b.bestSan)

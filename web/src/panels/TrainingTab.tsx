@@ -210,7 +210,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
         </div>
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <div>
+        <div style={{ flex: '1 1 380px', minWidth: 0, maxWidth: 380 }}>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
             Find the best move for {colorLabel}
           </div>

@@ -156,9 +156,9 @@ export function PuzzleBoard({
     ...(best ? [[best.from as Arrow[0], best.to as Arrow[1], 'rgb(80,160,80)'] as Arrow] : []),
   ] : []
 
-  const size = useBoardSize(boardWidth)
+  const [boardRef, size] = useBoardSize(boardWidth)
   return (
-    <div style={{ width: size }}>
+    <div ref={boardRef} style={{ width: '100%', maxWidth: boardWidth }}>
       <Chessboard
         position={boardPosition}
         boardOrientation={orientationFromFen(blunder.fenBefore)}

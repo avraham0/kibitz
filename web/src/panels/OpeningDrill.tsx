@@ -61,7 +61,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
   const atEnd = viewIdx === steps.length - 1
   const { fen, pgn, halfMove } = steps[viewIdx]
   const evalCp = useStockfishEval(fen)
-  const boardSize = useBoardSize(BOARD_SIZE, 24) // reserve for eval bar + gap
+  const [boardRef, boardSize] = useBoardSize(BOARD_SIZE, 24) // reserve for eval bar + gap
 
   const chess = new Chess(fen)
   const sideToMove = chess.turn() === 'w' ? 'white' : 'black'
@@ -196,7 +196,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
         </label>
         <button type="button" onClick={reset}>Start over</button>
       </div>
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div ref={boardRef} style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, height: 44, overflow: 'hidden' }}>
             {!atEnd

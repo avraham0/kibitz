@@ -60,7 +60,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   // While exploring an off-game line, compute the eval live with the engine
   // (no stored eval exists for those positions); null otherwise (use stored evals).
   const exploreEval = useStockfishEval(explore ? explore.fen : null)
-  const boardSize = useBoardSize(320, 24) // reserve for eval bar + gap
+  const [boardRef, boardSize] = useBoardSize(320, 24) // reserve for eval bar + gap
 
   // Jump to a game (and optionally a specific move) requested from elsewhere.
   useEffect(() => {
@@ -259,7 +259,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>
       ) : (
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+        <div ref={boardRef} style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
           <div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
               {cur && <EvalBar cp={explore ? exploreEval : shownEval} height={boardSize} orientation={boardOrientation} />}
