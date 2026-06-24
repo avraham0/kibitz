@@ -10,6 +10,8 @@ import { accuracyColor } from '../accuracyColor.js'
 import { soundForSan, playMoveSound, SOUND_KEY } from '../sound.js'
 import { explainBlunder } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
+import { EvalBar } from './EvalBar.js'
+import { useStockfishEval } from '../useStockfish.js'
 
 const TIME_TROUBLE_SEC = 20
 
@@ -54,6 +56,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   const [explore, setExplore] = useState<{ fen: string; n: number } | null>(null)
   // Any navigation returns to the game line.
   useEffect(() => { setExplore(null) }, [ply, gi])
+  // While exploring an off-game line, compute the eval live with the engine
+  // (no stored eval exists for those positions); null otherwise (use stored evals).
+  const exploreEval = useStockfishEval(explore ? explore.fen : null)
 
   // Jump to a game (and optionally a specific move) requested from elsewhere.
   useEffect(() => {
@@ -186,6 +191,9 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   // Drag a piece to explore a line from the shown position. Returns false (snap back)
   // for illegal moves. Navigation clears the exploration (see the [ply, gi] effect).
   const gamePos = cur ? fenAfter(cur.fenBefore, cur.san) : ''
+  // Eval of the shown position (after the current move) — white-POV, matching the chart.
+  const shownEval = cur ? (moves[idx + 1]?.evalCp ?? cur.evalCp) : 0
+  const boardOrientation = flipped ? (g.color === 'white' ? 'black' : 'white') : g.color
   function onDrop(from: string, to: string): boolean {
     try {
       const c = new Chess(explore?.fen ?? gamePos)
@@ -250,17 +258,20 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
         <p>No moves recorded for this game.</p>
       ) : (
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
-          <div style={{ width: 320 }}>
-            {cur && (
-              <Chessboard
-                position={explore?.fen ?? gamePos}
-                boardOrientation={flipped ? (g.color === 'white' ? 'black' : 'white') : g.color}
-                customArrows={explore ? [] : arrows}
-                arePiecesDraggable
-                onPieceDrop={(s, t) => onDrop(s, t)}
-                boardWidth={320}
-              />
-            )}
+          <div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              {cur && <EvalBar cp={explore ? exploreEval : shownEval} height={320} orientation={boardOrientation} />}
+              {cur && (
+                <Chessboard
+                  position={explore?.fen ?? gamePos}
+                  boardOrientation={boardOrientation}
+                  customArrows={explore ? [] : arrows}
+                  arePiecesDraggable
+                  onPieceDrop={(s, t) => onDrop(s, t)}
+                  boardWidth={320}
+                />
+              )}
+            </div>
             {explore && (
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6, fontSize: 13 }}>
                 <span style={{ color: 'var(--amber, #e0b15a)' }}>Exploring — {explore.n} move{explore.n === 1 ? '' : 's'} in</span>

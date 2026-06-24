@@ -41,9 +41,18 @@ export default function App() {
           </p>
           <AnalyzeForm hero onSubmit={startAndSave} disabled={running} />
           {running && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', width: 'min(520px, 100%)' }}>
-              {progress ? <ProgressBar done={progress.done} total={progress.total} /> : <span>Starting analysis…</span>}
-              <button type="button" onClick={cancel}>Cancel</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start', width: 'min(520px, 100%)' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', width: '100%' }}>
+                <div style={{ flex: 1 }}>
+                  {progress ? <ProgressBar done={progress.done} total={progress.total} /> : <span>Starting analysis…</span>}
+                </div>
+                <button type="button" onClick={cancel}>Cancel</button>
+              </div>
+              {progress && progress.total > 100 && progress.done < progress.total && (
+                <p style={{ color: '#e0b15a', fontSize: 13, margin: 0 }}>
+                  {progress.total} games in this range — this will take a while. Cancel and use a smaller <em>last N</em> or a shorter <em>range</em> for a faster pass.
+                </p>
+              )}
             </div>
           )}
           {status === 'error' && (
@@ -86,7 +95,7 @@ export default function App() {
             </div>
             {progress && progress.total > 100 && progress.done < progress.total && (
               <p style={{ color: '#e0b15a', fontSize: 13, marginTop: -4 }}>
-                {progress.total} games in this range — this will take a while. Cancel and use <strong>Quick scan</strong>, or a smaller <em>last N</em>, for a faster pass. (Analyzed games are cached, so it's fast next time.)
+                {progress.total} games in this range — this will take a while. Cancel and use a smaller <em>last N</em> or a shorter <em>range</em> for a faster pass.
               </p>
             )}
           </>

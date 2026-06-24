@@ -4,22 +4,13 @@ import { ThemedBoard as Chessboard } from '../ThemedBoard.js'
 import type { GameSummary, OpeningStat } from '../api-types.js'
 import { buildTree } from '../openingTree.js'
 import { useStockfishEval, getBestMove } from '../useStockfish.js'
+import { EvalBar } from './EvalBar.js'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 const BOARD_SIZE = 380 // match the puzzles board
 
 type Step = { fen: string; pgn: string; halfMove: number }
 
-function EvalBar({ cp, height }: { cp: number | null; height: number }) {
-  const v = cp ?? 0
-  const whitePct = 50 + 50 * Math.tanh(v / 300)
-  const label = cp == null ? '?' : v > 0 ? `+${(v / 100).toFixed(1)}` : (v / 100).toFixed(1)
-  return (
-    <div style={{ width: 16, height, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden', flexShrink: 0, position: 'relative' }} title={label}>
-      <div style={{ position: 'absolute', bottom: 0, width: '100%', height: `${whitePct}%`, background: '#d8d8d8', transition: 'height 0.3s ease' }} />
-    </div>
-  )
-}
 
 function appendPgn(currentPgn: string, san: string, currentHalfMove: number): string {
   const moveNum = Math.floor(currentHalfMove / 2) + 1
@@ -215,7 +206,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
               : <span>Make a move. Kibitz replies with the most common response from your games.</span>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-            <EvalBar cp={evalCp} height={BOARD_SIZE} />
+            <EvalBar cp={evalCp} height={BOARD_SIZE} orientation={playerColor} />
             <div>
               <Chessboard
                 position={fen}

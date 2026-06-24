@@ -44,8 +44,9 @@ export function useAnalyzeStream() {
   const start = useCallback((params: StartParams) => {
     esRef.current?.close()
     abortRef.current?.abort()
-    // Keep any previous result on screen while re-running (don't blank the dashboard).
-    setStatus('running'); setProgress(null); setError(null)
+    // Clear the previous result so stale data isn't shown while the new run loads
+    // (progressive partials repopulate it within a second or two).
+    setStatus('running'); setProgress(null); setError(null); setResult(null)
 
     // In-browser engine: run the whole pipeline client-side (no server).
     if (params.engine === 'browser') {

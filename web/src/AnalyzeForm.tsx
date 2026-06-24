@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type CSSProperties } from 'react'
+import { sinceFromRange, RANGE_LABELS, type RangeKey } from './sinceFromRange.js'
 
 export type FormParams = { user: string; last?: string; depth?: string; since?: string; variations?: boolean; timeControl?: string; result?: string; opening?: string }
 
@@ -13,12 +14,18 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p
   const [timeControl, setTimeControl] = useState('')
   const [result, setResult] = useState('all')
   const [opening, setOpening] = useState('')
+  const [range, setRange] = useState<RangeKey>('1year')
+  const [customSince, setCustomSince] = useState('')
   const [showOptions, setShowOptions] = useState(false)
+
+  function sinceValue(): string | undefined {
+    return range === 'custom' ? (customSince || undefined) : sinceFromRange(range, new Date())
+  }
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!user.trim()) return
-    onSubmit({ user: user.trim(), last: last || undefined, timeControl: timeControl || undefined, result, opening: opening || undefined })
+    onSubmit({ user: user.trim(), last: last || undefined, since: sinceValue(), timeControl: timeControl || undefined, result, opening: opening || undefined })
   }
 
   return (
@@ -42,6 +49,16 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false }: { onSubmit: (p
       {showOptions && (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'end', justifyContent: 'flex-start' }}>
           <label>last N<br /><input value={last} onChange={(e) => setLast(e.target.value)} style={{ width: 60 }} /></label>
+          <label>range<br />
+            <select value={range} onChange={(e) => setRange(e.target.value as RangeKey)}>
+              {(Object.keys(RANGE_LABELS) as RangeKey[]).map((k) => (
+                <option key={k} value={k}>{RANGE_LABELS[k]}</option>
+              ))}
+            </select>
+          </label>
+          {range === 'custom' && (
+            <label>since (YYYY-MM)<br /><input value={customSince} onChange={(e) => setCustomSince(e.target.value)} placeholder="2025-01" style={{ width: 90 }} /></label>
+          )}
           <label>result<br />
             <select value={result} onChange={(e) => setResult(e.target.value)}>
               <option value="all">all</option>
