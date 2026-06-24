@@ -188,7 +188,7 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
       <h2>Opening drill</h2>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
         <label>Opening:{' '}
-          <select value={eco} onChange={(e) => setEco(e.target.value)}>
+          <select value={eco} onChange={(e) => setEco(e.target.value)} style={{ maxWidth: 'min(260px, 100%)' }}>
             {openings.map((o) => (
               <option key={o.name} value={o.name}>{o.name} — {o.games} games</option>
             ))}

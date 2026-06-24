@@ -189,7 +189,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
     <section>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 4 }}>
         <h2 style={{ margin: 0 }}>Training</h2>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
           {hungPieceFilter && (
             <button type="button" onClick={() => { setHungPieceFilter(undefined); setCur(0); setEpoch((ep) => ep + 1) }} style={{ fontSize: 13 }} title="Clear piece filter">
               {PIECE_LABEL[hungPieceFilter] ?? hungPieceFilter} hangs ✕
