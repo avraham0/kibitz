@@ -71,6 +71,10 @@ section {
   /* Hero Analyze button: a full-width CTA on its own line on phones, instead of
      awkwardly wrapping next to the username field. */
   .hero-analyze { flex-basis: 100%; }
+  /* Declutter Game review on mobile: drop the eval chart, and turn the move
+     list into a tidy full-width strip below the board instead of a narrow column. */
+  .review-chart { display: none; }
+  .review-moves { width: 100% !important; height: 150px !important; min-height: 0 !important; align-self: auto !important; }
   /* On phones, horizontal tiles never fit — stack them vertically as full-width
      rows, value on the left and label on the right (compact, always readable). */
   .stats { flex-direction: column; flex-wrap: nowrap; overflow-x: visible; gap: 8px; }

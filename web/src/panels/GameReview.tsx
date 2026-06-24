@@ -318,7 +318,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
               </div>
             </div>
           </div>
-          <div style={{ flex: '1 1 300px', minWidth: 0, maxWidth: 420, height: 240 }}>
+          <div className="review-chart" style={{ flex: '1 1 300px', minWidth: 0, maxWidth: 420, height: 240 }}>
           <ResponsiveContainer>
           <LineChart
             data={data}
@@ -348,7 +348,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
           {/* Stretch to the row's full height (board/graph bottom) and scroll inside.
               The inner div is absolutely positioned so the list's length doesn't drive
               the row taller — it fills whatever height the board column sets. */}
-          <div style={{ width: 210, alignSelf: 'stretch', position: 'relative', minHeight: 240 }}>
+          <div className="review-moves" style={{ width: 210, alignSelf: 'stretch', position: 'relative', minHeight: 240 }}>
             <div style={{ position: 'absolute', inset: 0, overflowY: 'auto', fontSize: 13, lineHeight: 1.6 }}>
               {Array.from({ length: Math.ceil(moves.length / 2) }, (_, r) => {
                 const wi = r * 2
