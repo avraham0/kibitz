@@ -13,7 +13,7 @@ class Engine {
   private onLine: ((line: string) => void) | null = null
 
   constructor() {
-    this.worker = new Worker('/stockfish.js')
+    this.worker = new Worker(`${import.meta.env.BASE_URL}stockfish.js`)
     this.worker.onmessage = (e: MessageEvent) => {
       const line = typeof e.data === 'string' ? e.data : String(e.data)
       this.onLine?.(line)

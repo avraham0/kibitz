@@ -8,7 +8,7 @@ const messageListeners = new Set<(line: string) => void>()
 
 function ensureWorker() {
   if (worker) return
-  worker = new Worker('/stockfish.js')
+  worker = new Worker(`${import.meta.env.BASE_URL}stockfish.js`)
   worker.onerror = (e) => console.error('[stockfish] worker error:', e.message, e)
   worker.onmessage = (e) => {
     const line = typeof e.data === 'string' ? e.data : String(e.data)
