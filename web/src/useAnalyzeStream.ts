@@ -64,7 +64,11 @@ export function useAnalyzeStream() {
           result: (params.result as 'all' | 'win' | 'loss' | 'draw') || 'all',
           opening: params.opening,
         },
-        (done, total) => setProgress({ done, total }),
+        {
+          onProgress: (done, total) => setProgress({ done, total }),
+          // Stream partial results so the dashboard renders early and refines live.
+          onPartial: (r) => { if (!ac.signal.aborted) setResult(r) },
+        },
         ac.signal,
       )
         .then((r) => {

@@ -31,11 +31,19 @@ export type ClientParams = {
   opening?: string
 }
 
+export type AnalyzeHandlers = {
+  onProgress?: (done: number, total: number) => void
+  // Called as games finish (throttled) with a result built from completed games so
+  // far, so the dashboard can render early and refine live.
+  onPartial?: (result: AnalyzeResult) => void
+}
+
 export async function clientAnalyze(
   params: ClientParams,
-  onProgress?: (done: number, total: number) => void,
+  handlers?: AnalyzeHandlers,
   signal?: AbortSignal,
 ): Promise<AnalyzeResult> {
+  const { onProgress, onPartial } = handlers ?? {}
   const raw = await fetchGamesSince(params.user, params.since, params.nowISO, fetch)
   if (signal?.aborted) throw new Error('analysis aborted')
 
@@ -53,13 +61,29 @@ export async function clientAnalyze(
   }
   parsed.sort((a, b) => a.playedAt.localeCompare(b.playedAt))
   if (params.last && params.last > 0) parsed = parsed.slice(-params.last)
+  // Analyze most-recent games first so early partial results are the relevant ones.
+  parsed.reverse()
 
   const total = parsed.length
   const analyses: GameAnalysis[] = new Array(total)
+  const meta = { user: params.user, since: params.since, depth: params.depth }
+  const build = (): AnalyzeResult => {
+    const completed = analyses.filter(Boolean)
+    const stats = aggregate(completed, { variations: params.variations })
+    return { stats, suggestions: coach(stats), meta, games: perGameSummaries(completed) } as unknown as AnalyzeResult
+  }
+
   onProgress?.(0, total)
-  if (total === 0) {
-    const stats = aggregate(analyses, { variations: params.variations })
-    return { stats, suggestions: coach(stats), meta: { user: params.user, since: params.since, depth: params.depth }, games: perGameSummaries(analyses) } as unknown as AnalyzeResult
+  if (total === 0) return build()
+
+  // Throttle partial emits so re-rendering the dashboard doesn't thrash.
+  let lastEmit = 0
+  const emitPartial = (force: boolean) => {
+    if (!onPartial) return
+    const now = Date.now()
+    if (!force && now - lastEmit < 500) return
+    lastEmit = now
+    if (analyses.some(Boolean)) onPartial(build())
   }
 
   const pool = createBrowserPool()
@@ -74,6 +98,7 @@ export async function clientAnalyze(
         analyses[i] = await analyzeGame(parsed[i], params.depth, evaluate)
         done++
         onProgress?.(done, total)
+        emitPartial(done === total)
       }
     }
     await Promise.all(pool.evaluators.slice(0, Math.max(1, total)).map((e) => worker(e)))
@@ -82,11 +107,5 @@ export async function clientAnalyze(
   }
   if (signal?.aborted) throw new Error('analysis aborted')
 
-  const stats = aggregate(analyses, { variations: params.variations })
-  return {
-    stats,
-    suggestions: coach(stats),
-    meta: { user: params.user, since: params.since, depth: params.depth },
-    games: perGameSummaries(analyses),
-  } as unknown as AnalyzeResult
+  return build()
 }
