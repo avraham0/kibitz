@@ -211,7 +211,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 380px', minWidth: 0, maxWidth: 380 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, height: 44, overflow: 'hidden' }}>
             Find the best move for {colorLabel}
           </div>
           <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} reviewIdx={reviewIdx} />
