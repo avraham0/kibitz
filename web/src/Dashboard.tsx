@@ -48,12 +48,12 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
     { id: 'blunders', label: 'Blunders' },
     { id: 'practice', label: 'Practice' },
     { id: 'stats', label: 'Stats' },
-    { id: 'review', label: 'Game review' },
+    { id: 'review', label: 'Review' },
     // { id: 'mastery', label: 'Mastery' },
   ]
   return (
     <div>
-      <div className="tabs" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div className="tabs" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {tabs.map((t) => (
           <button key={t.id} type="button" className={tab === t.id ? 'tab active' : 'tab'} onClick={() => setTab(t.id)}>
             {t.label}

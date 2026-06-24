@@ -118,8 +118,21 @@ button:disabled { opacity: 0.45; cursor: default; }
 /* Override react-chessboard's inline cursor:grab on non-draggable boards */
 [data-piece] { cursor: default !important; }
 
-/* Tabs */
-.tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; background: var(--bg); }
+/* Tabs — single non-wrapping row that scrolls horizontally when it doesn't fit
+   (instead of wrapping to cramped multiple rows on mobile). */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   background: transparent;
   border: none;
@@ -128,6 +141,8 @@ button:disabled { opacity: 0.45; cursor: default; }
   color: var(--muted);
   padding: 9px 14px;
   font-weight: 600;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .tab:hover:not(:disabled) { color: var(--text); border-color: transparent; }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }

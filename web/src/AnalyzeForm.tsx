@@ -42,7 +42,7 @@ export function AnalyzeForm({ onSubmit, disabled, hero = false, initial }: { onS
           value={user} onChange={(e) => setUser(e.target.value)} placeholder={source === 'lichess' ? 'lichess username' : 'chess.com username'} required
           name="chesscomHandle" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           data-1p-ignore="true" data-lpignore="true" data-form-type="other"
-          style={{ flex: 1, fontSize: hero ? 16 : 14, padding: hero ? '10px 12px' : undefined }}
+          style={{ flex: 1, minWidth: 0, fontSize: hero ? 16 : 14, padding: hero ? '10px 12px' : undefined }}
         />
         <button
           type="submit"
