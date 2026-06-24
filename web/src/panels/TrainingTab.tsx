@@ -8,6 +8,9 @@ import { hangingAfter } from '../explainBlunder.js'
 
 const PIECE_LABEL: Record<string, string> = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
 
+// Compact nav buttons so prev/next/reset/reveal sit on one row, including mobile.
+const navBtn = { fontSize: 13, padding: '5px 9px', whiteSpace: 'nowrap' as const }
+
 const TYPE_LABEL: Record<CoachableType, string> = {
   hung_piece: 'hung piece', missed_tactic: 'missed tactic', bad_trade: 'bad trade',
   king_safety: 'king safety', positional: 'positional',
@@ -196,8 +199,11 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
       </div>
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 380px', minWidth: 0, maxWidth: 380 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, height: 44, overflow: 'hidden' }}>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
             Find the best move for {colorLabel}
+          </div>
+          <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 6 }}>
+            {idx + 1} / {queue.length} blunders
           </div>
           <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} reviewIdx={reviewIdx} />
           {/* Feedback sits right under the board so it's visible on mobile, where
@@ -211,20 +217,17 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
           </div>
         </div>
         <div style={{ minWidth: 200 }}>
-          <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 4 }}>
-            {idx + 1} / {queue.length} blunders
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            <button type="button" onClick={goPrev} disabled={idx === 0}>‹ prev</button>
-            <button type="button" onClick={advance} disabled={idx >= queue.length - 1}>next ›</button>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button type="button" style={navBtn} onClick={goPrev} disabled={idx === 0}>‹ prev</button>
+            <button type="button" style={navBtn} onClick={advance} disabled={idx >= queue.length - 1}>next ›</button>
             {(puzzleState.solved || puzzleState.revealed) && (
-              <button type="button" onClick={resetPuzzle}>reset</button>
+              <button type="button" style={navBtn} onClick={resetPuzzle}>reset</button>
             )}
             {!puzzleState.solved && !puzzleState.revealed && puzzleState.committed && (
-              <button type="button" onClick={resetPuzzle}>try again</button>
+              <button type="button" style={navBtn} onClick={resetPuzzle}>try again</button>
             )}
             {!puzzleState.solved && !puzzleState.revealed && (
-              <button type="button" onClick={() => setForceReveal(true)}>reveal</button>
+              <button type="button" style={navBtn} onClick={() => setForceReveal(true)}>reveal</button>
             )}
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Enter: next puzzle{(puzzleState.solved || puzzleState.revealed) && (puzzleState.reviewLen ?? 1) > 1 ? ' · ← → step the line' : ''}</div>
