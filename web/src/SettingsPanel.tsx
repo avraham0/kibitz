@@ -89,7 +89,7 @@ export function SettingsPanel() {
         <div style={{
           position: 'absolute', right: 0, top: '110%', zIndex: 100,
           background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 10, padding: '16px 18px', width: 260,
+          borderRadius: 10, padding: '16px 18px', width: 260, maxWidth: 'calc(100vw - 24px)',
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>

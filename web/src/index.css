@@ -67,8 +67,11 @@ section {
   section { padding: 12px; }
   section table { display: block; overflow-x: auto; white-space: nowrap; }
   /* On phones, let stat tiles wrap to multiple rows instead of a cramped
-     horizontal scroll strip (the desktop no-reflow concern doesn't apply here). */
+     horizontal scroll strip (the desktop no-reflow concern doesn't apply here).
+     Size each tile to its content so wide values (e.g. the W-L-D record) aren't
+     clipped by the 78px min-width. */
   .stats { flex-wrap: wrap; overflow-x: visible; }
+  .stat { min-width: max-content; }
 }
 
 /* Tables */
@@ -88,6 +91,10 @@ input, button, select {
   box-sizing: border-box;
 }
 select {
+  /* Never let a long option (e.g. a full game label) stretch the control past
+     its container and off-screen — cap it and let the browser truncate. */
+  max-width: 100%;
+  min-width: 0;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
