@@ -66,12 +66,19 @@ section {
 @media (max-width: 640px) {
   section { padding: 12px; }
   section table { display: block; overflow-x: auto; white-space: nowrap; }
-  /* On phones, let stat tiles wrap to multiple rows instead of a cramped
-     horizontal scroll strip (the desktop no-reflow concern doesn't apply here).
-     Size each tile to its content so wide values (e.g. the W-L-D record) aren't
-     clipped by the 78px min-width. */
-  .stats { flex-wrap: wrap; overflow-x: visible; }
-  .stat { min-width: max-content; }
+  /* On phones, horizontal tiles never fit — stack them vertically as full-width
+     rows, value on the left and label on the right (compact, always readable). */
+  .stats { flex-direction: column; flex-wrap: nowrap; overflow-x: visible; gap: 8px; }
+  .stat {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .stat .stat-value { font-size: 22px; }
+  .stat .stat-label { margin-top: 0; }
 }
 
 /* Tables */

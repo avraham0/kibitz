@@ -195,13 +195,13 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
               {PIECE_LABEL[hungPieceFilter] ?? hungPieceFilter} hangs ✕
             </button>
           )}
-          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setHungPieceFilter(undefined); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13 }}>
+          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setHungPieceFilter(undefined); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13, maxWidth: 200 }}>
             <option value="all">all patterns ({blunders.length})</option>
             {types.map((t) => (
               <option key={t} value={t}>{TYPE_LABEL[t as CoachableType] ?? t} ({blunders.filter((b) => b.type === t).length})</option>
             ))}
           </select>
-          <select value={openingFilter} onChange={(e) => { setOpeningFilter(e.target.value); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13 }}>
+          <select value={openingFilter} onChange={(e) => { setOpeningFilter(e.target.value); setCur(0); setEpoch((ep) => ep + 1); setPuzzleAnswered(false); setPuzzleState({ solved: false, revealed: false, wrong: 0, lastWrongSan: null }); setForceReveal(false) }} style={{ fontSize: 13, maxWidth: 200 }}>
             <option value="all">all openings</option>
             {openings.map((o) => (
               <option key={o} value={o}>{o} ({blunders.filter((b) => b.family === o).length})</option>

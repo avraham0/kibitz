@@ -213,7 +213,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
     <section>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <h2 style={{ margin: 0 }}>Game review</h2>
-        <select value={gi} onChange={(e) => pick(Number(e.target.value))} style={{ fontSize: 13 }}>
+        <select value={gi} onChange={(e) => pick(Number(e.target.value))} style={{ fontSize: 13, maxWidth: 'min(280px, 100%)' }}>
           {[...games].reverse().map((gg, ri) => {
             const i = games.length - 1 - ri
             return (
