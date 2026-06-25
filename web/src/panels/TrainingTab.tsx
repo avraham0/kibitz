@@ -5,6 +5,8 @@ import {
   loadSrs, saveSrs, recordResult, orderByCalibrated, puzzleKey, type SrsStore,
 } from '../puzzleSrs.js'
 import { hangingAfter } from '../explainBlunder.js'
+import { recurringMistakes } from '../recurringMistakes.js'
+import { LESSON, TYPE_NAME } from '../lessons.js'
 
 const PIECE_LABEL: Record<string, string> = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
 
@@ -67,6 +69,10 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
     for (const b of blunders) seen.add(b.type)
     return [...seen].sort()
   }, [blunders])
+
+  // Personalized pre-move checklist: your top recurring weaknesses, shown as a
+  // habit nudge before you answer (turns the mistake profile into in-the-moment behavior).
+  const weaknesses = useMemo(() => recurringMistakes(games).filter((t) => t.count >= 2).slice(0, 2), [games])
 
   const filtered = useMemo(
     () => blunders.filter((b) =>
@@ -197,6 +203,17 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
           </select>
         </div>
       </div>
+      {weaknesses.length > 0 && !puzzleState.solved && !puzzleState.revealed && (
+        <div style={{ border: '1px solid var(--border)', background: 'var(--surface-2)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
+          <span style={{ fontWeight: 600 }}>Before you move</span>
+          <span style={{ color: 'var(--muted)' }}> — your recurring habits:</span>
+          <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+            {weaknesses.map((w) => (
+              <li key={w.type}><span style={{ color: 'var(--muted)' }}>{TYPE_NAME[w.type]}:</span> {LESSON[w.type]}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 380px', minWidth: 0, maxWidth: 380 }}>
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>
