@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import type { BlunderRef, CoachableType, GameSummary } from '../api-types.js'
 import { PuzzleBoard, PuzzleFeedback, type PuzzleState } from './PuzzleBoard.js'
 import {
-  loadSrs, saveSrs, recordResult, orderByDue, puzzleKey, type SrsStore,
+  loadSrs, saveSrs, recordResult, orderByCalibrated, puzzleKey, type SrsStore,
 } from '../puzzleSrs.js'
 import { hangingAfter } from '../explainBlunder.js'
 
@@ -78,7 +78,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
 
   const now = Date.now()
   const queue = useMemo(
-    () => orderByDue(filtered, srsRef.current, now),
+    () => orderByCalibrated(filtered, srsRef.current, now),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filtered],
   )

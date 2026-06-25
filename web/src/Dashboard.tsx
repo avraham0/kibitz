@@ -5,6 +5,7 @@ import { Splits } from './panels/Splits.js'
 import { OpeningsTable } from './panels/OpeningsTable.js'
 import { BlunderList } from './panels/BlunderList.js'
 import { CoachingCards } from './panels/CoachingCards.js'
+import { RecurringMistakes } from './panels/RecurringMistakes.js'
 import { MistakeTypesChart } from './panels/MistakeTypesChart.js'
 import { PhaseChart } from './panels/PhaseChart.js'
 import { TimePressureChart } from './panels/TimePressureChart.js'
@@ -74,6 +75,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
             <HangFrequency games={filteredGames} onPractice={startPractice} />
           </div>
           <CoachingCards suggestions={filteredSuggestions} onPractice={startPractice} />
+          <RecurringMistakes games={filteredGames} onPractice={startPractice} />
           <OpeningRecommendations stats={filteredStats} />
           <OpeningsTable openings={filteredStats.openings} games={filteredGames} onOpenGame={openGame} onPractice={(family) => startPractice({ practice: 'opening', family })} />
         </>

@@ -1,4 +1,4 @@
-import type { BlunderRef } from './api-types.js'
+import type { BlunderRef, MistakeType } from './api-types.js'
 
 // Spaced-repetition for puzzles. A Leitner-style box per puzzle: a correct solve
 // promotes it to a longer interval; a reveal/fail resets it to "due now". Persisted
@@ -36,6 +36,42 @@ export function orderByDue(blunders: BlunderRef[], store: SrsStore, now: number)
     const dueDiff = (store[puzzleKey(a)]?.due ?? 0) - (store[puzzleKey(b)]?.due ?? 0)
     if (dueDiff !== 0) return dueDiff
     return (store[puzzleKey(b)]?.wrongCount ?? 0) - (store[puzzleKey(a)]?.wrongCount ?? 0)
+  })
+}
+
+// Rough 0..1 difficulty of a puzzle for calibration. Higher = harder to find.
+// Subtle, positional, quiet mistakes are hard; a hung queen with a huge swing is easy.
+const TYPE_DIFFICULTY: Record<MistakeType, number> = {
+  hung_piece: 0.2, bad_trade: 0.4, fork: 0.4, back_rank: 0.45, missed_tactic: 0.5,
+  pin: 0.5, skewer: 0.55, discovered_attack: 0.55, trapped_piece: 0.55,
+  king_safety: 0.6, positional: 0.75, lost_position: 0.5,
+}
+export function estimateDifficulty(b: Pick<BlunderRef, 'type' | 'cpLoss'>, store: SrsStore, key: string): number {
+  let d = TYPE_DIFFICULTY[b.type] ?? 0.5
+  // Bigger swings are more obvious → easier to spot.
+  if (b.cpLoss >= 800) d -= 0.12
+  else if (b.cpLoss >= 300) d -= 0.05
+  else if (b.cpLoss < 150) d += 0.1
+  // If this user has failed it before, it's hard for them specifically.
+  d += Math.min(0.2, 0.08 * (store[key]?.wrongCount ?? 0))
+  return Math.max(0, Math.min(1, d))
+}
+
+const TRIVIAL = 0.3 // skip dead-easy puzzles to the back — comfort only protects your level
+
+// Calibrated order: spaced-repetition due puzzles first (as always), but within each
+// group ramp from approachable to hard ("desirable difficulty") and push trivial ones
+// to the end, instead of opening cold on the single hardest puzzle.
+export function orderByCalibrated(blunders: BlunderRef[], store: SrsStore, now: number): BlunderRef[] {
+  const diff = (b: BlunderRef) => estimateDifficulty(b, store, puzzleKey(b))
+  return [...blunders].sort((a, b) => {
+    const aDue = isDue(store, puzzleKey(a), now)
+    const bDue = isDue(store, puzzleKey(b), now)
+    if (aDue !== bDue) return aDue ? -1 : 1 // due first
+    const da = diff(a), db = diff(b)
+    const aTriv = da < TRIVIAL, bTriv = db < TRIVIAL
+    if (aTriv !== bTriv) return aTriv ? 1 : -1 // trivial puzzles last
+    return da - db // otherwise easier → harder, a gentle ramp
   })
 }
 

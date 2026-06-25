@@ -7,6 +7,7 @@ import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
 import { explainBlunder, explainWrongMove } from '../explainBlunder.js'
+import { LESSON } from '../lessons.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 import { useBoardSize } from '../useBoardSize.js'
 
@@ -18,17 +19,21 @@ function analysisLink(fen: string): string {
 
 export function PuzzleFeedback({ state, blunder, onReview }: { state: PuzzleState; blunder: BlunderRef; onReview?: () => void }) {
   const { solved, revealed, wrong, lastWrongSan, committed } = state
+  const lesson = blunder.type in LESSON ? LESSON[blunder.type as keyof typeof LESSON] : null
+  const principle = lesson && <div style={{ color: 'var(--muted)', marginTop: 3 }}><strong>Principle:</strong> {lesson}</div>
   return (
     <div style={{ fontSize: 13 }}>
       {solved ? (
         <>
           <div style={{ color: '#6c6', fontWeight: 600 }}>✓ Solved — {blunder.bestSan}</div>
           <div style={{ color: 'var(--muted)', marginTop: 3 }}>{explainBlunder(blunder)}</div>
+          {principle}
         </>
       ) : revealed ? (
         <>
           <div>Best was <strong>{blunder.bestSan}</strong></div>
           <div style={{ color: 'var(--muted)', marginTop: 3 }}>{explainBlunder(blunder)}</div>
+          {principle}
         </>
       ) : committed && lastWrongSan ? (
         <>

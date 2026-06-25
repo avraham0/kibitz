@@ -5,7 +5,7 @@ import type { BlunderRef, GameSummary, MistakeType } from '../api-types.js'
 import { sanToSquares } from '../sanToSquares.js'
 import { orientationFromFen } from '../orientationFromFen.js'
 import { PuzzleBoard } from './PuzzleBoard.js'
-import { loadSrs, saveSrs, recordResult, orderByDue, dueCount, isDue, puzzleKey, type SrsStore } from '../puzzleSrs.js'
+import { loadSrs, saveSrs, recordResult, orderByCalibrated, dueCount, isDue, puzzleKey, type SrsStore } from '../puzzleSrs.js'
 import { explainBlunder } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 import { useBoardSize } from '../useBoardSize.js'
@@ -81,7 +81,7 @@ export function BlunderList({ blunders, games, onOpenGame }: {
   // Order the solve queue most-overdue-first, frozen per filter so recording a
   // result doesn't reshuffle the puzzle under you mid-session.
   const queue = useMemo(
-    () => orderByDue(shown, srsRef.current, Date.now()),
+    () => orderByCalibrated(shown, srsRef.current, Date.now()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filter, blunders, mode],
   )
