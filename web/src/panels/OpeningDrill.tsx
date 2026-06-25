@@ -191,14 +191,16 @@ export function OpeningDrill({ openings, games, initialFamily }: { openings: Ope
 
   return (
     <section>
-      <h2>Opening drill</h2>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
-        <select value={eco} onChange={(e) => setEco(e.target.value)} aria-label="Opening" style={{ fontSize: 13, maxWidth: 'min(260px, 100%)' }}>
-          {openings.map((o) => (
-            <option key={o.name} value={o.name}>{o.name} — {o.games} games</option>
-          ))}
-        </select>
-        <button type="button" onClick={reset}>Start over</button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>Opening drill</h2>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', minWidth: 0 }}>
+          <select value={eco} onChange={(e) => setEco(e.target.value)} aria-label="Opening" style={{ fontSize: 13, maxWidth: 'min(260px, 100%)' }}>
+            {openings.map((o) => (
+              <option key={o.name} value={o.name}>{o.name} — {o.games} games</option>
+            ))}
+          </select>
+          <button type="button" style={{ fontSize: 13 }} onClick={reset}>Start over</button>
+        </div>
       </div>
       <div ref={boardRef} style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div>
