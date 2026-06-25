@@ -8,6 +8,7 @@ import { sanToSquares } from '../sanToSquares.js'
 import { AXIS, GRID, TOOLTIP, COLORS } from './chartTheme.js'
 import { accuracyColor } from '../accuracyColor.js'
 import { soundForSan, playMoveSound, soundEnabled } from '../sound.js'
+import { RecallQuiz } from './RecallQuiz.js'
 import { explainBlunder } from '../explainBlunder.js'
 import { ExternalLinkIcon } from './ExternalLinkIcon.js'
 import { EvalBar } from './EvalBar.js'
@@ -56,6 +57,7 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
   // Free-play exploration forked from the current position; null = following the game.
   const [explore, setExplore] = useState<{ fen: string; n: number } | null>(null)
   const [selectedSq, setSelectedSq] = useState<string | null>(null)
+  const [recall, setRecall] = useState(false)
   // Any navigation returns to the game line.
   useEffect(() => { setExplore(null); setSelectedSq(null) }, [ply, gi])
   // While exploring an off-game line, compute the eval live with the engine
@@ -260,8 +262,28 @@ export function GameReview({ games, focus }: { games: GameSummary[]; focus?: { i
         <div style={{ color: 'rgb(224,121,107)' }}>{cur && isMistake ? `${cur.severity} −${cur.cpLoss}cp · best ${cur.bestSan}` : ' '}</div>
         <div style={{ color: 'var(--muted)' }}>{cur && isMistake ? explainBlunder(cur) : ' '}</div>
       </div>
+      {moves.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, marginBottom: 4 }}>
+          {([['Review', false], ['Recall (quiz)', true]] as const).map(([label, on]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setRecall(on)}
+              style={{
+                fontSize: 13, fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
+                background: recall === on ? 'var(--accent)' : 'var(--surface-2)',
+                color: recall === on ? '#fff' : 'var(--text)', border: '1px solid var(--border)',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {moves.length === 0 ? (
         <p>No moves recorded for this game.</p>
+      ) : recall ? (
+        <RecallQuiz key={gi} game={g} />
       ) : (
         <div ref={boardRef} style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
           <div>
