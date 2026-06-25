@@ -206,15 +206,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
             {idx + 1} / {queue.length} blunders
           </div>
           <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} reviewIdx={reviewIdx} />
-          {/* Feedback sits right under the board so it's visible on mobile, where
-              the side panel would otherwise wrap far below the tall board. */}
-          <div style={{ marginTop: 10, minHeight: 40 }}>
-            <PuzzleFeedback
-              state={puzzleState}
-              blunder={b}
-              onReview={(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? () => onOpenGame(gid, b.ply - 1) : undefined })()}
-            />
-          </div>
         </div>
         <div style={{ minWidth: 200 }}>
           <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -230,7 +221,13 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
               <button type="button" style={navBtn} onClick={() => setForceReveal(true)}>reveal</button>
             )}
           </div>
-          <div className="kbd-hint" style={{ fontSize: 12, color: 'var(--muted)' }}>Enter: next puzzle{(puzzleState.solved || puzzleState.revealed) && (puzzleState.reviewLen ?? 1) > 1 ? ' · ← → step the line' : ''}</div>
+          <div style={{ minHeight: 40 }}>
+            <PuzzleFeedback
+              state={puzzleState}
+              blunder={b}
+              onReview={(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? () => onOpenGame(gid, b.ply - 1) : undefined })()}
+            />
+          </div>
         </div>
       </div>
     </section>
