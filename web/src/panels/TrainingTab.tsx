@@ -207,8 +207,17 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
           </div>
           <PuzzleBoard key={`${key}-${epoch}`} blunder={b} onResult={handleResult} boardWidth={380} onStateChange={setPuzzleState} forceReveal={forceReveal} reviewIdx={reviewIdx} />
         </div>
-        <div style={{ minWidth: 200 }}>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 200, flex: '1 1 200px' }}>
+          {/* Feedback first so it sits right under the board on mobile (where this
+              panel wraps below), with the action buttons following it. */}
+          <div style={{ minHeight: 40, marginBottom: 12 }}>
+            <PuzzleFeedback
+              state={puzzleState}
+              blunder={b}
+              onReview={(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? () => onOpenGame(gid, b.ply - 1) : undefined })()}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <button type="button" style={navBtn} onClick={goPrev} disabled={idx === 0}>‹ prev</button>
             <button type="button" style={navBtn} onClick={advance} disabled={idx >= queue.length - 1}>next ›</button>
             {(puzzleState.solved || puzzleState.revealed) && (
@@ -220,13 +229,6 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
             {!puzzleState.solved && !puzzleState.revealed && (
               <button type="button" style={navBtn} onClick={() => setForceReveal(true)}>reveal</button>
             )}
-          </div>
-          <div style={{ minHeight: 40 }}>
-            <PuzzleFeedback
-              state={puzzleState}
-              blunder={b}
-              onReview={(() => { const gid = gameById.get(b.url); return onOpenGame && gid ? () => onOpenGame(gid, b.ply - 1) : undefined })()}
-            />
           </div>
         </div>
       </div>
