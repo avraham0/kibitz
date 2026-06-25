@@ -99,7 +99,7 @@ export function Dashboard({ result }: { result: AnalyzeResult }) {
         </>
       )}
       {tab === 'blunders' && <BlunderList blunders={filteredStats.topBlunders} games={filteredGames} onOpenGame={openGame} />}
-      {tab === 'practice' && <PracticeTab games={filteredGames} openings={filteredStats.openings} focus={practiceFocus} onOpenGame={openGame} />}
+      {tab === 'practice' && <PracticeTab games={filteredGames} focus={practiceFocus} onOpenGame={openGame} />}
       {tab === 'review' && <GameReview games={filteredGames} focus={focus} />}
       {/* {tab === 'mastery' && <MasteryTab games={filteredGames} onOpenGame={openGame} />} */}
     </div>

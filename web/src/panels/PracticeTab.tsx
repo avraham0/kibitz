@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
-import type { GameSummary, OpeningStat, SuggestionAction, CoachableType } from '../api-types.js'
+import type { GameSummary, SuggestionAction, CoachableType } from '../api-types.js'
 import { TrainingTab } from './TrainingTab.js'
-import { OpeningDrill } from './OpeningDrill.js'
+import { OpeningMistakes } from './OpeningMistakes.js'
 
 type Mode = 'puzzles' | 'openings'
 
 // Merged practice surface. Two modes — blunder puzzles (every mistake type, not just
 // tactics) and opening drills — but the user normally arrives here via a coaching card,
 // which picks the mode and the filter. `focus` is the routed SuggestionAction.
-export function PracticeTab({ games, openings, focus, onOpenGame }: {
+export function PracticeTab({ games, focus, onOpenGame }: {
   games: GameSummary[]
-  openings: OpeningStat[]
   focus: SuggestionAction | null
   onOpenGame?: (id: string, ply?: number) => void
 }) {
@@ -44,7 +43,7 @@ export function PracticeTab({ games, openings, focus, onOpenGame }: {
       </div>
       {mode === 'puzzles'
         ? <TrainingTab games={games} initialTypeFilter={typeFilter} initialHungPiece={hungPiece} onOpenGame={onOpenGame} />
-        : <OpeningDrill openings={openings} games={games} initialFamily={family} />}
+        : <OpeningMistakes games={games} initialFamily={family} onOpenGame={onOpenGame} />}
     </section>
   )
 }
