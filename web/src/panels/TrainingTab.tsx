@@ -7,6 +7,7 @@ import {
 import { hangingAfter } from '../explainBlunder.js'
 import { recurringMistakes } from '../recurringMistakes.js'
 import { LESSON, TYPE_NAME } from '../lessons.js'
+import { BestLineWalkthrough } from './BestLineWalkthrough.js'
 
 const PIECE_LABEL: Record<string, string> = { q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn' }
 
@@ -48,6 +49,7 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
   const [puzzleState, setPuzzleState] = useState<PuzzleState>({ solved: false, revealed: false, wrong: 0, lastWrongSan: null })
   const [forceReveal, setForceReveal] = useState(false)
   const [reviewIdx, setReviewIdx] = useState<number | null>(null)
+  const [showLine, setShowLine] = useState(false)
   const [typeFilter, setTypeFilter] = useState<string>(initialTypeFilter ?? 'all')
   const [hungPieceFilter, setHungPieceFilter] = useState<string | undefined>(initialHungPiece)
 
@@ -134,8 +136,8 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleState.revealed])
 
-  // Reset the step cursor when the shown puzzle changes.
-  useEffect(() => { setReviewIdx(null) }, [key, epoch])
+  // Reset the step cursor + walkthrough when the shown puzzle changes.
+  useEffect(() => { setReviewIdx(null); setShowLine(false) }, [key, epoch])
 
   // Once answered, ← / → step the pieces through the game line on the board.
   // Enter advances to the next puzzle.
@@ -240,6 +242,9 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
             {(puzzleState.solved || puzzleState.revealed) && (
               <button type="button" style={navBtn} onClick={resetPuzzle}>reset</button>
             )}
+            {(puzzleState.solved || puzzleState.revealed) && (
+              <button type="button" style={navBtn} onClick={() => setShowLine((v) => !v)}>{showLine ? 'hide line' : 'walk the line'}</button>
+            )}
             {!puzzleState.solved && !puzzleState.revealed && puzzleState.committed && (
               <button type="button" style={navBtn} onClick={resetPuzzle}>try again</button>
             )}
@@ -247,6 +252,9 @@ export function TrainingTab({ games, initialTypeFilter, initialHungPiece, onOpen
               <button type="button" style={navBtn} onClick={() => setForceReveal(true)}>reveal</button>
             )}
           </div>
+          {showLine && (puzzleState.solved || puzzleState.revealed) && (
+            <BestLineWalkthrough key={key} fenBefore={b.fenBefore} bestSan={b.bestSan} />
+          )}
         </div>
       </div>
     </section>
